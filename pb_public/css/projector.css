@@ -1,0 +1,96 @@
+/* Word Garden projector (#s9): one 1920×1080 stage, scaled to fit the window, readable from the back of the room. */
+
+html, body.pj-body { height: 100%; overflow: hidden; }
+body.pj-body { background: #1E1E22; }
+
+.pj-stage {
+  position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px;
+  transform: translate(-50%, -50%); transform-origin: center;
+  background: var(--cream); overflow: hidden;
+  display: grid; grid-template-columns: 1060px 1fr; grid-template-rows: auto 1fr;
+  gap: 28px 40px; padding: 44px 64px 48px;
+}
+.pj-loading { grid-column: 1 / -1; align-self: center; text-align: center; font-size: 48px; color: var(--ink-2); }
+
+/* Header */
+.pj-h { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 32px; }
+.pj-h h1 { font-size: 72px; line-height: 1; }
+.pj-chips { display: flex; align-items: center; gap: 16px; }
+.pj-chip {
+  display: inline-flex; align-items: center; padding: 12px 28px; border-radius: 999px;
+  background: var(--teal-l); color: var(--teal-d); font-size: 30px; font-weight: 700; white-space: nowrap;
+}
+.pj-chip.is-quiet { background: var(--orange-l); color: var(--orange-d); }
+.pj-chip[hidden] { display: none; }
+
+/* Garden */
+.pj-garden { min-height: 0; border-radius: 36px; overflow: hidden; background: #fff; box-shadow: var(--sh); display: flex; flex-direction: column; }
+.pj-scene { flex: 1; min-height: 0; }
+.pj-scene svg { display: block; width: 100%; height: 100%; }
+.pj-milestone { padding: 24px 36px 28px; min-height: 160px; } /* same height live and waiting, so the scene crops the same */
+.pj-milestone .top { padding-right: 64px; display: flex; justify-content: space-between; align-items: baseline; gap: 24px; font-size: 36px; font-weight: 800; }
+.pj-milestone small { font-size: 26px; font-weight: 600; color: var(--ink-2); }
+.pj-mbar { position: relative; height: 40px; border-radius: 999px; background: var(--cream-2); margin-top: 14px; }
+.pj-mbar .fill {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 0; min-width: 40px; border-radius: 999px;
+  background: linear-gradient(90deg, var(--leaf), #8CC56A); transition: width 1.2s var(--ease);
+}
+.pj-mbar .flag { position: absolute; right: -14px; top: 50%; transform: translateY(-50%); font-size: 58px; line-height: 1; }
+
+/* Side cards */
+.pj-side { display: flex; flex-direction: column; gap: 22px; min-height: 0; }
+.pj-card { background: #fff; border-radius: 36px; box-shadow: var(--sh); padding: 24px 36px; }
+.pj-card h2 { font-size: 44px; }
+.pj-who { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.pj-who p { font-size: 28px; color: var(--ink-2); margin-top: 8px; }
+
+.pj-avs { --cols: 6; display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 14px 16px; margin-top: 16px; align-content: start; }
+.pj-avs.is-many { --cols: 8; }
+.pj-avs.is-crowd { --cols: 10; gap: 10px 10px; }
+.pj-p { text-align: center; min-width: 0; }
+.pj-av { position: relative; display: grid; place-items: center; aspect-ratio: 1; border-radius: 50%; background: var(--leaf-l); font-size: 52px; }
+.pj-avs.is-many .pj-av { font-size: 40px; }
+.pj-avs.is-crowd .pj-av { font-size: 32px; }
+.pj-av::after {
+  position: absolute; right: -4px; bottom: -4px; width: 40%; height: 40%; border-radius: 50%;
+  display: grid; place-items: center; font-size: .45em; border: 3px solid #fff;
+}
+.pj-av.is-done { background: var(--cream); }
+.pj-av.is-done::after { content: "✓"; background: var(--leaf); color: #fff; font-weight: 900; }
+.pj-av.is-growing::after { content: "🌱"; background: #fff; }
+.pj-n { display: none; font-size: 24px; font-weight: 700; color: var(--ink-2); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pj-avs.is-many .pj-n, .pj-avs.is-crowd .pj-n { font-size: 19px; }
+.pj-stage.show-names .pj-n { display: block; }
+
+.pj-ring { display: flex; align-items: center; gap: 24px; }
+.pj-ring svg { width: 116px; height: 116px; flex: none; }
+.pj-ring .arc { transition: stroke-dasharray 1.2s var(--ease); }
+.pj-ring b { font-size: 58px; line-height: 1; display: block; }
+.pj-ring span { font-size: 28px; color: var(--ink-2); }
+
+.pj-tricky { background: var(--orange-l); }
+.pj-tricky .k { font-size: 24px; font-weight: 800; color: var(--orange-d); text-transform: uppercase; letter-spacing: .06em; }
+.pj-tricky b { display: block; font-size: 46px; line-height: 1.15; margin: 2px 0 6px; }
+.pj-tricky .prompt {
+  font-size: 28px; line-height: 1.35; color: var(--ink);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+}
+.pj-tricky p { font-size: 26px; color: var(--ink-2); margin-top: 6px; }
+
+/* Waiting for class (no live session) */
+.pj-wait { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 20px; text-align: center; }
+.pj-wait .big { font-size: 96px; line-height: 1; }
+.pj-wait h2 { font-size: 52px; }
+.pj-wait p { font-size: 32px; color: var(--ink-2); }
+
+/* Growth: a new flower grows up from its soil, and the growing plant gives a small nudge when stars arrive. */
+.pj-plant { transform-box: fill-box; transform-origin: 50% 100%; }
+.pj-bloom { animation: pjBloom 1.4s var(--ease) both; }
+.pj-nudge { animation: pjNudge 1s var(--ease) both; }
+@keyframes pjBloom { from { opacity: 0; transform: scale(.3); } 70% { opacity: 1; transform: scale(1.08); } to { opacity: 1; transform: none; } }
+@keyframes pjNudge { 0%, 100% { transform: none; } 40% { transform: scale(1.12) rotate(-3deg); } 70% { transform: scale(.98) rotate(2deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pj-bloom, .pj-nudge { animation: none; }
+  .pj-mbar .fill, .pj-ring .arc { transition: none; }
+}
