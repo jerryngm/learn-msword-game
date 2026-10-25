@@ -1,0 +1,142 @@
+/* Word Garden trainer page: denser than the learner screens (one adult trainer, 1366×768 laptop). */
+body.trainer { font-size: 15px; line-height: 1.4; }
+.t-app { min-height: 100vh; }
+.t-view { padding: 10px 16px 16px; max-width: 1600px; margin: 0 auto; }
+.t-muted { color: var(--ink-3); font-weight: 400; }
+.t-empty { color: var(--ink-3); margin: 6px 0; }
+
+/* buttons and controls */
+.t-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 38px; padding: 6px 16px; border-radius: 999px; border: 2px solid var(--line);
+  background: #fff; font: inherit; font-weight: 700; cursor: pointer; text-decoration: none; color: var(--ink);
+}
+.t-btn:hover { border-color: var(--teal); }
+.t-btn[disabled] { opacity: .5; cursor: not-allowed; }
+.t-btn-pri { background: var(--teal); border-color: var(--teal); color: #fff; }
+.t-btn-pri:hover { background: var(--teal-d); border-color: var(--teal-d); }
+.t-btn-sm { min-height: 32px; padding: 4px 12px; font-size: 14px; }
+.t-link { border-color: transparent; background: transparent; text-decoration: underline; color: var(--ink-2); }
+.t-danger { color: #A32D1F; }
+.t-danger:hover { border-color: #A32D1F; }
+.t-chip {
+  border: 2px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 12px;
+  font: inherit; font-size: 14px; cursor: pointer; text-align: left;
+}
+.t-chip.is-on { border-color: var(--teal); background: var(--teal-l); font-weight: 700; }
+.t-chk { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.t-chk input { width: 18px; height: 18px; accent-color: var(--teal); }
+.t-msg { min-height: 1.4em; margin: 6px 0 0; color: var(--leaf-d); font-weight: 600; }
+.t-msg[data-kind="error"] { color: #A32D1F; }
+.t-banner:empty { display: none; }
+.t-banner { margin: 0 0 8px; }
+
+/* header */
+.t-head { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; margin-bottom: 10px; }
+.t-head h1 { font-size: 26px; }
+.t-live { background: var(--leaf); color: #fff; font-weight: 700; font-size: 13px; padding: 3px 10px; border-radius: 999px; }
+.t-live.is-off { background: var(--ink-3); }
+.t-sess { color: var(--ink-2); flex: 1; min-width: 200px; }
+
+/* cards */
+.t-card { background: var(--card); border-radius: var(--r-md); box-shadow: var(--sh-sm); padding: 12px 14px; }
+.t-card h2 { font-size: 17px; margin-bottom: 8px; display: flex; align-items: baseline; gap: 8px; }
+.t-card h2 small { font-size: 12px; margin-left: auto; }
+.t-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.t-scroll { overflow: auto; }
+.t-short { max-height: 150px; }
+
+/* dashboard grid: queue | heatmap | side column */
+.t-grid { display: grid; grid-template-columns: 280px minmax(0, 1fr) 320px; gap: 12px; align-items: start; }
+.t-queue .t-scroll { max-height: calc(100vh - 140px); }
+.t-heat .t-scroll { max-height: calc(100vh - 190px); }
+.t-count { background: var(--orange); color: #fff; border-radius: 999px; font-size: 13px; padding: 1px 9px; }
+
+/* faces */
+.t-face {
+  display: inline-grid; place-items: center; flex: none; width: 36px; height: 36px; font-size: 20px;
+  border-radius: 50%; background: var(--cream-2); box-shadow: 0 0 0 3px var(--ring, transparent);
+}
+.t-face-sm { width: 24px; height: 24px; font-size: 14px; box-shadow: 0 0 0 2px var(--ring, transparent); margin-right: 6px; vertical-align: middle; }
+
+/* ask queue */
+.t-q { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 8px; border-radius: 12px; background: var(--cream); margin-bottom: 8px; border-left: 5px solid var(--orange); }
+.t-q-learn_more { border-left-color: var(--teal); }
+.t-q-classmate { border-left-color: var(--leaf); }
+.t-q small { display: block; font-size: 12px; }
+
+/* heatmap */
+.t-hm { border-collapse: collapse; font-size: 13px; }
+.t-hm th, .t-hm td { border: 1px solid #EFE4D2; padding: 3px 5px; text-align: center; }
+.t-hm thead th { font-weight: 600; vertical-align: bottom; min-width: 52px; max-width: 70px; line-height: 1.15; }
+.t-hm thead th small { display: block; color: var(--ink-3); font-weight: 400; }
+.t-hm tbody th { text-align: left; white-space: nowrap; font-weight: 600; position: sticky; left: 0; background: #fff; }
+.t-hm td { font-size: 16px; min-width: 52px; }
+.t-hm td small { display: block; font-size: 10px; color: var(--orange-d); letter-spacing: -1px; }
+.t-hm .c-seed { color: var(--ink-3); }
+.t-hm .c-sprout { background: #F4F9EF; }
+.t-hm .c-leafy { background: var(--leaf-l); }
+.t-hm .c-flowering { background: #FFF2C9; }
+.t-hm .c-wilt { background: #F6EFD6; }
+.t-hm tr.is-flagged th { box-shadow: inset 4px 0 0 #C9583F; }
+.t-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--ink-2); margin-top: 8px; }
+
+/* flags, helpers */
+.t-flag { display: flex; gap: 10px; align-items: center; padding: 6px 8px; border-radius: 10px; background: #FCEDE8; margin-bottom: 6px; }
+.t-flag small { display: block; color: var(--ink-2); }
+.t-pair { display: flex; flex-direction: column; gap: 2px; padding: 5px 0; border-bottom: 1px solid #F1E7D7; }
+.t-pair > span:first-child { font-size: 13px; color: var(--ink-2); }
+
+/* send a star */
+.t-send label:not(.t-chk) { display: block; font-weight: 600; margin: 6px 0 3px; font-size: 14px; }
+.t-send select, .t-send input[type="text"], .t-admin input[type="text"], .t-admin select, .t-login input {
+  width: 100%; min-height: 36px; border: 2px solid var(--line); border-radius: 10px; padding: 4px 10px; font: inherit; background: #fff;
+}
+.t-msgs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.t-send .t-chk { margin: 8px 0; }
+
+/* learner admin */
+.t-admin { margin-top: 12px; }
+.t-admin summary { cursor: pointer; display: flex; align-items: baseline; gap: 10px; list-style: none; }
+.t-admin summary h2 { margin: 0; }
+.t-admin summary::-webkit-details-marker { display: none; }
+.t-admin summary::before { content: "▸"; color: var(--ink-3); }
+.t-admin[open] summary::before { content: "▾"; }
+.t-admin-tbl { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.t-admin-tbl th, .t-admin-tbl td { padding: 5px 6px; border-bottom: 1px solid #F1E7D7; text-align: left; }
+.t-admin-tbl input[type="text"] { max-width: 220px; }
+.t-admin-tbl select { max-width: 220px; }
+.t-admin-tbl tr.is-inactive td { opacity: .55; }
+
+/* session setup */
+.t-setup { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.t-topics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 8px 0 10px; }
+.t-topic { border: 2px solid var(--line); border-radius: 12px; background: #fff; padding: 6px; display: flex; flex-direction: column; gap: 4px; }
+.t-topic.is-on { border-color: var(--teal); background: var(--teal-l); }
+.t-topic.is-locked { background: #F4F1EC; }
+.t-topic.is-locked .t-topic-pick { color: var(--ink-3); }
+.t-topic-pick { display: flex; gap: 8px; align-items: flex-start; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; padding: 2px; }
+.t-topic-pick[disabled] { cursor: not-allowed; }
+.t-topic-pick b { font-size: 20px; min-width: 20px; }
+.t-topic-pick small { display: block; font-size: 12px; color: var(--ink-3); }
+.t-taught { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); cursor: pointer; }
+.t-taught input { accent-color: var(--leaf); }
+.t-quick { display: flex; flex-wrap: wrap; gap: 6px; }
+.t-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.t-seg button { border: 2px solid var(--line); border-radius: 12px; background: #fff; padding: 8px; font: inherit; font-weight: 700; cursor: pointer; }
+.t-seg button small { display: block; font-weight: 400; color: var(--ink-3); font-size: 12px; }
+.t-seg button.is-on { border-color: var(--teal); background: var(--teal-l); }
+.t-note { margin-top: 8px; color: var(--ink-2); font-size: 14px; }
+.t-preview { background: var(--cream); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; }
+.t-actions { display: flex; gap: 10px; margin-top: 10px; }
+
+/* login */
+.t-login { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+.t-login-card { width: min(380px, 100%); padding: 24px; display: flex; flex-direction: column; gap: 6px; }
+.t-login-card h1 { font-size: 28px; }
+.t-login-card label { font-weight: 600; margin-top: 6px; }
+.t-login-card .t-btn { margin-top: 8px; }
+
+@media (max-width: 1280px) {
+  .t-grid { grid-template-columns: 250px minmax(0, 1fr) 290px; }
+}
