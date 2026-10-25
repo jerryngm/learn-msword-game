@@ -2,7 +2,8 @@
 //   const hints = createHints(word, { hint1: {en, vi}, spotlight: 'home.font', demo: script });
 //   hints.show(1)  hint bubble with the text hint
 //   hints.show(2)  hint bubble pointing at the spotlit ribbon group (numbered marker if reduced motion)
-//   hints.show(3)  "Show me": ghost-cursor demo (the document never changes), then the "Your turn"
+//   hints.show(3)  "Show me": plays the demo script through js/demo/player.js (ghost cursor, ghost
+//                  typing, on-screen keyboard; the document never changes), then the "Your turn"
 //                  card, placed so it never covers the target line, with "▶ Show me again"
 //   hints.hide()   removes everything
 

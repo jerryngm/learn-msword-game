@@ -17,11 +17,12 @@ import {
 import { createRenderer } from "./render.js";
 import { fitRibbon, itemsHtml, ribbonHtml, tabRowHtml, TABS, ribbonParts } from "./ribbon.js";
 import {
-  caretRect, clampSel, collapsedSel, domRange, domToPos, posFromPoint, readSelection, sameSel, selectAll, selRange, writeSelection,
+  caretRect, clampSel, collapsedSel, domRange, domToPos, posFromPoint, posToDom, readSelection, sameSel, selectAll, selRange, writeSelection,
 } from "./selection.js";
 import { createHistory } from "./undo.js";
 import { createPopups, decArg } from "./ui.js";
 import { esc, labelPair, ws, biPair } from "./strings.js";
+import { playDemo, validateScript } from "../demo/player.js";
 
 // Ctrl+key combos that Word owns but the browser would act on (print, new window, open, link, close tab).
 const BROWSER_KEYS = { p: "file.print", n: "file.new.blank", o: "file.openDocument", k: "insert.links.link", w: "file.close" };
@@ -36,7 +37,6 @@ export function getInternals(word) {
 }
 
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function shortcutOf(e) {
   const parts = [];
@@ -1105,11 +1105,13 @@ export function mountWord(el, opts = {}) {
     applySpotlight();
   }
 
-  /* ---------- demo (Show me): moves a ghost cursor, never touches the document ---------- */
+  /* ---------- demo (Show me): drawn by js/demo/player.js, never touches the document ---------- */
   let demoState = null;
 
+  // Aborting the player removes all of its overlays, including the markers that stay after a
+  // reduced-motion demo.
   function clearDemo() {
-    demoState?.layer.remove();
+    demoState?.ctrl.abort();
     root.querySelectorAll(".is-demo-press").forEach((x) => x.classList.remove("is-demo-press"));
     demoState = null;
   }
@@ -1156,153 +1158,94 @@ export function mountWord(el, opts = {}) {
     return b;
   }
 
-  function validateScript(script) {
-    if (!Array.isArray(script)) throw new TypeError("demo: script must be an array");
-    for (const step of script) {
-      if (!step || typeof step !== "object") throw new TypeError("demo: bad step");
-      if (!("target" in step) && !("select" in step) && !("say" in step)) throw new TypeError("demo: step needs target, select or say");
+  /** How many paragraphs a `doc:` target lies past the last one (a demo types into lines its ghost Enter opened). */
+  function linesPastEnd(target) {
+    const m = /^doc:(\d+),\d+$/.exec(target ?? "");
+    return m ? Math.max(0, Number(m[1]) - (doc.p.length - 1)) : 0;
+  }
+  /** Caret rect for a doc position; `past` lines below the end of the document start at the left margin. */
+  function demoCaretRect(pos, past) {
+    if (!past) return caretRect(page, pos);
+    const last = doc.p.length - 1;
+    const end = caretRect(page, { p: last, offset: doc.p[last].length });
+    const para = page.querySelector(`:scope > .wd-p[data-p="${last}"]`);
+    const pr = para?.getBoundingClientRect() ?? end;
+    const pad = para ? (parseFloat(getComputedStyle(para).paddingLeft) || 0) * (zoom / 100) : 0;
+    const h = end.height || 18;
+    return new DOMRect(pr.left + pad, pr.bottom + (past - 1) * h, 1, h);
+  }
+
+  /** Targets the player can point at: command ids, `file`, `bs.*`, `sa.*`, or `doc:p,offset`. */
+  function demoResolve(target) {
+    const pos = parseDocTarget(target);
+    if (!pos) return commandEl(target);
+    const past = linesPastEnd(target);
+    ensureVisible(demoCaretRect(pos, past));
+    return { getBoundingClientRect: () => demoCaretRect(pos, past) };
+  }
+  /** Where ghost typing starts: a `doc:` target, or the caret (start of the selection) for null. */
+  function demoCaret(target) {
+    let pos;
+    let past = 0;
+    if (target == null) {
+      if (backstage) return null;
+      pos = orderRange(clampPos(doc, sel.anchor), clampPos(doc, sel.focus)).from;
+    } else {
+      pos = parseDocTarget(target);
+      if (!pos) return null;
+      past = linesPastEnd(target);
+      if (past) pos = { p: doc.p.length - 1, offset: doc.p[doc.p.length - 1].length };
     }
+    ensureVisible(demoCaretRect(pos, past));
+    const cr = demoCaretRect(pos, past);
+    const para = page.querySelector(`:scope > .wd-p[data-p="${pos.p}"]`) ?? page;
+    const pr = para.getBoundingClientRect();
+    const pcs = getComputedStyle(para);
+    const { node } = posToDom(page, pos);
+    const runEl = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+    const cs = getComputedStyle(runEl ?? para);
+    const z = zoom / 100;
+    return {
+      x: cr.left,
+      y: cr.top,
+      h: cr.height || 18,
+      left: pr.left + (parseFloat(pcs.paddingLeft) || 0) * z,
+      right: pr.right - (parseFloat(pcs.paddingRight) || 0) * z,
+      font: { family: cs.fontFamily, size: (parseFloat(cs.fontSize) || 15) * z, weight: cs.fontWeight, style: cs.fontStyle, color: cs.color },
+    };
+  }
+  function demoSelectRects(range) {
+    const r = orderRange(clampPos(doc, range.from), clampPos(doc, range.to));
+    const first = rangeRects(r)[0];
+    if (first) ensureVisible(first);
+    return rangeRects(r);
   }
 
   async function demo(script) {
     validateScript(script);
     cancelDemo();
     const token = ++demoToken;
+    const ctrl = new AbortController();
+    demoState = { ctrl };
     const before = JSON.stringify(doc);
-    const reduced = reducedMotion();
+    const beforeSel = JSON.stringify(sel);
     locked = true;
     root.classList.add("is-demo");
     popups.closeAll();
     popups.closeToast();
-    const layer = document.createElement("div");
-    layer.className = "wg-demo";
-    layer.innerHTML = `<div class="wg-blocker"></div>`;
-    root.appendChild(layer);
-    demoState = { layer, reduced };
-    const alive = () => token === demoToken && !destroyed;
-    const R0 = root.getBoundingClientRect();
-    let ghost = null;
-    if (!reduced) {
-      ghost = document.createElement("div");
-      ghost.className = "wg-ghost";
-      ghost.innerHTML = `${ico("ghost")}<span class="wg-ghost-lbl">${esc(ws("watch").en)}</span>`;
-      ghost.style.left = `${R0.width * 0.7}px`;
-      ghost.style.top = `${R0.height * 0.6}px`;
-      layer.appendChild(ghost);
-      await sleep(80);
-    }
-    const moveTo = async (x, y, ms = 850) => {
-      if (!ghost) return;
-      ghost.style.transitionDuration = `${ms}ms`;
-      ghost.style.left = `${x}px`;
-      ghost.style.top = `${y}px`;
-      await sleep(ms + 60);
-    };
-    const press = async () => {
-      if (!ghost) return;
-      ghost.classList.remove("is-press");
-      void ghost.offsetWidth;
-      ghost.classList.add("is-press");
-      await sleep(450);
-    };
-    let n = 0;
-    const marker = (x, y) => {
-      const m = document.createElement("div");
-      m.className = "wg-marker";
-      m.textContent = String(++n);
-      m.style.left = `${x}px`;
-      m.style.top = `${y}px`;
-      layer.appendChild(m);
-    };
-    let caption = null;
-
     try {
-      for (const step of script) {
-        if (!alive()) break;
-        if (step.say) {
-          caption?.remove();
-          caption = document.createElement("div");
-          caption.className = "wg-caption";
-          caption.innerHTML = biPair({ en: String(step.say.en ?? ""), vi: String(step.say.vi ?? "") });
-          layer.appendChild(caption);
-          const len = String(step.say.en ?? "").length;
-          await sleep(reduced ? 900 : Math.min(4000, 1400 + len * 35));
-          continue;
-        }
-        if (step.select) {
-          const range = orderRange(clampPos(doc, step.select.from), clampPos(doc, step.select.to));
-          let rects = rangeRects(range);
-          if (rects[0]) ensureVisible(rects[0]);
-          rects = rangeRects(range).map(relOf);
-          if (!rects.length) continue;
-          const hls = rects.map((r) => {
-            const h = document.createElement("div");
-            h.className = "wg-demohl";
-            Object.assign(h.style, { left: `${r.x}px`, top: `${r.y}px`, height: `${r.h}px`, width: reduced ? `${r.w}px` : "0px" });
-            layer.appendChild(h);
-            return h;
-          });
-          if (reduced) {
-            marker(rects[0].x - 44, rects[0].y + rects[0].h / 2 - 18);
-            await sleep(700);
-            continue;
-          }
-          await moveTo(rects[0].x - 2, rects[0].y + rects[0].h * 0.55);
-          await press();
-          for (let i = 0; i < rects.length && alive(); i++) {
-            const r = rects[i];
-            const ms = Math.max(300, Math.min(1200, r.w * 3));
-            hls[i].style.transition = `width ${ms}ms linear`;
-            ghost.style.transition = `left ${ms}ms linear, top 200ms ease`;
-            ghost.style.left = `${r.x + r.w}px`;
-            ghost.style.top = `${r.y + r.h * 0.55}px`;
-            hls[i].style.width = `${r.w}px`;
-            await sleep(ms + 40);
-          }
-          ghost.style.transition = "";
-          continue;
-        }
-        if (typeof step.target === "string") {
-          let rect = null;
-          let btn = null;
-          const pos = parseDocTarget(step.target);
-          if (pos) {
-            const cr = caretRect(page, pos);
-            ensureVisible(cr);
-            rect = relOf(caretRect(page, pos));
-          } else {
-            btn = commandEl(step.target);
-            if (!btn) {
-              console.warn(`demo: no button for ${step.target}`);
-              continue;
-            }
-            rect = popups.relRect(btn);
-          }
-          if (reduced) {
-            marker(rect.x + rect.w / 2 - 18, rect.y + rect.h + 4);
-            await sleep(700);
-            continue;
-          }
-          await moveTo(rect.x + rect.w / 2 - 4, rect.y + rect.h / 2 - 2);
-          btn?.classList.add("is-demo-press");
-          await press();
-          await sleep(350);
-          btn?.classList.remove("is-demo-press");
-        }
-      }
-      if (alive() && !reduced) {
-        await sleep(400);
-        layer.classList.add("is-fading");
-        await sleep(450);
-      }
+      await playDemo(root, script, {
+        resolve: demoResolve,
+        caret: demoCaret,
+        selectRects: demoSelectRects,
+        reducedMotion: reducedMotion(),
+        signal: ctrl.signal,
+      });
     } finally {
       if (token === demoToken) {
         locked = false;
         root.classList.remove("is-demo");
-        layer.querySelector(".wg-blocker")?.remove();
-        caption?.remove();
-        if (!reduced) clearDemo();
-        if (JSON.stringify(doc) !== before) console.error("demo changed the document; this must never happen");
+        if (JSON.stringify(doc) !== before || JSON.stringify(sel) !== beforeSel) console.error("demo changed the document or selection; this must never happen");
       }
     }
   }
@@ -1310,10 +1253,30 @@ export function mountWord(el, opts = {}) {
   /** Union rect (root coordinates) of the document places a script points at. */
   function scriptTargetRect(script) {
     const rects = [];
+    let typeAt = null; // caret rect where the next ghost typing lands: last doc target, else the caret
+    let lines = 0;
     for (const step of script ?? []) {
-      if (step.select) rects.push(...rangeRects(step.select).map(relOf));
+      if (step.select) {
+        rects.push(...rangeRects(step.select).map(relOf));
+        typeAt = caretRect(page, orderRange(clampPos(doc, step.select.from), clampPos(doc, step.select.to)).from);
+      }
       const pos = typeof step.target === "string" ? parseDocTarget(step.target) : null;
-      if (pos) rects.push(relOf(caretRect(page, pos)));
+      if (pos) {
+        typeAt = demoCaretRect(pos, linesPastEnd(step.target));
+        rects.push(relOf(typeAt));
+      }
+      if (typeof step.type === "string") {
+        const at = typeof step.at === "string" ? parseDocTarget(step.at) : null;
+        typeAt = (at && demoCaretRect(at, linesPastEnd(step.at))) || typeAt || caretRect(page, orderRange(clampPos(doc, sel.anchor), clampPos(doc, sel.focus)).from);
+        lines += 1 + (step.type.match(/\n/g)?.length ?? 0);
+      }
+      if (step.key === "Enter") lines += 1;
+    }
+    // The typed text covers the caret line and the lines Enter opens below it.
+    if (typeAt && lines) {
+      const c = relOf(typeAt);
+      const p = relOf(page.getBoundingClientRect());
+      rects.push({ x: p.x, y: c.y, w: p.w, h: c.h * lines });
     }
     if (!rects.length) return null;
     const x = Math.min(...rects.map((r) => r.x));

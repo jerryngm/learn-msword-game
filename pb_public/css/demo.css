@@ -1,0 +1,90 @@
+/* Demo player overlay and on-screen keyboard (loaded by js/demo/player.js). */
+
+.dm-layer { position: absolute; inset: 0; z-index: 45; pointer-events: none; overflow: hidden; transition: opacity .45s; }
+.dm-layer.is-fading { opacity: 0; }
+.dm-layer .wg-blocker { position: absolute; inset: 0; pointer-events: auto; cursor: progress; }
+.dm-ghost { z-index: 6; }
+.dm-ghost .wg-ghost-lbl .vi { display: block; font-size: 12px; font-weight: 700; }
+
+/* click ripple: one per click, so a double click shows two */
+.dm-ripple {
+  position: absolute; z-index: 2; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
+  border: 4px solid var(--orange, #F29B38); animation: dmRipple .65s ease-out both;
+}
+.dm-ripple.is-right { border-color: var(--teal, #2F7370); border-style: dashed; }
+@keyframes dmRipple { from { transform: scale(.3); opacity: 1; } to { transform: scale(1.7); opacity: 0; } }
+
+.dm-marker { z-index: 2; }
+.dm-tag {
+  position: absolute; left: 40px; top: 2px; white-space: nowrap; padding: 3px 10px; border-radius: 8px;
+  background: var(--ink, #17324D); color: #fff; font: 700 15px/1.2 var(--font, sans-serif);
+}
+.dm-tag .vi { display: block; font-size: 12px; color: #D6E2EE; }
+
+/* ghost typing: overlays the page, never part of the document */
+.dm-type { position: absolute; z-index: 1; white-space: pre-wrap; overflow-wrap: break-word; text-align: left; }
+.dm-type.is-single { white-space: pre; overflow: hidden; }
+.dm-typed { background: rgba(255, 214, 153, .55); box-shadow: 0 0 0 1px rgba(242, 155, 56, .35); border-radius: 2px; }
+.dm-typed:empty { box-shadow: none; }
+.dm-caret {
+  display: inline-block; width: 2px; height: 1.05em; margin-left: 1px; vertical-align: -0.15em;
+  background: var(--orange, #E07A00); animation: dmBlink 1s steps(1) infinite;
+}
+@keyframes dmBlink { 50% { opacity: 0; } }
+
+/* dock: caption above the keyboard; placed by the player away from the target */
+.dm-dock {
+  position: absolute; z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  max-width: calc(100% - 16px); animation: dmSlideIn .35s ease-out both;
+}
+.dm-dock[hidden] { display: none; }
+@keyframes dmSlideIn { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.dm-caption {
+  max-width: min(720px, 100%); padding: 12px 20px; border-radius: 14px; background: var(--ink, #17324D); color: #fff;
+  text-align: center; font: 700 20px/1.3 var(--font, sans-serif); box-shadow: var(--sh, 0 6px 20px rgba(0, 0, 0, .25));
+}
+.dm-caption[hidden] { display: none; }
+.dm-caption .vi { display: block; color: #D6E2EE; font-size: 15px; }
+
+/* keyboard: a plain dark Windows laptop deck; --u is one key unit (set by the player) */
+.kb {
+  --u: 40px;
+  width: calc(var(--u) * 15.6); padding: calc(var(--u) * .2); border-radius: calc(var(--u) * .3);
+  background: #2A2E35; box-shadow: 0 10px 28px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .08);
+  font-family: "Segoe UI", system-ui, sans-serif; color: #F1F3F6; user-select: none;
+}
+.kb-combo {
+  height: calc(var(--u) * .75); display: grid; place-items: center; margin-bottom: calc(var(--u) * .15);
+  font-size: calc(var(--u) * .5); font-weight: 700; color: #FFD9A8; letter-spacing: .02em;
+}
+.kb-keys { display: flex; flex-direction: column; gap: calc(var(--u) * .1); }
+.kb-row { display: flex; gap: calc(var(--u) * .1); height: var(--u); }
+.kb-row-fn { height: calc(var(--u) * .62); }
+.kb-k, .kb-col { flex-basis: 0; flex-shrink: 1; min-width: 0; }
+.kb-k {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: calc(var(--u) * .14);
+  background: #41464F; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .35); overflow: hidden; white-space: nowrap;
+  font-size: calc(var(--u) * .42); font-weight: 600; line-height: 1; transition: background .08s, transform .08s;
+}
+.kb-word { font-size: calc(var(--u) * .3); }
+.kb-fn { font-size: calc(var(--u) * .26); color: #C9CED6; }
+.kb-two { gap: calc(var(--u) * .04); font-size: calc(var(--u) * .36); }
+.kb-sh { font-size: calc(var(--u) * .26); color: #AEB5BF; }
+.kb-col { display: flex; flex-direction: column; gap: calc(var(--u) * .06); }
+.kb-half { flex: 1 1 0; font-size: calc(var(--u) * .28); }
+.kb-k.is-lit {
+  background: var(--orange, #F29B38); color: #2B1700; transform: translateY(1px) scale(.96);
+  box-shadow: 0 0 0 2px #FFD9A8, 0 0 14px 2px rgba(242, 155, 56, .6);
+}
+.kb-k.is-lit .kb-sh { color: #4A2A00; }
+
+.dm-layer.is-reduced .dm-dock, .dm-layer.is-reduced .dm-ripple { animation: none; }
+.dm-layer.is-reduced .dm-caret { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .dm-dock, .dm-ripple, .dm-caret { animation: none; }
+  .kb-k { transition: none; }
+  /* base.css gives everything a 0.01 ms "all" transition here, which delays size changes by a
+     frame; the player measures the keyboard right after resizing it, so opt the overlay out. */
+  .dm-layer, .dm-layer * { transition-property: none; }
+}
+html.hide-vi .dm-layer .vi { display: none; }
