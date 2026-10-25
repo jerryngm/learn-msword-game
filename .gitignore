@@ -1,0 +1,14 @@
+# Runtime and secrets
+pocketbase
+pb_data/
+.env*
+
+# Local machine
+.DS_Store
+.claude/settings.local.json
+
+# Course materials (kept on disk, not part of the app)
+Topic */
+*.docx
+*.pptx
+template-big-slide.html
