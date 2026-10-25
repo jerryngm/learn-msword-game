@@ -379,12 +379,11 @@ html.hide-vi .home-links { margin-top: 28px; }
 .wg-mstep.done .wg-num { background: var(--leaf); color: #fff; }
 .wg-mstep.done .wg-num::before { content: "✓"; }
 .wg-mstep.done .wg-num span { display: none; }
-.support-1 .wg-mstep:not(.revealed):not(.done) { display: none; }
-.wg-hintbtn, .wg-offer {
+.wg-offer {
   min-height: 56px; width: 100%; border-radius: 999px; border: 2px dashed var(--orange); background: #fff; font-size: 18px; font-weight: 800;
   line-height: 1.15; cursor: pointer; flex: none;
 }
-.wg-hintbtn .vi, .wg-offer .vi { font-size: 13px; }
+.wg-offer .vi { font-size: 13px; }
 .wg-offer { background: #FFF3DF; }
 .wg-offer[hidden] { display: none; }
 .wg-helpbtn {

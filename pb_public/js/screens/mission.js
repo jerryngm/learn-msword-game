@@ -153,10 +153,9 @@ export async function render(root, { id, learner }) {
           ${mission.scenario ? `<p class="wg-m-scn">${biPair(pair(mission.scenario))}</p>` : ""}
           ${mission.targetDoc != null ? `<div class="wg-m-look">${gbi("lookLike")}
             <div class="wg-thumb" role="img" aria-label="${esc(glabel("goalPicture"))}"><div class="wg-thumb-page" aria-hidden="true"></div><span class="wg-thumb-ok" aria-hidden="true">✓</span></div></div>` : ""}
-          ${support < 2 && steps.length ? `<ol class="wg-msteps">${steps
+          ${steps.length ? `<ol class="wg-msteps">${steps
             .map((s, i) => `<li class="wg-mstep" data-step="${i}"><span class="wg-num" aria-hidden="true"><span>${i + 1}</span></span><span class="wg-mstep-t">${biPair(pair(s.text))}</span></li>`)
             .join("")}</ol>` : ""}
-          ${support === 1 && steps.length ? `<button type="button" class="wg-hintbtn">${gbi("hintBtn")}</button>` : ""}
           <button type="button" class="wg-offer" hidden>${gbi("offerSpot")}</button>
           <button type="button" class="wg-helpbtn"><span class="wg-ladder" aria-hidden="true"><i></i><i></i><i></i></span><span class="wg-help-t"></span></button>
           <p class="wg-explore">${gbi("explore")}</p>
@@ -175,7 +174,6 @@ export async function render(root, { id, learner }) {
     const host = root.querySelector(".wg-whost");
     const helpBtn = col.querySelector(".wg-helpbtn");
     const offerBtn = col.querySelector(".wg-offer");
-    const hintBtn = col.querySelector(".wg-hintbtn");
     const stepEls = [...col.querySelectorAll(".wg-mstep")];
     const thumb = col.querySelector(".wg-thumb");
     const stopThumb = thumb ? drawThumb(thumb, mission.targetDoc) : () => {};
@@ -260,19 +258,13 @@ export async function render(root, { id, learner }) {
     // A double-click or a held key presses a Help button once: it must not jump two levels.
     const helpTap = tapGuard(700);
     const onceKey = (e) => e.repeat && e.preventDefault();
-    for (const btn of [helpBtn, offerBtn, hintBtn]) btn?.addEventListener("keydown", onceKey);
+    for (const btn of [helpBtn, offerBtn]) btn?.addEventListener("keydown", onceKey);
     helpBtn.addEventListener("click", () => {
       if (!helpTap()) return;
       const max = maxLevel();
       useHelp(Math.min(max, lastLevel + 1));
     });
     offerBtn.addEventListener("click", () => helpTap() && useHelp(2));
-    hintBtn?.addEventListener("click", () => {
-      if (!helpTap()) return;
-      stepEls[current]?.classList.add("revealed");
-      useHelp(1);
-      if (stepEls.every((el, i) => el.classList.contains("revealed") || el.classList.contains("done") || i > current)) hintBtn.blur();
-    });
 
     /* ----- steps tick themselves ----- */
     function updateSteps() {

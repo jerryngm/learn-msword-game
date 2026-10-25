@@ -76,7 +76,6 @@ export const GAME_STRINGS = {
   moreHelp: { en: "More help", vi: "Giúp thêm" },
   showMe: { en: "Show me", vi: "Chỉ cho tôi xem" },
   showMeAgain: { en: "Show me again", vi: "Chỉ lại cho tôi" },
-  hintBtn: { en: "💡 Hint: show the next step", vi: "Gợi ý: xem bước tiếp theo" },
   offerSpot: { en: "💡 Show me where to click", vi: "Chỉ cho tôi chỗ cần bấm" },
   explore: {
     en: "🧭 Explore freely: trying buttons does not lose stars.",
