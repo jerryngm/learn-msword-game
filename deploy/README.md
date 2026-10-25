@@ -7,7 +7,7 @@
 JS migrations in `pb_migrations/` use the v0.23+ API (`new Collection({fields: [...]})`, `app.save`). Re-check them before bumping the server version.
 
 ## Tests
-`node --test tests/rules.test.mjs` (Node 22.7 or newer, which loads the `.js` ES modules without a `package.json`).
+`node --test tests/rules.test.mjs tests/content.test.mjs` (Node 22.7 or newer, which loads the `.js` ES modules without a `package.json`).
 
 ## Local dev
 ```sh
