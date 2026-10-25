@@ -168,3 +168,13 @@ test("About me finishes when the title ends with a full stop", async () => {
     assert.equal(m.goal.check(doc, ctx), true, `title "${title}"`);
   }
 });
+
+test("Save About me accepts the name the learner types, not only the name they joined with", async () => {
+  const { missions } = await import("../pb_public/js/content/topic-1.js");
+  const m = missions.find((x) => x.id === "t1-m-save");
+  assert.ok(m, "save mission");
+  const ctx = (name) => ({ learner: { name: "awdawd" }, saved: { folder: ["Documents"], name } });
+  for (const name of ["About Me Jerry", "About_Me_Lan", "aboutme lan.docx"]) assert.equal(m.goal.check(null, ctx(name)), true, name);
+  for (const name of ["About Me", "My file"]) assert.equal(m.goal.check(null, ctx(name)), false, name);
+  assert.equal(m.goal.check(null, { learner: { name: "Lan" }, saved: { folder: ["Desktop"], name: "About Me Lan" } }), false, "wrong folder");
+});

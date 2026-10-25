@@ -15,13 +15,13 @@ const plain = (s) =>
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "");
 
-/** True when `name` looks like About_Me_<learner's name>. Spaces, capitals and a typed .docx don't matter. */
-function isAboutMeName(name, learnerName) {
+/**
+ * True when `name` looks like About_Me_<a name>. Spaces, capitals and a typed .docx don't matter.
+ * Any name after About Me is accepted: the name a learner joined with may be a nickname, not the one they type.
+ */
+function isAboutMeName(name) {
   const n = plain(String(name ?? "").replace(/\.docx$/i, ""));
-  if (!n.startsWith("aboutme") || n.length <= "aboutme".length) return false;
-  const rest = n.slice("aboutme".length);
-  const tokens = String(learnerName ?? "").split(/\s+/).map(plain).filter((t) => t.length >= 2);
-  return tokens.length === 0 || tokens.some((t) => rest.includes(t));
+  return n.startsWith("aboutme") && n.length >= "aboutme".length + 2;
 }
 
 /** Word keeps the zoom and the Backstage in its own DOM; steps read them there (the screens re-check on change). */
@@ -31,7 +31,7 @@ const has = (sel) => Boolean(document.querySelector(sel));
 const saveStage = () => document.querySelector(".bs")?.dataset.stage ?? "";
 const typedFileName = () => document.querySelector(".bs .sa-name")?.value ?? "";
 const savedInDocuments = (ctx) => Boolean(ctx.saved && ctx.saved.folder.length === 1 && ctx.saved.folder[0] === "Documents");
-const savedOk = (ctx) => savedInDocuments(ctx) && isAboutMeName(ctx.saved.name, ctx.learner?.name);
+const savedOk = (ctx) => savedInDocuments(ctx) && isAboutMeName(ctx.saved.name);
 
 const cap = /^\p{Lu}/u;
 /** Splits text into sentences (up to and including . ! ?). A last piece with no end mark still counts as a piece. */
@@ -650,7 +650,7 @@ const saveSteps = [
       "Tên tệp: gõ About Me và tên của bạn. Ví dụ: About_Me_Lan hoặc About Me Lan.",
     ),
     hint: T("Click in the File name box. Type About Me and then your name. Spaces or _ are both fine.", "Bấm vào ô File name. Gõ About Me rồi đến tên bạn. Dùng dấu cách hay dấu _ đều được."),
-    done: withWho((doc, ctx) => (saveStage() === "dialog-documents" && isAboutMeName(typedFileName(), ctx.learner?.name)) || savedOk(ctx)),
+    done: withWho((doc, ctx) => (saveStage() === "dialog-documents" && isAboutMeName(typedFileName())) || savedOk(ctx)),
     get demo() {
       return [
         go("sa.name"),
@@ -764,8 +764,8 @@ export const missions = [
     skill: "t1-zoom",
     title: T("Make the page bigger", "Phóng to trang cho dễ đọc"),
     scenario: T(
-      "The words on the page are too small to read easily. Make the page bigger so you can read it.",
-      "Chữ trên trang nhỏ quá, khó đọc. Hãy phóng to trang để đọc cho dễ.",
+      "The words on the page are too small to read easily. Make the page bigger: 150% or more.",
+      "Chữ trên trang nhỏ quá, khó đọc. Hãy phóng to trang lên 150% hoặc hơn.",
     ),
     startDoc: "Class notice\nOur class starts at nine o'clock on Tuesday morning.\nPlease bring your laptop and a pen.",
     tabs: ["home"],
