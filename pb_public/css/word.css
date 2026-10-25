@@ -561,3 +561,6 @@
 .sa-save { border: 2px solid #0F6CBD; }
 .sa-dlg button:focus-visible { outline: 2px solid #0F6CBD; outline-offset: 1px; }
 @media (max-height: 640px) { .sa-note { display: none; } }
+
+/* Hide native caret during demo animations */
+.wd.is-demo .wd-page { caret-color: transparent; }

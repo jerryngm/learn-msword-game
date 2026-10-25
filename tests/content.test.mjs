@@ -157,3 +157,14 @@ test("every topic file follows the content guide", () => {
   }
   assert.deepEqual(errors, [], `\n${errors.join("\n")}`);
 });
+
+test("About me finishes when the title ends with a full stop", async () => {
+  const { createDoc } = await import("../pb_public/js/word/model.js");
+  const { missions } = await import("../pb_public/js/content/topic-1.js");
+  const m = missions.find((x) => x.id === "t1-m-about-me");
+  const ctx = { learner: { name: "Lan" } };
+  for (const title of ["About me", "About me."]) {
+    const doc = createDoc(`${title}\nMy name is Lan. I live in Melbourne.`);
+    assert.equal(m.goal.check(doc, ctx), true, `title "${title}"`);
+  }
+});

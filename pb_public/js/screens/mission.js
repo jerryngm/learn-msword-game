@@ -11,7 +11,7 @@
 
 import { biPair, esc, labelPair } from "../i18n.js";
 import { skillById } from "../content/skills.js";
-import { mountWord } from "../word/index.js";
+import { getInternals, mountWord } from "../word/index.js";
 import { createHints, setHelpGlow } from "../word/hints.js";
 import { createDoc } from "../word/model.js";
 import { createRenderer } from "../word/render.js";
@@ -404,7 +404,8 @@ export async function render(root, { id, learner }) {
       const onSel = () => {
         cancelAnimationFrame(raf);
         raf = requestAnimationFrame(() => {
-          if (!alive || !word) return;
+          // Show me opens the Backstage itself; its stages must not tick steps (that would cut the demo short).
+          if (!alive || !word || getInternals(word).demoRunning) return;
           ctx.selection = word.selection;
           updateSteps();
         });

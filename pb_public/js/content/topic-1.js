@@ -584,7 +584,7 @@ const aboutMeSteps = [
   {
     text: T("Title: type About me. Then press Enter.", "Tiêu đề: gõ About me. Rồi nhấn Enter."),
     hint: T("Type About me with a capital A. Then press the Enter key to go to a new line.", "Gõ About me, chữ A viết hoa. Rồi nhấn phím Enter để xuống dòng."),
-    done: (doc) => doc.p.length >= 2 && /^about me$/i.test(textOf(doc.p[0]).trim()),
+    done: (doc) => doc.p.length >= 2 && /^about me[.!]?$/i.test(textOf(doc.p[0]).trim()),
     demo: [go("doc:0,0"), typ("About me"), key("Enter"), say("A new line for your sentences.", "Xuống dòng để viết các câu.")],
   },
   {
@@ -626,27 +626,23 @@ const saveSteps = [
     text: T("Click File at the top left. Then click Save As.", "Bấm File ở góc trên bên trái. Rồi bấm Save As."),
     hint: T("File is the first word in the top row of Word. Save As is in the list on the left.", "File là chữ đầu tiên ở hàng trên cùng của Word. Save As nằm trong danh sách bên trái."),
     done: (doc, ctx) => /^(saveas|dialog)/.test(saveStage()) || Boolean(ctx.saved),
-    // The Save As steps point at things that only exist once the Backstage is open, so each reads the DOM when the script is built.
+    // Show me opens what each ghost click opens, so the later steps' targets exist when they play.
     get demo() {
-      if (has(".bs")) return [say("Click Save As in the list on the left.", "Bấm Save As trong danh sách bên trái."), go("bs.saveas")];
-      return [go("file"), say("Click File. Then Save As, Browse and Documents.", "Bấm File. Rồi bấm Save As, Browse và Documents.")];
+      const saveAs = [say("Click Save As in the list on the left.", "Bấm Save As trong danh sách bên trái."), go("bs.saveas")];
+      return has(".bs") ? saveAs : [say("Click File at the top left.", "Bấm File ở góc trên bên trái."), go("file"), ...saveAs];
     },
   },
   {
     text: T("Click Browse.", "Bấm Browse."),
     hint: T("Browse is the last choice in the list, with a folder picture.", "Browse là mục cuối cùng trong danh sách, có hình thư mục."),
     done: (doc, ctx) => saveStage().startsWith("dialog") || Boolean(ctx.saved),
-    get demo() {
-      return has(".bs .sa-browse") ? [say("Click Browse.", "Bấm Browse."), go("sa.browse")] : [];
-    },
+    demo: [say("Click Browse.", "Bấm Browse."), go("sa.browse")],
   },
   {
     text: T("Click Documents in the list on the left.", "Bấm Documents trong danh sách bên trái."),
     hint: T("Look at the list on the left side of the Save As window. Find Documents.", "Nhìn vào danh sách bên trái của cửa sổ Save As. Tìm chữ Documents."),
     done: (doc, ctx) => saveStage() === "dialog-documents" || savedInDocuments(ctx),
-    get demo() {
-      return has(".bs .sa-scrim") ? [say("Click Documents on the left.", "Bấm Documents ở bên trái."), go("sa.documents")] : [];
-    },
+    demo: [say("Click Documents on the left.", "Bấm Documents ở bên trái."), go("sa.documents")],
   },
   {
     text: T(
@@ -656,7 +652,6 @@ const saveSteps = [
     hint: T("Click in the File name box. Type About Me and then your name. Spaces or _ are both fine.", "Bấm vào ô File name. Gõ About Me rồi đến tên bạn. Dùng dấu cách hay dấu _ đều được."),
     done: withWho((doc, ctx) => (saveStage() === "dialog-documents" && isAboutMeName(typedFileName(), ctx.learner?.name)) || savedOk(ctx)),
     get demo() {
-      if (!has(".bs .sa-scrim")) return [];
       return [
         go("sa.name"),
         say("Type About Me and your name. A space or _ between words is fine.", "Gõ About Me và tên bạn. Giữa các chữ dùng dấu cách hay dấu _ đều được."),
@@ -668,9 +663,7 @@ const saveSteps = [
     text: T("Click Save.", "Bấm Save."),
     hint: T("The Save button is at the bottom right of the window.", "Nút Save nằm ở góc dưới bên phải của cửa sổ."),
     done: (doc, ctx) => savedOk(ctx),
-    get demo() {
-      return has(".bs .sa-scrim") ? [say("Click Save.", "Bấm Save."), go("sa.save")] : [];
-    },
+    demo: [say("Click Save.", "Bấm Save."), go("sa.save")],
   },
 ];
 

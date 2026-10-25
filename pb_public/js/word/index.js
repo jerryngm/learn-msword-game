@@ -1116,10 +1116,12 @@ export function mountWord(el, opts = {}) {
     demoState = null;
   }
   function cancelDemo() {
+    const was = demoState?.was;
     demoToken += 1;
     clearDemo();
     locked = false;
     root.classList.remove("is-demo");
+    if (was && !destroyed) restoreBackstage(was);
   }
 
   function relOf(rect) {
@@ -1221,12 +1223,34 @@ export function mountWord(el, opts = {}) {
     return rangeRects(r);
   }
 
+  // A ghost click on File, a Backstage item, Browse or a Save As folder opens what the real click
+  // opens, so the next target is on screen. The file name box and Save are never pressed: a demo
+  // must not save.
+  function demoAct(target) {
+    if (target === "file") return openFile("home");
+    if (target === "sa.name" || target === "sa.save") return;
+    if (target.startsWith("bs.") || target.startsWith("sa.")) commandEl(target)?.click();
+  }
+  // What the demo opened is closed again, so the learner starts from where they were.
+  function backstageSnapshot() {
+    return { open: Boolean(backstage), page: backstage?.page ?? null, dialog: Boolean(root.querySelector(".bs .sa-scrim")), stage: root.querySelector(".bs")?.dataset.stage ?? "" };
+  }
+  function restoreBackstage(was) {
+    if (!backstage) return;
+    if (!was.open) return backstage.close();
+    const now = backstageSnapshot();
+    if (now.dialog && (!was.dialog || now.stage !== was.stage)) root.querySelector('.bs .sa-scrim [data-act="cancel"]')?.click();
+    if (now.page !== was.page) backstage.show(was.page);
+    if (was.dialog && !root.querySelector(".bs .sa-scrim")) root.querySelector(".bs .sa-browse")?.click();
+  }
+
   async function demo(script) {
     validateScript(script);
     cancelDemo();
     const token = ++demoToken;
     const ctrl = new AbortController();
-    demoState = { ctrl };
+    const wasBackstage = backstageSnapshot();
+    demoState = { ctrl, was: wasBackstage };
     const before = JSON.stringify(doc);
     const beforeSel = JSON.stringify(sel);
     locked = true;
@@ -1238,6 +1262,7 @@ export function mountWord(el, opts = {}) {
         resolve: demoResolve,
         caret: demoCaret,
         selectRects: demoSelectRects,
+        act: demoAct,
         reducedMotion: reducedMotion(),
         signal: ctrl.signal,
       });
@@ -1246,6 +1271,9 @@ export function mountWord(el, opts = {}) {
         locked = false;
         root.classList.remove("is-demo");
         if (JSON.stringify(doc) !== before || JSON.stringify(sel) !== beforeSel) console.error("demo changed the document or selection; this must never happen");
+        // A demo that ran to the end puts the Backstage back itself; cancelDemo does it for one cut short.
+        if (demoState) demoState.was = null;
+        if (!destroyed) restoreBackstage(wasBackstage);
       }
     }
   }

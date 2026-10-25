@@ -21,6 +21,9 @@
 //   caret(target|null) -> {x, y, h, left, right, font} | null   (client px) optional host hook for a
 //                   text host (Word): where typing starts for a target, or the current caret for null
 //   selectRects(select) -> DOMRect[]   optional host hook: client rects of a model range
+//   act(target)     optional host hook, called after each ghost click on an element: the host may
+//                   open what the click opens (a menu, a Backstage page) so later targets exist.
+//                   It must never change the document; the host restores the UI when the demo ends.
 //
 // The keyboard appears only when the script has a `type` or `key` step, and it (with the caption)
 // is docked where it covers neither the current target nor the line being typed.
@@ -321,6 +324,8 @@ export async function playDemo(host, script, opts = {}) {
   }
 
   function newLine(a, indent) {
+    // Only the line being typed shows a caret.
+    layer.querySelectorAll(".dm-caret").forEach((c) => c.remove());
     const box = add(`dm-type${a.single ? " is-single" : ""}`, `<span class="dm-typed"></span><span class="dm-caret"></span>`);
     const r = rel(new DOMRect(a.left, a.y, Math.max(20, a.right - a.left), a.h));
     Object.assign(box.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, lineHeight: `${a.h}px`, minHeight: `${a.h}px`, textIndent: `${indent}px` });
@@ -371,6 +376,7 @@ export async function playDemo(host, script, opts = {}) {
     if (chars.length) line.text.textContent = chars.slice(0, -1).join("");
     else if (typing.lines.length > 1) {
       typing.lines.pop().box.remove();
+      currentLine().box.insertAdjacentHTML("beforeend", `<span class="dm-caret"></span>`);
     }
   }
   const append = (s) => {
@@ -403,6 +409,7 @@ export async function playDemo(host, script, opts = {}) {
       if (caretSpot) marker(r.x - 44, r.y + r.h / 2 - 18, tag);
       else marker(r.x + r.w / 2 - 18, r.y + r.h + 4, tag);
       await sleep(kind === "single" ? 700 : 1100);
+      if (!aborted() && el instanceof Element) opts.act?.(step.target);
       return;
     }
     const cx = r.x + r.w / 2;
@@ -424,6 +431,7 @@ export async function playDemo(host, script, opts = {}) {
     if (el instanceof Element) {
       el.classList.remove("is-demo-press");
       pressed.delete(el);
+      if (!aborted()) opts.act?.(step.target);
     }
     if (tag) lbl.textContent = "Watch";
   }
