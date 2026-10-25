@@ -5,7 +5,13 @@
 // Region ids: nav-home, nav-desktop, nav-downloads, nav-documents, nav-pictures, nav-music, nav-videos,
 // tile-<folder> (the big folders on Home), address, search, toolbar, content, file-about-me, file-other.
 // mount(el, {item, mission, learner, onRegion(id, el), onOpen(name), onWrong()})
-//   -> {destroy(), reveal(regionId), spotlight(regionId|null), demo(script)}
+//   -> {destroy(), reveal(regionId), spotlight(regionId|null), demo(script), resolve(id)}
+// resolve(id) -> Element|null, for the replay/demo player (visual only, never clicks anything). Ids: the region ids above,
+// 'documents' (= nav-documents), 'file:About_Me_<Name>' (that file's row; any 'file:About_Me_...' finds the learner's own file,
+// and so does 'file-about-me'), and 'taskbar-explorer' (the yellow folder on the taskbar strip, which a still picture shows
+// only when it is mounted without onRegion, i.e. as a replay stage; a click-ui item keeps its full height).
+// In a still picture (not a mission) a file row only exists once Documents is showing, so resolving a file id switches the
+// picture to Documents. A mission never changes view on resolve: it is the learner's own window.
 // onOpen(name) reports the folder you went to ("Documents") or the file you opened ("About_Me_Lan.docx").
 
 import { ico } from "../word/icons.js";
@@ -79,7 +85,14 @@ function filesOf(folder, mine) {
   return [];
 }
 
-function html({ view, mine, interactive }) {
+const WIN_LOGO = `<svg viewBox="0 0 20 20" aria-hidden="true"><path fill="#4CA6F0" d="M2 3.4 9 2.4v7H2zM10 2.3l8-1.2v8.3h-8zM2 10.6h7v7l-7-1zM10 10.6h8v8.3l-8-1.2z"/></svg>`;
+
+/** The Windows taskbar under a still File Explorer picture. Not a click target; the replay points at the yellow folder. */
+function taskbar() {
+  return `<div class="mke-task" aria-hidden="true"><span class="mke-tb">${WIN_LOGO}</span><span class="mke-tb mke-tsearch">${ico("search_20")}Search</span><span class="mke-tb mke-tfold" data-t="taskbar-explorer">${FOLDER_SVG}</span><span class="mke-tb">${ico("globe_20")}</span><span class="mke-tclock">9:30 AM<br>10/25/2026</span></div>`;
+}
+
+function html({ view, mine, interactive, withTaskbar }) {
   const nav = FOLDERS.map(
     (f) => `<div class="mk-r mke-n${view === f.id ? " is-on" : ""}" data-region="nav-${f.id}" data-folder="${f.id}" role="button" tabindex="0"><span class="mk-tag">${f.label}</span>${folderIcon(f)}<span class="mke-nl">${f.label}</span><i class="mke-pin">${PIN}</i></div>`,
   ).join("");
@@ -104,7 +117,7 @@ function html({ view, mine, interactive }) {
     }`;
   }
   const count = view === "home" ? FOLDERS.length : filesOf(view, mine).length;
-  return `<div class="mk-ex${interactive ? " is-live" : ""}" aria-label="File Explorer">
+  return `<div class="mk-ex${interactive ? " is-live" : withTaskbar ? " has-task" : ""}" aria-label="File Explorer">
     <div class="mke-title"><span class="mke-tab">${ico("folder_open_20")}<span>${view === "home" ? "Home" : LABEL[view]}</span><i>×</i></span><span class="mke-caps">${ico("capmin")}${ico("caprestore")}${ico("capclose")}</span></div>
     <div class="mk-r mke-cmd" data-region="toolbar" role="button" tabindex="0"><span class="mk-tag">Toolbar</span>
       <span class="mke-cb">${ico("add_circle_20")}New <i>▾</i></span><span class="mke-sep"></span>
@@ -121,12 +134,15 @@ function html({ view, mine, interactive }) {
       <div class="mk-r mke-main" data-region="content" role="group"><span class="mk-tag">Files</span>${content}</div>
     </div>
     <div class="mke-status"><span>${count} item${count === 1 ? "" : "s"}</span><span class="mke-sel"></span></div>
+    ${withTaskbar ? taskbar() : ""}
     <div class="mke-toast" role="status" hidden></div>
   </div>`;
 }
 
 export function mount(el, { item, mission, learner, onRegion, onOpen, onWrong } = {}) {
   const interactive = Boolean(mission) && !item;
+  // A still picture mounted without onRegion is a replay stage: it also shows the taskbar (the yellow File Explorer folder).
+  const withTaskbar = !interactive && typeof onRegion !== "function";
   const mine = aboutMeFile(learner?.name);
   const root = document.createElement("div");
   root.className = `mk-root${interactive ? " is-tall" : ""}`;
@@ -139,7 +155,7 @@ export function mount(el, { item, mission, learner, onRegion, onOpen, onWrong } 
   const timers = new Set();
 
   function draw() {
-    root.innerHTML = html({ view, mine, interactive });
+    root.innerHTML = html({ view, mine, interactive, withTaskbar });
     root.querySelectorAll(".mk-r").forEach((n, i) => {
       n.setAttribute("aria-label", labelPair({ en: `Part ${i + 1} of the File Explorer window`, vi: `Phần ${i + 1} của cửa sổ File Explorer` }));
     });
@@ -165,6 +181,26 @@ export function mount(el, { item, mission, learner, onRegion, onOpen, onWrong } 
     draw();
     // Going to a folder counts as "opening" it: the mission's first step ticks on "Documents".
     onOpen?.(folder === "home" ? "Home" : LABEL[folder]);
+  }
+
+  /** A still picture shows another folder when a replay points at something that lives there. */
+  function showView(folder) {
+    if (interactive || view === folder) return;
+    view = folder;
+    draw();
+  }
+  const fileKey = (name) => String(name).replace(/\.docx$/i, "").toLowerCase();
+  function resolve(id) {
+    if (typeof id !== "string" || !id) return null;
+    const q = (sel) => root.querySelector(sel);
+    if (id === "taskbar-explorer") return q('[data-t="taskbar-explorer"]');
+    if (id === "file-about-me" || id.startsWith("file:")) {
+      if (view !== "documents") showView("documents");
+      const rows = [...root.querySelectorAll(".mke-r[data-kind='file']")];
+      const want = id.startsWith("file:") ? fileKey(id.slice(5)) : "";
+      return (want && rows.find((r) => fileKey(r.dataset.name) === want)) || q('.mke-r[data-region="file-about-me"]');
+    }
+    return q(`[data-region="${CSS.escape(id === "documents" ? "nav-documents" : id)}"]`);
   }
 
   const onClick = (e) => {
@@ -237,7 +273,7 @@ export function mount(el, { item, mission, learner, onRegion, onOpen, onWrong } 
     try {
       for (const step of steps) {
         if (run !== demoRun) return;
-        const target = typeof step?.target === "string" ? root.querySelector(`[data-region="${CSS.escape(step.target)}"]`) : null;
+        const target = resolve(step?.target);
         if (!target) continue;
         const R = target.getBoundingClientRect();
         const x = R.left - B.left + Math.min(R.width / 2, 90);
@@ -255,13 +291,14 @@ export function mount(el, { item, mission, learner, onRegion, onOpen, onWrong } 
         ghost.style.left = `${x - 4}px`;
         ghost.style.top = `${y - 2}px`;
         await wait(950);
-        for (let k = 0; k < (step.dbl ? 2 : 1); k++) {
+        const dbl = step.dbl || step.click === "double";
+        for (let k = 0; k < (dbl ? 2 : 1); k++) {
           if (run !== demoRun) return;
           ghost.classList.remove("is-press");
           void ghost.offsetWidth;
           ghost.classList.add("is-press");
           target.classList.add("is-demo-press");
-          await wait(step.dbl ? 330 : 520);
+          await wait(dbl ? 330 : 520);
           target.classList.remove("is-demo-press");
         }
         await wait(350);
@@ -284,6 +321,7 @@ export function mount(el, { item, mission, learner, onRegion, onOpen, onWrong } 
       applySpot();
     },
     demo,
+    resolve,
     destroy() {
       demoRun += 1;
       clearTimeout(toastTimer);

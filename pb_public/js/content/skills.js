@@ -14,6 +14,8 @@
 //                     spotlight?: groupId, demo?: script (the Engine API in phase-02)
 //   type 'fix'      → text: string (start), accept: [string] (exact, after trimming), or check(text) → bool
 //   type 'sort'     → bins: [{id, label: {en, vi}}], cards: [{id, label: {en, vi}, bin: binId}]
+// Every item may have `replay: {mock, doc?, script}`, played after the answer (see the demo script contract in phase-03,
+// "Feedback round 1"). Script steps: {target, click?}, {select}, {type, at?}, {key}, {say}, {wait}.
 // Revision tries: a wrong try 1 gets the gentle "Not yet" toast, a wrong try 2 shows `hint`, and a wrong try 3 reveals the answer,
 // which the learner then does. Stars: right on try 1 = 3, try 2 = 2, after the hint or reveal = 1 (game-rules.md).
 //
@@ -29,6 +31,8 @@
 // Predicates using runsMatching() must also check `.length > 0` (an empty match `.every()` is true).
 // Capstone missions (Topic 8) may add `skill` per step. Each step's stars then count for that step's skill.
 //
+// Clear purpose: every prompt starts with a short real-life goal (why), then asks ONE clear thing (what). Order items name
+// the job, never "start at X, end at Y". An item that starts midway says where the learner is and shows it (a mini mock or a picture).
 // All learner-facing text is {en, vi}. Vietnamese is natural, not word for word, and never says "draft"/"nháp".
 
 export const ITEM_TYPES = ["pick", "click-ui", "order", "do", "fix", "sort"];
