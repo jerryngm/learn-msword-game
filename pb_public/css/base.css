@@ -1,0 +1,81 @@
+/* Word Garden base: palette, type scale, buttons. Values come from the UX prototype. */
+:root {
+  --cream: #FFF7EA; --cream-2: #FBEBD3;
+  --ink: #17324D; --ink-2: #4A5F73; --ink-3: #7B8B9A;
+  --teal: #2F7370; --teal-d: #245A58; --teal-l: #E3F0EE;
+  --orange: #F29B38; --orange-d: #A3560C; --orange-l: #FDEBD3;
+  --leaf: #5E9E4F; --leaf-d: #3F7A3A; --leaf-l: #E6F2DC;
+  --card: #fff;
+  --line: #D9CBB5;
+
+  --r-xl: 28px; --r-lg: 22px; --r-md: 16px;
+  --sh: 0 12px 32px rgba(23, 50, 77, .10), 0 2px 6px rgba(23, 50, 77, .06);
+  --sh-sm: 0 4px 14px rgba(23, 50, 77, .08);
+  --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --ease: cubic-bezier(.22, .8, .3, 1);
+
+  /* type scale */
+  --fs-body: 22px;
+  --fs-lead: 24px;
+  --fs-h1: 42px;
+  --fs-h2: 30px;
+  --fs-label: 24px;
+  --fs-small: 18px;
+  --fs-vi: .76em;
+
+  /* tap targets for older learners */
+  --tap: 60px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--font);
+  background: var(--cream);
+  color: var(--ink);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; color: inherit; }
+h1, h2, h3, p { margin: 0; }
+h1 { font-size: var(--fs-h1); line-height: 1.15; font-weight: 800; letter-spacing: -.01em; }
+h2 { font-size: var(--fs-h2); line-height: 1.2; font-weight: 800; }
+:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; border-radius: 8px; }
+a { color: inherit; }
+
+html.hide-vi .vi { display: none; }
+
+/* Vietnamese second line: smaller, under the English */
+.vi { display: block; font-size: var(--fs-vi); font-weight: 400; color: var(--ink-2); line-height: 1.35; margin-top: 2px; }
+
+.card { background: var(--card); border-radius: var(--r-xl); box-shadow: var(--sh); }
+.lead { font-size: var(--fs-lead); color: var(--ink-2); }
+
+/* Buttons */
+.btn {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 68px; padding: 10px 40px; border-radius: 999px; border: 0;
+  font-size: 26px; font-weight: 700; line-height: 1.15; cursor: pointer;
+  transition: transform .15s var(--ease), box-shadow .2s, background .2s;
+}
+.btn .vi { color: inherit; opacity: .85; font-size: 16px; margin-top: 3px; }
+.btn-primary { background: var(--teal); color: #fff; box-shadow: 0 6px 0 var(--teal-d), 0 10px 24px rgba(47, 115, 112, .25); }
+.btn-primary:hover { background: #337E7A; }
+.btn-primary:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--teal-d); }
+.btn-primary[disabled] { background: #A9C4C2; box-shadow: 0 6px 0 #8FAEAC; cursor: not-allowed; }
+.btn-ghost {
+  background: transparent; color: var(--ink-2); font-size: 20px; min-height: 52px; padding: 8px 20px;
+  text-decoration: underline; text-underline-offset: 4px;
+}
+.btn-sm {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 58px; padding: 6px 22px; border-radius: 999px; border: 2px solid var(--line);
+  background: #fff; font-size: 19px; font-weight: 700; line-height: 1.15; cursor: pointer; text-decoration: none;
+}
+.btn-sm .vi { font-size: 13px; }
+.btn-sm:hover { border-color: var(--teal); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

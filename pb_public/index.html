@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Word Garden</title>
+<script>try{if(localStorage.getItem("hide_vi")==="1")document.documentElement.classList.add("hide-vi")}catch(e){}</script>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/game.css">
+<link rel="stylesheet" href="css/word.css">
+</head>
+<body>
+<svg id="sprite" width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <linearGradient id="gLeaf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8CC56A"/><stop offset="1" stop-color="#5E9E4F"/></linearGradient>
+  <linearGradient id="gLeaf2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6DAE57"/><stop offset="1" stop-color="#3F7A3A"/></linearGradient>
+  <linearGradient id="gWilt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C9BC73"/><stop offset="1" stop-color="#A39552"/></linearGradient>
+  <linearGradient id="gPot" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#D9774A"/><stop offset=".6" stop-color="#E8916A"/><stop offset="1" stop-color="#C9673D"/></linearGradient>
+  <linearGradient id="gBroth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F4C77A"/><stop offset="1" stop-color="#E3A452"/></linearGradient>
+  <linearGradient id="gBread" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F2B866"/><stop offset="1" stop-color="#D98E3A"/></linearGradient>
+  <linearGradient id="gSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF4DF"/><stop offset="1" stop-color="#FCE6C4"/></linearGradient>
+  <linearGradient id="gCan" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2A6764"/><stop offset=".45" stop-color="#3E8C88"/><stop offset="1" stop-color="#2F7370"/></linearGradient>
+  <g id="mound"><ellipse cx="50" cy="101" rx="30" ry="7" fill="#6B4329"/><path d="M22 101 Q50 84 78 101Z" fill="#8A5A3B"/><circle cx="38" cy="96" r="1.6" fill="#A8734D"/><circle cx="60" cy="94" r="1.3" fill="#A8734D"/></g>
+  <path id="leafL" d="M0 0 C-14 0 -24 -10 -24 -20 C-10 -20 0 -12 0 0Z"/>
+  <path id="leafR" d="M0 0 C14 0 24 -10 24 -20 C10 -20 0 -12 0 0Z"/>
+</defs>
+
+<!-- Plant stages: viewBox 0 0 100 110, soil line ~y100. Stems drawn first, leaves anchor on the stem, mound covers the stem base -->
+<symbol id="p-seed" viewBox="0 0 100 110">
+  <use href="#mound"/>
+  <ellipse cx="50" cy="91" rx="6.5" ry="4.6" fill="#E7C27D" transform="rotate(-18 50 91)"/>
+  <path d="M51 88 q1 -7 8 -9" stroke="#6DAE57" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+  <path d="M58.5 79.2 c3 -1.5 6.5 -.6 7.6 1.8 c-3 2 -6.6 1.2 -7.6 -1.8z" fill="#8CC56A"/>
+</symbol>
+<symbol id="p-sprout" viewBox="0 0 100 110">
+  <path d="M50 98 C50 88 49 78 50 66" stroke="#4F8F43" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <use href="#leafL" x="49.6" y="76" fill="url(#gLeaf)"/>
+  <use href="#leafR" x="50" y="67" fill="url(#gLeaf2)"/>
+  <use href="#mound"/>
+</symbol>
+<symbol id="p-leafy" viewBox="0 0 100 110">
+  <path d="M50 98 C48 80 52 60 50 38" stroke="#3F7A3A" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  <use href="#leafL" x="49.4" y="88" fill="url(#gLeaf2)"/>
+  <use href="#leafR" x="49.6" y="80" fill="url(#gLeaf)"/>
+  <use href="#leafL" x="50.6" y="66" fill="url(#gLeaf)"/>
+  <use href="#leafR" x="50.7" y="56" fill="url(#gLeaf2)"/>
+  <path d="M50 40 C40 38 36 28 38 20 C48 24 51 32 50 40Z" fill="#8CC56A"/>
+  <path d="M50 40 C58 36 62 28 60 20 C52 24 49 32 50 40Z" fill="#6DAE57"/>
+  <use href="#mound"/>
+</symbol>
+<symbol id="p-flower" viewBox="0 0 100 110">
+  <path d="M50 98 C48 80 52 58 50 30" stroke="#3F7A3A" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  <use href="#leafL" x="49.4" y="88" fill="url(#gLeaf2)"/>
+  <use href="#leafR" x="49.6" y="78" fill="url(#gLeaf)"/>
+  <use href="#leafL" x="50.6" y="62" fill="url(#gLeaf)"/>
+  <use href="#leafR" x="50.7" y="52" fill="url(#gLeaf2)"/>
+  <g transform="translate(50 26)">
+    <g fill="#F6C945">
+      <ellipse rx="6" ry="12" transform="translate(0 -12)"/><ellipse rx="6" ry="12" transform="rotate(45) translate(0 -12)"/>
+      <ellipse rx="6" ry="12" transform="rotate(90) translate(0 -12)"/><ellipse rx="6" ry="12" transform="rotate(135) translate(0 -12)"/>
+      <ellipse rx="6" ry="12" transform="rotate(180) translate(0 -12)"/><ellipse rx="6" ry="12" transform="rotate(225) translate(0 -12)"/>
+      <ellipse rx="6" ry="12" transform="rotate(270) translate(0 -12)"/><ellipse rx="6" ry="12" transform="rotate(315) translate(0 -12)"/>
+    </g>
+    <circle r="9" fill="#F29B38"/><circle r="9" fill="#8A5A3B" opacity=".35"/><circle cx="-3" cy="-3" r="2" fill="#fff" opacity=".35"/>
+  </g>
+  <use href="#mound"/>
+</symbol>
+<symbol id="p-fruit" viewBox="0 0 100 110">
+  <path d="M50 98 C46 80 54 60 50 30" stroke="#3F7A3A" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  <path d="M50 66 C40 62 34 56 30 47" stroke="#3F7A3A" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M51 52 C60 50 66 44 70 37" stroke="#3F7A3A" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M49 76 C47 76 45 76 44 64" stroke="#3F7A3A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <use href="#leafL" x="48.6" y="86" fill="url(#gLeaf2)"/>
+  <use href="#leafR" x="49.6" y="78" fill="url(#gLeaf)"/>
+  <use href="#leafL" x="51.4" y="42" fill="url(#gLeaf)"/>
+  <use href="#leafR" x="50.8" y="34" fill="url(#gLeaf2)"/>
+  <circle cx="30" cy="56" r="9" fill="#E8553E"/><circle cx="27" cy="53" r="2.4" fill="#fff" opacity=".45"/>
+  <path d="M26 47.5 l4 2.5 l4 -2.5" stroke="#3F7A3A" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  <circle cx="70" cy="45" r="8" fill="#F0703F"/><circle cx="67" cy="42" r="2" fill="#fff" opacity=".45"/>
+  <path d="M66 37.5 l4 2.5 l4 -2.5" stroke="#3F7A3A" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  <circle cx="44" cy="71" r="7" fill="#E8553E"/><path d="M41 64.5 l3 2 l3 -2" stroke="#3F7A3A" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <use href="#mound"/>
+</symbol>
+<symbol id="p-wilt" viewBox="0 0 100 110">
+  <path d="M50 98 C49 82 52 66 58 56 C64 48 70 50 72 56" stroke="#8E8146" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  <path d="M50 86 C40 88 32 94 28 100 C38 100 46 94 50 86Z" fill="url(#gWilt)"/>
+  <path d="M51 76 C61 77 69 84 71 92 C61 90 53 85 51 76Z" fill="url(#gWilt)"/>
+  <path d="M55.5 61 C46 63 40 70 40 78 C48 74 54 68 55.5 61Z" fill="#B9AC64"/>
+  <path d="M72 56 C68 64 70 72 76 76 C78 68 76 60 72 56Z" fill="#C9BC73"/>
+  <use href="#mound"/>
+</symbol>
+
+<!-- Watering can: tank, top handle, spout joined at the lower front with a rose head, falling droplets -->
+<symbol id="can" viewBox="0 0 72 64">
+  <path d="M39 47 L58 30" stroke="#245A58" stroke-width="7" stroke-linecap="round"/>
+  <path d="M39 47 L58 30" stroke="#3E8C88" stroke-width="4" stroke-linecap="round"/>
+  <g transform="rotate(-42 60 28)"><rect x="56" y="22" width="8" height="12" rx="3" fill="#245A58"/><rect x="62.5" y="23" width="2.5" height="10" rx="1.2" fill="#1C4846"/></g>
+  <path d="M16 24 C16 8 38 8 38 24" stroke="#245A58" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  <path d="M10 26 Q10 21 15 21 H38 Q43 21 43 26 V51 Q43 57 37 57 H16 Q10 57 10 51 Z" fill="url(#gCan)"/>
+  <rect x="10" y="21" width="33" height="6" rx="3" fill="#245A58"/>
+  <path d="M15 33 V48" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".28"/>
+  <path d="M10 50 h33" stroke="#245A58" stroke-width="2" opacity=".5"/>
+  <g fill="#5AA8E0"><path d="M64 38 c1.6 2.4 2.4 3.6 2.4 4.6 a2.4 2.4 0 0 1 -4.8 0 c0 -1 .8 -2.2 2.4 -4.6z"/><path d="M68.5 46 c1.4 2 2 3 2 3.9 a2 2 0 0 1 -4 0 c0 -.9 .6 -1.9 2 -3.9z"/><path d="M61 47 c1.3 1.9 1.9 2.8 1.9 3.6 a1.9 1.9 0 0 1 -3.8 0 c0 -.8 .6 -1.7 1.9 -3.6z"/></g>
+</symbol>
+</svg>
+
+<div id="lang" class="lang-slot"></div>
+<div id="app" class="app" aria-live="polite"></div>
+
+<noscript>Word Garden needs JavaScript. / Word Garden cần bật JavaScript.</noscript>
+<script type="module" src="js/router.js"></script>
+</body>
+</html>
