@@ -1,10 +1,11 @@
 // The community garden picture (#s9): a fixed scene with planter boxes whose slots fill with
 // flowers as the class earns stars. The next slot shows the flower that is growing now.
 // Bloomed flowers take turns through the present learners' plant kinds, so every learner's plant
-// shows up. Uses the stage symbols copied from index.html into projector.html (#p-seed … #p-fruit)
+// shows up. The front bed holds one small flower, in the learner's own kind, for every skill a
+// learner in the room has mastered (no names: learners know their own kind). Uses the stage symbols copied from index.html into projector.html (#p-seed … #p-fruit)
 // plus the kind symbols that js/plants.js adds.
 
-// Slots in the scene's viewBox (0 -110 1000 630), front box first, then left, then right.
+// Slots in the scene's viewBox (0 -110 1000 690), front box first, then left, then right.
 const SLOTS = [
   [340, 336], [404, 328], [468, 328], [532, 336], [598, 340],
   [44, 292], [104, 292], [164, 292], [224, 292],
@@ -15,6 +16,16 @@ const PLANT_H = 100;
 
 export const SLOT_COUNT = SLOTS.length;
 
+// Front bed: a strip of ground below the planter boxes, left of the watering can. Flowers are
+// spaced evenly along it (centred while there are only a few).
+const BED_W = 54;
+const BED_H = 70;
+const BED_LEFT = 24;
+const BED_RIGHT = 846;
+const BED_BASE = 566;
+const BED_GAP_MAX = 62;
+export const BED_COUNT = 22;
+
 /** Stage of the flower that is growing now, from the share of its stars already earned. */
 export function growingSymbol(towardNext, perFlower) {
   const share = perFlower > 0 ? towardNext / perFlower : 0;
@@ -23,22 +34,35 @@ export function growingSymbol(towardNext, perFlower) {
   return "p-seed";
 }
 
+/** A plant standing on (cx, base). The animated group sits at the origin so it grows from its own soil. */
+function plantAt(symbol, cx, base, w, h, cls) {
+  return `<g transform="translate(${cx} ${base})"><g class="${cls}"><use href="#${symbol}" x="${-w / 2}" y="${-h}" width="${w}" height="${h}"/></g></g>`;
+}
+
 function plant(symbol, [x, y], cls) {
   // Slot x/y are the top-left of a 66×90 plant; bigger plants keep the same centre and soil line.
-  const px = x - (PLANT_W - 66) / 2;
-  const py = y - (PLANT_H - 90);
-  return `<use href="#${symbol}" class="${cls}" x="${px}" y="${py}" width="${PLANT_W}" height="${PLANT_H}"/>`;
+  return plantAt(symbol, x + 33, y + 90, PLANT_W, PLANT_H, cls);
+}
+
+function bedHtml(bed) {
+  const shown = bed.slice(-BED_COUNT); // the newest when the bed is full
+  const gap = Math.min(BED_GAP_MAX, (BED_RIGHT - BED_LEFT) / Math.max(1, shown.length));
+  const start = (BED_LEFT + BED_RIGHT) / 2 - (gap * shown.length) / 2;
+  return shown
+    .map((f, i) => plantAt(f.symbol, start + gap * (i + 0.5), BED_BASE, BED_W, BED_H, f.isNew ? "pj-plant pj-bloom" : "pj-plant"))
+    .join("");
 }
 
 /**
  * SVG markup for the garden.
- * @param {{flowers: number, towardNext: number, perFlower: number, newFrom: number, grew: boolean, kinds?: string[], waiting?: boolean}} g
+ * @param {{flowers: number, towardNext: number, perFlower: number, newFrom: number, grew: boolean, kinds?: string[], bed?: Array<{symbol: string, isNew: boolean}>, waiting?: boolean}} g
  *   kinds: flower symbols to take turns through (one per present learner); sunflowers when empty.
+ *   bed: mastered-skill flowers for the front bed, oldest first (isNew ones animate in).
  *   newFrom: flowers at index >= newFrom bloomed since the last draw (they animate in).
  *   grew: stars arrived since the last draw (the growing plant gets a gentle nudge).
  *   waiting: no live session, so the boxes stay empty.
  */
-export function gardenSvg({ flowers, towardNext, perFlower, newFrom, grew, kinds = [], waiting = false }) {
+export function gardenSvg({ flowers, towardNext, perFlower, newFrom, grew, kinds = [], bed = [], waiting = false }) {
   const shown = Math.min(flowers, SLOT_COUNT);
   const plants = [];
   if (!waiting) {
@@ -48,11 +72,11 @@ export function gardenSvg({ flowers, towardNext, perFlower, newFrom, grew, kinds
     }
   }
 
-  return `<svg viewBox="0 -110 1000 630" preserveAspectRatio="xMidYMax slice" role="img" aria-label="Class garden with ${shown} flowers">
-    <rect y="-110" width="1000" height="630" fill="url(#gSky)"/>
+  return `<svg viewBox="0 -110 1000 690" preserveAspectRatio="xMidYMax slice" role="img" aria-label="Class garden with ${shown} flowers${bed.length ? ` and ${bed.length} learned-skill flowers` : ""}">
+    <rect y="-110" width="1000" height="690" fill="url(#gSky)"/>
     <circle cx="840" cy="40" r="62" fill="#FFE1A0"/><circle cx="840" cy="40" r="44" fill="#FFD074"/>
-    <path d="M0 300 C140 230 260 250 380 280 C520 220 700 230 1000 270 V520 H0Z" fill="#D6E8BE"/>
-    <path d="M0 340 C200 290 380 320 520 310 C700 290 860 300 1000 320 V520 H0Z" fill="#B9D89A"/>
+    <path d="M0 300 C140 230 260 250 380 280 C520 220 700 230 1000 270 V580 H0Z" fill="#D6E8BE"/>
+    <path d="M0 340 C200 290 380 320 520 310 C700 290 860 300 1000 320 V580 H0Z" fill="#B9D89A"/>
     <g fill="#F6E2C2" stroke="#E2C59A" stroke-width="2">
       <path d="M20 350 v-70 l12 -12 l12 12 v70z M80 350 v-70 l12 -12 l12 12 v70z M140 350 v-70 l12 -12 l12 12 v70z M200 350 v-70 l12 -12 l12 12 v70z M260 350 v-70 l12 -12 l12 12 v70z M760 350 v-70 l12 -12 l12 12 v70z M820 350 v-70 l12 -12 l12 12 v70z M880 350 v-70 l12 -12 l12 12 v70z M940 350 v-70 l12 -12 l12 12 v70z"/>
       <rect x="0" y="300" width="300" height="10" rx="4"/><rect x="0" y="330" width="300" height="10" rx="4"/><rect x="740" y="300" width="260" height="10" rx="4"/><rect x="740" y="330" width="260" height="10" rx="4"/>
@@ -69,6 +93,9 @@ export function gardenSvg({ flowers, towardNext, perFlower, newFrom, grew, kinds
       <rect x="330" y="420" width="360" height="66" rx="12" fill="#B87C49"/><rect x="330" y="412" width="360" height="22" rx="10" fill="#7A4E33"/>
     </g>
     <g>${plants.join("")}</g>
-    <use href="#can" x="860" y="452" width="76" height="68"/>
+    <path d="M0 500 C300 492 700 494 1000 502 V580 H0Z" fill="#A9CC86"/>
+    <rect x="12" y="556" width="846" height="20" rx="10" fill="#8A5A3B"/><rect x="12" y="556" width="846" height="7" rx="3.5" fill="#A8734D"/>
+    <g>${waiting ? "" : bedHtml(bed)}</g>
+    <use href="#can" x="872" y="508" width="76" height="68"/>
   </svg>`;
 }

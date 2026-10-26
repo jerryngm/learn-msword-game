@@ -38,3 +38,20 @@ test("plants: the migration backfills the same kind keys", () => {
   const keys = JSON.parse(src.match(/const KINDS = (\[[^\]]*\])/)[1]);
   assert.deepEqual(keys, PLANT_KINDS.map((k) => k.key));
 });
+
+test("projector front bed: a flower per mastered skill of the learners in the room", async () => {
+  const { masteredFlowers } = await import("../pb_public/js/projector/class-stats.js");
+  const at = (learner, skill, stars, day) => ({ learner, skill, stars, created: `${day} 02:00:00.000Z` });
+  const attempts = [
+    // a: 3 clean days on s1 (mastered on the 3rd), only 2 on s2
+    at("a", "s1", 3, "2026-10-01"), at("a", "s1", 3, "2026-10-01"), at("a", "s1", 2, "2026-10-02"),
+    at("a", "s1", 3, "2026-10-08"), at("a", "s1", 3, "2026-10-15"),
+    at("a", "s2", 3, "2026-10-01"), at("a", "s2", 3, "2026-10-08"),
+    // b: mastered s1 earlier than a did; c is not in the room
+    at("b", "s1", 3, "2026-10-01"), at("b", "s1", 3, "2026-10-02"), at("b", "s1", 3, "2026-10-03"),
+    at("c", "s1", 3, "2026-10-01"), at("c", "s1", 3, "2026-10-02"), at("c", "s1", 3, "2026-10-03"),
+  ];
+  const got = masteredFlowers(attempts, ["a", "b"]).map((f) => `${f.learner}|${f.skill}`);
+  assert.deepEqual(got, ["b|s1", "a|s1"]);
+  assert.deepEqual(masteredFlowers([], ["a"]), []);
+});

@@ -1,10 +1,11 @@
 // Projector (#s9): the class garden for the live session. Read-only, no login, English only.
-// Follows the live session, its attempts and the learner list through js/live.js and redraws on every change.
+// Follows the live session, its attempts, every attempt (for mastered skills) and the learner list
+// through js/live.js and redraws on every change.
 
-import { liveSession, watchLearners, watchSessionAttempts } from "../live.js";
+import { liveSession, watchAllAttempts, watchLearners, watchSessionAttempts } from "../live.js";
 import { avatarEmoji, esc } from "../i18n.js";
 import { TOPICS, loadTopic, skillById } from "../content/skills.js";
-import { classStats } from "./class-stats.js";
+import { classStats, masteredFlowers } from "./class-stats.js";
 import { SLOT_COUNT, gardenSvg } from "./garden-scene.js";
 import { mountVersionBadge } from "../version-badge.js";
 import { mountPlantSymbols, plantKindOf } from "../plants.js";
@@ -65,6 +66,9 @@ const state = {
   attempts: [],
   attemptsError: null,
   learners: new Map(),
+  allAttempts: [], // every learner's history: the front bed shows skills they have mastered
+  historyLoaded: false,
+  shownBed: null, // keys of front-bed flowers at the last draw (null = first draw: no bloom animation)
   shownFlowers: null, // flowers on screen at the last draw (null = first draw: no bloom animation)
   shownStars: null,
   sessionId: null,
@@ -82,6 +86,12 @@ function topicsText(session) {
 
 /* ---------- drawing ---------- */
 
+// How the garden grows, under the bar (live and waiting, so the scene crops the same).
+const HOW_HTML = `<ul class="pj-how">
+    <li><b>⭐ Every star</b> fills the bar. Full bar = a new flower in the boxes.</li>
+    <li><b>🌸 ⭐⭐⭐ on 3 different days</b> = your own flower in the front bed.</li>
+  </ul>`;
+
 function headerHtml(session, offline) {
   const topics = session ? topicsText(session) : "";
   return `<header class="pj-h">
@@ -97,7 +107,8 @@ function waitingHtml(offline) {
   return `${headerHtml(null, offline)}
     <section class="pj-garden" aria-label="Class garden">
       <div class="pj-scene">${gardenSvg({ flowers: 0, towardNext: 0, perFlower: 3, newFrom: 0, grew: false, waiting: true })}</div>
-      <div class="pj-milestone"><div class="top"><span>The garden grows with every ⭐</span></div></div>
+      <div class="pj-milestone"><div class="top"><span>The garden grows with every ⭐</span></div>
+        ${HOW_HTML}</div>
     </section>
     <aside class="pj-side">
       <div class="pj-card pj-wait">
@@ -171,6 +182,7 @@ function liveHtml(session, stats, label, offline, anim) {
         kinds: stats.learnerIds.map((id) => plantKindOf(state.learners.get(id) ?? { id }).symbol),
         newFrom: anim.newFrom,
         grew: anim.grew,
+        bed: anim.bed,
       })}</div>
       <div class="pj-milestone">
         <div class="top">
@@ -180,6 +192,7 @@ function liveHtml(session, stats, label, offline, anim) {
         <div class="pj-mbar" role="progressbar" aria-label="Stars toward the next flower" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}">
           <div class="fill" style="width:${pct}%"></div><span class="flag" aria-hidden="true">🌻</span>
         </div>
+        ${HOW_HTML}
       </div>
     </section>
     <aside class="pj-side">
@@ -216,6 +229,12 @@ async function draw() {
   }
   state.shownFlowers = stats.flowers;
   state.shownStars = stats.stars;
+  const bed = masteredFlowers(state.allAttempts, stats.learnerIds).map((f) => ({
+    key: `${f.learner}|${f.skill}`,
+    symbol: plantKindOf(state.learners.get(f.learner) ?? { id: f.learner }).symbol,
+  }));
+  anim.bed = bed.map((f) => ({ symbol: f.symbol, isNew: state.shownBed != null && !state.shownBed.has(f.key) }));
+  if (state.historyLoaded) state.shownBed = new Set(bed.map((f) => f.key)); // the first full history never animates
 
   stage.classList.toggle("show-names", session.show_names === true);
   stage.innerHTML = liveHtml(session, stats, label, offline, anim);
@@ -228,6 +247,13 @@ const redraw = () => draw().catch((err) => console.error("projector: draw failed
 watchLearners((list, err) => {
   if (err) console.error("projector: learners could not load", err);
   state.learners = new Map(list.map((l) => [l.id, l]));
+  redraw();
+});
+
+watchAllAttempts((list, err) => {
+  if (err) console.error("projector: attempt history could not load", err);
+  state.allAttempts = list;
+  state.historyLoaded = state.historyLoaded || !err;
   redraw();
 });
 
@@ -244,6 +270,7 @@ liveSession((session, err) => {
     state.attemptsError = null;
     state.shownFlowers = null;
     state.shownStars = null;
+    state.shownBed = null;
     stopAttempts = watchSessionAttempts(id, (list, aerr) => {
       if (aerr) console.error("projector: attempts could not load", aerr);
       state.attemptsError = aerr ?? null;

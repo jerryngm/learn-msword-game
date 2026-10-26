@@ -27,7 +27,7 @@ body.pj-body { background: #1E1E22; }
 .pj-garden { min-height: 0; border-radius: 36px; overflow: hidden; background: #fff; box-shadow: var(--sh); display: flex; flex-direction: column; }
 .pj-scene { flex: 1; min-height: 0; }
 .pj-scene svg { display: block; width: 100%; height: 100%; }
-.pj-milestone { padding: 24px 36px 28px; min-height: 160px; } /* same height live and waiting, so the scene crops the same */
+.pj-milestone { padding: 20px 36px 22px; min-height: 160px; } /* same height live and waiting, so the scene crops the same */
 .pj-milestone .top { padding-right: 64px; display: flex; justify-content: space-between; align-items: baseline; gap: 24px; font-size: 36px; font-weight: 800; }
 .pj-milestone small { font-size: 26px; font-weight: 600; color: var(--ink-2); }
 .pj-mbar { position: relative; height: 40px; border-radius: 999px; background: var(--cream-2); margin-top: 14px; }
@@ -35,6 +35,8 @@ body.pj-body { background: #1E1E22; }
   position: absolute; left: 0; top: 0; bottom: 0; width: 0; min-width: 40px; border-radius: 999px;
   background: linear-gradient(90deg, var(--leaf), #8CC56A); transition: width 1.2s var(--ease);
 }
+.pj-how { list-style: none; margin: 12px 0 0; padding: 0; font-size: 28px; line-height: 1.3; color: var(--ink-2); }
+.pj-how b { color: var(--ink); }
 .pj-mbar .flag { position: absolute; right: -14px; top: 50%; transform: translateY(-50%); font-size: 58px; line-height: 1; }
 
 /* Side cards */
@@ -86,7 +88,7 @@ body.pj-body { background: #1E1E22; }
 .pj-wait p { font-size: 32px; color: var(--ink-2); }
 
 /* Growth: a new flower grows up from its soil, and the growing plant gives a small nudge when stars arrive. */
-.pj-plant { transform-box: fill-box; transform-origin: 50% 100%; }
+.pj-plant { transform-box: fill-box; transform-origin: 50% 100%; } /* on a <g> at the plant's soil point, so it grows in place */
 .pj-bloom { animation: pjBloom 1.4s var(--ease) both; }
 .pj-nudge { animation: pjNudge 1s var(--ease) both; }
 @keyframes pjBloom { from { opacity: 0; transform: scale(.3); } 70% { opacity: 1; transform: scale(1.08); } to { opacity: 1; transform: none; } }

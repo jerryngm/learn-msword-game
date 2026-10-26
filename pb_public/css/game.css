@@ -486,11 +486,19 @@ html.hide-vi .home-links { margin-top: 28px; }
 }
 .wg-tip .vi { color: #D6E2EE; font-size: 12px; }
 .wg-pbtn:hover .wg-tip, .wg-pbtn:focus-visible .wg-tip { opacity: 1; transform: translate(-50%, 0); }
-.wg-legend { display: flex; gap: 14px; align-items: center; font-size: 14px; color: var(--ink-2); margin-top: 12px; flex-wrap: wrap; line-height: 1.2; }
-.wg-legend span { display: flex; align-items: center; gap: 3px; }
-.wg-legend .vi { display: inline; margin: 0 0 0 4px; font-size: 12px; }
-.wg-legend svg { width: 22px; height: 26px; }
-.wg-legend-tap { margin-left: auto; }
+/* How a plant grows (a tab beside Kitchen and Badges): the four stages top to bottom, then the watering and star notes. */
+.wg-legend-tap { margin-top: 8px; padding-left: 220px; font-size: 14px; color: var(--ink-2); } /* clear of the fixed Back home link */
+.wg-legend-tap .vi { display: inline; margin-left: 4px; font-size: 12px; }
+.wg-howto-h { font-size: 16px; color: var(--ink); line-height: 1.15; }
+.wg-steps { list-style: none; display: flex; flex-direction: column; gap: 4px; margin: 4px 0 0; padding: 0; }
+.wg-steps li { display: flex; align-items: center; gap: 10px; padding: 3px 6px; border-radius: 12px; background: var(--cream); }
+.wg-steps svg { width: 40px; height: 44px; flex: none; }
+.wg-steps b { display: block; font-size: 16px; color: var(--ink); line-height: 1.15; }
+.wg-steps small { display: block; font-size: 15px; color: var(--ink-2); line-height: 1.2; }
+.wg-howto .vi { display: block; margin: 0; font-size: 12px; font-weight: 400; }
+.wg-howto-note { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 14px; color: var(--ink-2); line-height: 1.25; }
+.wg-howto-note svg { width: 32px; height: 36px; flex: none; }
+.wg-howto-note.is-stars { padding: 6px 10px; border-radius: 12px; background: var(--orange-l); color: var(--orange-d); font-weight: 700; }
 .wg-g-aside { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
 .wg-panel { background: #fff; border-radius: 18px; box-shadow: var(--sh-sm); padding: 12px 16px; }
 .wg-panel[hidden] { display: none; }

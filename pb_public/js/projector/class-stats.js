@@ -11,6 +11,8 @@
 //   Ties go to the item with more attempts, then the item id, so the card doesn't flicker.
 //   Nothing is shown while every such item is at 100%.
 
+import { CONFIG, attemptTime, dayKey } from "../rules.js";
+
 export const STARS_PER_LEARNER = 3;
 export const TRICKY_MIN_ATTEMPTS = 3;
 export const DEFAULT_LENGTH = 6; // same default as the learner screens (game-data playContext)
@@ -83,4 +85,32 @@ export function classStats(attempts, session) {
     tricky,
     trickyCandidates,
   };
+}
+
+/**
+ * The skills each learner has mastered (flowering: clean on CONFIG.masteryCleanDays different days),
+ * oldest first, for the learners in `learnerIds`. A mastered skill stays mastered, even if it wilts later.
+ * @param {Array<{learner: string, skill: string, stars: number, created: string, client_at?: string}>} attempts all attempts
+ * @returns {Array<{learner: string, skill: string, at: number}>} at = when the last needed clean day happened
+ */
+export function masteredFlowers(attempts, learnerIds) {
+  const wanted = new Set(learnerIds);
+  const days = new Map(); // "learner|skill" -> Map(day -> earliest clean time that day)
+  for (const a of attempts ?? []) {
+    if (!a || !wanted.has(a.learner) || !a.skill || starsOf(a) < CONFIG.cleanStars) continue;
+    const at = attemptTime(a);
+    const key = `${a.learner}|${a.skill}`;
+    if (!days.has(key)) days.set(key, new Map());
+    const byDay = days.get(key);
+    const day = dayKey(at);
+    if (!byDay.has(day) || at < byDay.get(day)) byDay.set(day, at);
+  }
+  const flowers = [];
+  for (const [key, byDay] of days) {
+    if (byDay.size < CONFIG.masteryCleanDays) continue;
+    const [learner, skill] = key.split("|");
+    const at = [...byDay.values()].sort((x, y) => x - y)[CONFIG.masteryCleanDays - 1];
+    flowers.push({ learner, skill, at });
+  }
+  return flowers.sort((x, y) => x.at - y.at || (x.learner + x.skill < y.learner + y.skill ? -1 : 1));
 }

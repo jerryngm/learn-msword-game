@@ -98,21 +98,28 @@ export async function render(root, { learner }) {
         <div class="wg-g-left">
           ${tried.length ? "" : `<p class="wg-g-empty">${gbi("gardenEmpty")}</p>`}
           <div class="wg-beds cols-${cols}">${beds.map(bedHtml).join("")}</div>
-          <div class="wg-legend">
-            ${["seed", "sprout", "leafy", "flowering", "wilted"]
-              .map((k) => `<span><svg viewBox="0 0 100 110" aria-hidden="true"><use href="#${k === "wilted" ? "p-wilt" : plantSymbol({ stage: k }, kind)}"/></svg>${biPair(gt(`stage_${k}`))}</span>`)
-              .join("")}
-            <span class="wg-legend-tap">${biPair(gt("tapPlant"))}</span>
-          </div>
+          <p class="wg-legend-tap">${biPair(gt("tapPlant"))}</p>
         </div>
         <aside class="wg-g-aside">
           <div class="wg-panel wg-tmsg" id="tmsg" hidden></div>
           <div class="wg-panel">
             <div class="wg-stabs" role="tablist">
-              <button type="button" class="wg-stab" role="tab" id="tabK" aria-controls="tpK" aria-selected="true">${gbi("kitchen")}</button>
+              <button type="button" class="wg-stab" role="tab" id="tabG" aria-controls="tpG" aria-selected="false">${gbi("howGrowTab")}</button>
+              <button type="button" class="wg-stab" role="tab" id="tabK" aria-controls="tpK" aria-selected="false">${gbi("kitchen")}</button>
               <button type="button" class="wg-stab" role="tab" id="tabB" aria-controls="tpB" aria-selected="false">${gbi("badges")}</button>
             </div>
-            <div class="wg-tpanel" id="tpK" role="tabpanel" aria-labelledby="tabK"><div class="wg-shelf">${shelf}</div><p class="wg-k-note">${gbi("kitchenNote")}</p></div>
+            <div class="wg-tpanel wg-howto" id="tpG" role="tabpanel" aria-labelledby="tabG" hidden>
+            <h2 class="wg-howto-h">${gbi("howGrow")}</h2>
+            <ol class="wg-steps">
+              ${["seed", "sprout", "leafy", "flowering"]
+                .map((k) => `<li><svg viewBox="0 0 100 110" aria-hidden="true"><use href="#${plantSymbol({ stage: k }, kind)}"/></svg>
+                  <span><b>${biPair(gt(`stage_${k}`))}</b><small>${biPair(gt(`grow_${k}`))}</small></span></li>`)
+                .join("")}
+            </ol>
+            <p class="wg-howto-note"><svg viewBox="0 0 100 110" aria-hidden="true"><use href="#p-wilt"/></svg><span>${biPair(gt("grow_wilted"))}</span></p>
+            <p class="wg-howto-note is-stars">${biPair(gt("grow_stars"))}</p>
+            </div>
+            <div class="wg-tpanel" id="tpK" role="tabpanel" aria-labelledby="tabK" hidden><div class="wg-shelf">${shelf}</div><p class="wg-k-note">${gbi("kitchenNote")}</p></div>
             <div class="wg-tpanel" id="tpB" role="tabpanel" aria-labelledby="tabB" hidden>${badgesHtml}${helperHtml}</div>
           </div>
         </aside>
@@ -140,7 +147,7 @@ export async function render(root, { learner }) {
     selectTab(next);
     next.focus();
   });
-  selectTab(tabs[0]);
+  selectTab(mastered.length ? tabs[1] : tabs[0]); // How it grows until the first flower, then the Kitchen
 
   /* ----- plant card ----- */
   function practiceFor(skillId) {
