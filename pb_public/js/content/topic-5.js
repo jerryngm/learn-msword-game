@@ -14,7 +14,7 @@ const layoutMenu = (cmd, arg) => [go(`menu:${cmd}`), go(`choice:${cmd}.set:${arg
 const menuItem = (cmd) => go(`choice:${cmd}:undefined`);
 const cellAt = (row, col, offset) => `cell:0,${row},${col}${offset === undefined ? '' : `,${offset}`}`;
 
-// Demo notes (what the engine draws): Insert Table and the Table Layout ribbon buttons change the ghost picture,
+// Demo notes (what the engine draws): Insert Table and the table Layout tab's ribbon buttons change the ghost picture,
 // and the ribbon buttons always act on the table's first cell. A menu item without an argument (Delete Rows) only shows the click.
 // Tab lights the key but doesn't move the ghost text, so typing after Tab names its cell with `at`.
 const tableDoc = (rows, heading, page) => createDoc({
@@ -123,12 +123,12 @@ export const items = [
     [go(cellAt(1, 0)), type('Tea', cellAt(1, 0)), key('Tab'), type('$3', cellAt(1, 1))]),
   doItem('t5-delete-row-do', 't5-row-col',
     T('The shop has no bread today. Delete the Bread row from the price list.', 'Hôm nay cửa hàng hết bánh mì. Hãy xoá hàng Bread khỏi bảng giá.'),
-    T('Click in the Bread row. On the Table Layout tab, click Delete, then Delete Rows. Or right-click the row.', 'Bấm vào hàng Bread. Trên thẻ Table Layout, bấm Delete, rồi bấm Delete Rows. Hoặc bấm chuột phải vào hàng đó.'),
+    T('Click in the Bread row. On the Layout tab next to Table Design, click Delete, then Delete Rows. Or right-click the row.', 'Bấm vào hàng Bread. Trên thẻ Layout nằm cạnh Table Design, bấm Delete, rồi bấm Delete Rows. Hoặc bấm chuột phải vào hàng đó.'),
     tableDoc([['Bread', '$2'], ['Milk', '$3'], ['Eggs', '$5']]), (doc) => sameGrid(doc, [['Milk', '$3'], ['Eggs', '$5']]),
     [go(cellAt(0, 0, 2)), go('tab.table'), go('menu:table.delete'), menuItem('table.deleteRow'), say('The Bread row is gone. Milk and Eggs stay.', 'Hàng Bread đã được xoá. Milk và Eggs vẫn còn.')], 'table.rows'),
   doItem('t5-insert-right-do', 't5-row-col',
     T('Your shopping list needs a place for prices. Add a column to the right of Food.', 'Danh sách đi chợ cần thêm chỗ ghi giá. Hãy thêm một cột bên phải cột Food.'),
-    T('Click in the Food column. On the Table Layout tab, click Insert Right. Or right-click the column.', 'Bấm vào cột Food. Trên thẻ Table Layout, bấm Insert Right. Hoặc bấm chuột phải vào cột đó.'),
+    T('Click in the Food column. On the Layout tab next to Table Design, click Insert Right. Or right-click the column.', 'Bấm vào cột Food. Trên thẻ Layout nằm cạnh Table Design, bấm Insert Right. Hoặc bấm chuột phải vào cột đó.'),
     tableDoc([['Food'], ['Rice'], ['Eggs']]),
     (doc) => size(doc, 2, 3) && ['food', 'rice', 'eggs'].every((s, r) => loose(cellText(doc, 0, r, 0)) === s),
     [go(cellAt(0, 0, 4)), go('tab.table'), go('table.insertRight')], 'table.rows'),
@@ -200,7 +200,7 @@ const classRows = [['Friday', '6 pm']];
 const saturdayRows = [['Friday', '6 pm'], ['Saturday', '10 am']];
 const saturdayCheck = (doc) => sameGrid(doc, saturdayRows);
 const saturdaySteps = [
-  step(T('Click in the Friday row. On the Table Layout tab, click Insert Below.', 'Bấm vào hàng Friday. Trên thẻ Table Layout, bấm Insert Below.'),
+  step(T('Click in the Friday row. On the Layout tab next to Table Design, click Insert Below.', 'Bấm vào hàng Friday. Trên thẻ Layout nằm cạnh Table Design, bấm Insert Below.'),
     T('Click in the Friday row. Insert Below adds an empty row under Friday. Or right-click the row.', 'Bấm vào hàng Friday. Insert Below thêm một hàng trống bên dưới Friday. Hoặc bấm chuột phải vào hàng đó.'),
     (doc) => (doc.tables?.[0]?.rows.length ?? 0) >= 2 && loose(cellText(doc, 0, 0, 0)) === 'friday',
     [go(cellAt(0, 0, 3)), go('tab.table'), go('table.insertBelow')], 'table.rows'),
