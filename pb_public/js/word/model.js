@@ -659,8 +659,10 @@ export function editTable(doc, pos, action) {
   if (!cell) return {doc};
   const table = doc.tables[cell.table];
   const rows = table.rows.length, cols = table.rows[0].length;
-  const rowAction = action === "insertBelow" || action === "deleteRow";
+  const rowAction = ["insertAbove","insertBelow","deleteRow"].includes(action);
   const deleting = action.startsWith("delete");
+  // Insert Above / Left put the new row or column at the current one, pushing it down or right.
+  const before = action === "insertAbove" || action === "insertLeft";
   if (deleting && ((rowAction ? rows : cols) === 1 || action === "deleteTable")) {
     const paras = doc.p.filter(p => p.cell?.table !== cell.table).map(p => p.cell?.table > cell.table ? new Para({...paraProps(p),cell:{...p.cell,table:p.cell.table-1}},p.runs) : p);
     const next = freezeDoc(paras,doc.spellings,doc.page);
@@ -669,10 +671,10 @@ export function editTable(doc, pos, action) {
   const grid = table.rows.map(row => row.map(c => c.p));
   if (rowAction) {
     if (deleting) grid.splice(cell.row,1);
-    else grid.splice(cell.row+1,0,Array.from({length:cols},()=>[new Para()]));
+    else grid.splice(cell.row+(before?0:1),0,Array.from({length:cols},()=>[new Para()]));
   } else for (const row of grid) {
     if (deleting) row.splice(cell.col,1);
-    else row.splice(cell.col+1,0,[new Para()]);
+    else row.splice(cell.col+(before?0:1),0,[new Para()]);
   }
   const parts = grid.flatMap((row,r)=>row.flatMap((ps,c)=>ps.map(p=>new Para({...paraProps(p),cell:{table:cell.table,row:r,col:c}},p.runs))));
   const start = doc.p.findIndex(p=>p.cell?.table===cell.table);

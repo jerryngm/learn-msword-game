@@ -33,7 +33,7 @@ function relRect(root, el) {
 
 const UL_CSS = { single: "solid", double: "double", thick: "solid", dotted: "dotted", dashed: "dashed", wave: "wavy" };
 
-function itemHtml(it) {
+function itemHtml(it, i) {
   if (it.tableGrid) return `<div class="wm-table-grid" aria-label="Choose table size">${Array.from({length:80},(_,i)=>{ const cols=i%10+1,rows=Math.floor(i/10)+1; return `<button type="button" data-cmd="insert.table.create" data-arg="${cols}x${rows}" data-cols="${cols}" data-rows="${rows}" aria-label="${cols} columns, ${rows} rows" title="${cols} columns, ${rows} rows"></button>`; }).join("")}</div>`;
   if (it.sep) return `<div class="wm-sep" role="separator"></div>`;
   if (it.searchbox) return `<button type="button" class="wm-searchbox" data-cmd="${it.cmd}">${esc(it.label)}</button>`;
@@ -65,7 +65,9 @@ function itemHtml(it) {
   if (it.effect) face = `<span class="wm-fx-${it.effect}">${face}</span>`;
   if (it.font) face = `<span style="font-family:${esc(fontStack(it.font))};font-size:14px">${face}</span>${it.hint ? ` <span class="wm-hint">${esc(it.hint)}</span>` : ""}`;
   const lead = it.swatch ? `<span class="wm-auto" style="background:${it.swatch}"></span>` : it.leadGlyph ? `<span class="wm-leadglyph">${esc(it.leadGlyph)}</span>` : it.icon ? ico(it.icon, it.iconCls ?? "") : `<span class="wm-ck">${it.checked ? "✓" : ""}</span>`;
-  return `<button type="button" class="wm-item${it.checked ? " is-checked" : ""}${it.disabled ? " is-disabled" : ""}" data-cmd="${it.cmd}" data-arg="${encArg(it.arg)}">
+  // A submenu item (submenu: [items]) opens its list beside the menu on hover or click; it runs no command.
+  const sub = Array.isArray(it.submenu) ? ` data-sub="${i}" aria-haspopup="menu"` : ` data-cmd="${it.cmd}" data-arg="${encArg(it.arg)}"`;
+  return `<button type="button" class="wm-item${it.checked ? " is-checked" : ""}${it.disabled ? " is-disabled" : ""}"${sub}>
     <span class="wm-lead">${lead}</span><span class="wm-label">${face}</span>${it.submenu ? `<span class="wm-sub">${ico("chevron_right_12")}</span>` : ""}</button>`;
 }
 
@@ -85,6 +87,7 @@ export function createPopups(root) {
   layer.className = "wm-layer";
   root.appendChild(layer);
   let menuEl = null;
+  let subEl = null;
   let dialogEl = null;
   let noteEl = null;
   let toastEl = null;
@@ -116,6 +119,31 @@ export function createPopups(root) {
       menuEl.setAttribute("role", "menu");
       menuEl.innerHTML = items.map(itemHtml).join("");
       layer.appendChild(menuEl);
+      const own = menuEl;
+      const showSub = (e) => {
+        const btn = e.target.closest?.(".wm-item");
+        if (!btn || !own.contains(btn) || btn.classList.contains("is-disabled")) return;
+        if (!btn.dataset.sub) return api.closeSubmenu();
+        if (subEl?._from === btn) return;
+        api.closeSubmenu();
+        subEl = document.createElement("div");
+        subEl.className = "wm-menu wm-submenu";
+        subEl.setAttribute("role", "menu");
+        subEl.innerHTML = items[Number(btn.dataset.sub)].submenu.map(itemHtml).join("");
+        subEl._from = btn;
+        btn.classList.add("is-open");
+        layer.appendChild(subEl);
+        // Beside the item, flipped to the left when there is no room on the right.
+        const R = root.getBoundingClientRect();
+        const b = relRect(root, btn);
+        const m = relRect(root, own);
+        let x = m.x + m.w - 2;
+        if (x + subEl.offsetWidth > R.width - 4) x = Math.max(4, m.x - subEl.offsetWidth + 2);
+        subEl.style.left = `${x}px`;
+        subEl.style.top = `${Math.max(4, Math.min(R.height - subEl.offsetHeight - 4, b.y - 5))}px`;
+      };
+      own.addEventListener("mouseover", showSub);
+      own.addEventListener("click", (e) => { if (e.target.closest?.("[data-sub]")) { e.stopPropagation(); showSub(e); } });
       if (opts.at) {
         menuEl.style.left = `${opts.at.x}px`;
         menuEl.style.top = `${opts.at.y}px`;
@@ -130,7 +158,13 @@ export function createPopups(root) {
       menuEl._anchor = anchor;
       return menuEl;
     },
+    closeSubmenu() {
+      subEl?._from?.classList.remove("is-open");
+      subEl?.remove();
+      subEl = null;
+    },
     closeMenu() {
+      api.closeSubmenu();
       if (!menuEl) return;
       menuEl._anchor?.classList.remove("is-open");
       menuEl.remove();

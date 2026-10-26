@@ -19,6 +19,8 @@ export const TABS = [
   { id: "view", label: "View" },
   { id: "help", label: "Help" },
   { id: "picture", label: "Picture Format" },
+  // Contextual table tabs, as in Word 365: Table Design, then the table's own Layout tab.
+  { id: "tabledesign", label: "Table Design" },
   { id: "table", label: "Layout" },
 ];
 
@@ -182,9 +184,44 @@ const HELP = [
   group("help.help", "Help", [big("help.help.help", "question_circle_20", "Help"), big("help.help.support", "person_20", "Contact Support"), big("help.help.feedback", "person_feedback_20", "Feedback"), big("help.help.training", "video_clip_24", "Show Training"), big("help.help.whatsNew", "sparkle_24", "What's New")]),
 ];
 
+// Table Design and the table Layout tab, from the classroom screenshots (2026-10-26). Insert Above /
+// Below / Left / Right and Delete are built (level a/b); the rest are visible but inert (level c).
+const TABLE_DESIGN = [
+  group("tabledesign.options", "Table Style Options", [{ t: "rows", rows: [
+    [{ t: "check", cmd: "tabledesign.headerRow", label: "Header Row", on: true }, { t: "check", cmd: "tabledesign.firstColumn", label: "First Column", on: true }],
+    [{ t: "check", cmd: "tabledesign.totalRow", label: "Total Row" }, { t: "check", cmd: "tabledesign.lastColumn", label: "Last Column" }],
+    [{ t: "check", cmd: "tabledesign.bandedRows", label: "Banded Rows", on: true }, { t: "check", cmd: "tabledesign.bandedColumns", label: "Banded Columns" }],
+  ] }]),
+  group("tabledesign.styles", "Table Styles", [{ t: "tablestyles", cmd: "tabledesign.style" }, big("tabledesign.shading", "tds_shading", "Shading", { menuOnly: true })], { grow: true }),
+  group("tabledesign.borders", "Borders", [
+    big("tabledesign.borderStyles", "tds_borderstyles", "Border Styles", { menuOnly: true }),
+    stack(sm("tabledesign.lineStyle", "tds_borderstyles", "Line Style", { menuOnly: true, text: true }), sm("tabledesign.lineWeight", "tds_borderstyles", "½ pt", { menuOnly: true, text: true })),
+    big("tabledesign.penColour", "tds_pen", "Pen Color", { menuOnly: true }),
+    big("tabledesign.borders", "tds_borders", "Borders", { split: true }), big("tabledesign.borderPainter", "tds_painter", "Border Painter"),
+  ], { launcher: "tabledesign.bordersDialog" }),
+];
+const TABLE_LAYOUT = [
+  group("table.table", "Table", [big("table.select", "tbl_select", "Select", { menuOnly: true }), big("table.gridlines", "tbl_gridlines", "View Gridlines"), big("table.properties", "tbl_properties", "Properties")]),
+  group("table.draw", "Draw", [big("table.drawTable", "tbl_draw", "Draw Table"), big("table.eraser", "tbl_eraser", "Eraser")]),
+  group("table.rows", "Rows & Columns", [
+    big("table.delete", "tbl_delete", "Delete", { menuOnly: true }),
+    big("table.insertAbove", "tbl_above", "Insert Above"), big("table.insertBelow", "tbl_below", "Insert Below"),
+    big("table.insertLeft", "tbl_left", "Insert Left"), big("table.insertRight", "tbl_right", "Insert Right"),
+  ], { launcher: "table.rowsDialog" }),
+  group("table.merge", "Merge", [big("table.mergeCells", "tbl_merge", "Merge Cells", { disabled: true }), big("table.splitCells", "tbl_split", "Split Cells"), big("table.splitTable", "tbl_splittable", "Split Table")]),
+  group("table.cellSize", "Cell Size", [
+    big("table.autofit", "tbl_autofit", "AutoFit", { menuOnly: true }),
+    { t: "rows", rows: [[{ t: "measure", cmd: "table.height", icon: "tbl_height", label: "Height", value: "0.43 cm" }], [{ t: "measure", cmd: "table.width", icon: "tbl_width", label: "Width", value: "5.31 cm" }]] },
+    stack(smt("table.distributeRows", "tbl_distrows", "Distribute Rows"), smt("table.distributeColumns", "tbl_distcols", "Distribute Columns")),
+  ], { launcher: "table.cellSizeDialog" }),
+  group("table.alignment", "Alignment", [{ t: "cellalign", cmd: "table.align" }, big("table.textDirection", "tbl_textdir", "Text Direction"), big("table.cellMargins", "tbl_cellmargins", "Cell Margins")]),
+  group("table.data", "Data", [big("table.sort", "tbl_sort", "Sort"), big("table.repeatHeader", "tbl_repeat", "Repeat Header Rows"), big("table.convert", "tbl_convert", "Convert to Text"), big("table.formula", "tbl_formula", "Formula")]),
+];
+
 const TAB_GROUPS = new Map([
   ["picture", [group("picture.arrange", "Arrange", [big("picture.wrap", "text_wrap_24", "Wrap Text", {menuOnly:true}),big("picture.delete", "delete", "Delete Picture")])]],
-  ["table", [group("table.rows", "Rows & Columns", [big("table.insertBelow", "table_32", "Insert Below"),big("table.insertRight", "table_32", "Insert Right"),big("table.delete", "delete", "Delete", {menuOnly:true})])]],
+  ["tabledesign", TABLE_DESIGN],
+  ["table", TABLE_LAYOUT],
   ["home", HOME], ["insert", INSERT], ["design", DESIGN], ["layout", LAYOUT], ["references", REFERENCES],
   ["mailings", MAILINGS], ["review", REVIEW], ["view", VIEW], ["help", HELP],
 ]);
@@ -276,6 +313,15 @@ function stylesHtml() {
     <div class="narrow-only">${bigHtml({ cmd: "home.styles.more", icon: "text_edit_style_24", label: "Styles", menuOnly: false })}</div>`;
 }
 
+/** Table Styles gallery: small grid tiles in Word's built-in colours (first tile is Table Grid). */
+const TABLE_STYLE_TILES = ["#000", "#7F7F7F", "#A5A5A5", "#595959", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#404040", "#5B9BD5", "#70AD47", "#4472C4", "#C55A9E", "#A9D18E", "#F4B183"];
+function tableStylesHtml(item) {
+  ensureCommand(item.cmd, "Table Style");
+  const tiles = TABLE_STYLE_TILES.map((c, i) => `<button type="button" class="wr-tstyle${i === 0 ? " is-grid" : ""}" data-cmd="${item.cmd}" data-arg="${i}" title="Table style" style="--c:${c}"><i></i></button>`).join("");
+  return `<div class="wr-gallery wr-tstyles"><div class="wr-gallery-tiles">${tiles}</div>
+    <button type="button" class="wr-btn wr-gallery-more" data-cmd="${item.cmd}" aria-label="More table styles">${ico("more")}</button></div>`;
+}
+
 function spinnersHtml() {
   const spin = (key, label, icon, unit) => `<label class="wr-spinrow" title="${label}"><span class="wr-spinlbl">${ico(icon)}${label}:</span>
       <span class="wr-spin" data-cmd="layout.paragraph.${key}"><input data-spin="${key}" type="text" readonly value="0${unit}" tabindex="-1"><span class="wr-spinbtns"><span>${ico("chevron_up_12")}</span><span>${ico("chevron_down_12")}</span></span></span></label>`;
@@ -303,7 +349,17 @@ function itemHtml(item) {
     case "narrow": return `<div class="narrow-only">${item.items.map(itemHtml).join("")}</div>`;
     case "check":
       ensureCommand(item.cmd, item.label);
-      return `<button type="button" class="wr-btn wr-check" data-cmd="${item.cmd}" title="${esc(item.label)}"><span class="wr-box"></span>${esc(item.label)}</button>`;
+      return `<button type="button" class="wr-btn wr-check${item.on ? " is-checked" : ""}" data-cmd="${item.cmd}" title="${esc(item.label)}"><span class="wr-box"></span>${esc(item.label)}</button>`;
+    case "tablestyles": return tableStylesHtml(item);
+    case "measure":
+      ensureCommand(item.cmd, item.label);
+      return `<label class="wr-spinrow wr-measure" title="${esc(item.label)}"><span class="wr-spinlbl">${ico(item.icon)}${esc(item.label)}:</span>
+        <span class="wr-spin" data-cmd="${item.cmd}"><input type="text" readonly value="${esc(item.value)}" tabindex="-1"><span class="wr-spinbtns"><span>${ico("chevron_up_12")}</span><span>${ico("chevron_down_12")}</span></span></span></label>`;
+    case "cellalign": {
+      ensureCommand(item.cmd, "Align");
+      const names = ["Top Left", "Top Center", "Top Right", "Center Left", "Center", "Center Right", "Bottom Left", "Bottom Center", "Bottom Right"];
+      return `<div class="wr-cellalign">${names.map((n, i) => `<button type="button" class="wr-btn wr-ca${i === 0 ? " is-on" : ""}" data-cmd="${item.cmd}" data-arg="${i}" title="Align ${n}" aria-label="Align ${n}"><span class="wr-ca-cell" style="--r:${Math.floor(i / 3)};--c:${i % 3}"></span></button>`).join("")}</div>`;
+    }
     case "tiles":
       ensureCommand(item.cmd, "Style Set");
       return `<div class="wr-gallery"><div class="wr-gallery-tiles">${item.tiles.map((t) => `<button type="button" class="wr-style wr-set" data-cmd="${item.cmd}"><b>${esc(t)}</b><i></i><i></i></button>`).join("")}</div><button type="button" class="wr-btn wr-gallery-more" data-cmd="${item.cmd}" aria-label="More">${ico("more")}</button></div>`;

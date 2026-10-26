@@ -615,3 +615,34 @@
 .bs-title { position:absolute; inset:0 0 auto; height:44px; display:flex; align-items:center; gap:12px; padding:0 16px; background:#f3f3f3; font-size:12px; }
 .bs-caption { margin-left:auto; display:flex; gap:28px; }
 .bs-caption .wi { width:12px; height:12px; }
+
+/* ---------- Contextual tabs, picture menu and table tabs (classroom screenshots, 2026-10-26) ---------- */
+/* Contextual tab names are blue in Word 365. */
+.wt-tab[data-tab="picture"], .wt-tab[data-tab="tabledesign"], .wt-tab[data-tab="table"] { color: #2B579A; }
+.wt-tab[data-tab="picture"].is-on, .wt-tab[data-tab="tabledesign"].is-on, .wt-tab[data-tab="table"].is-on { color: #1B4F96; }
+.wr-check.is-checked .wr-box { background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.6l4.6-5' fill='none' stroke='%23242424' stroke-width='1.4'/%3E%3C/svg%3E") center/11px no-repeat; }
+.wr-rows .wr-check { min-width: 116px; height: 20px; justify-content: flex-start; font-size: 12px; }
+[data-group="tabledesign.options"] .wr-rows { gap: 2px; padding-top: 2px; }
+/* Table Styles gallery: small grid tiles in each style's colour. */
+.wr-tstyles { height: 60px; max-width: 760px; }
+.wr-tstyle { flex: none; width: 52px; height: 44px; margin: 6px 2px 0; padding: 3px; border: 1px solid transparent; border-radius: 3px; background: #fff; }
+.wr-tstyle:hover { border-color: #C7C7C7; }
+.wr-tstyle i { display: block; width: 100%; height: 100%;
+  background: linear-gradient(var(--c) 0 0) top / 100% 5px no-repeat,
+    repeating-linear-gradient(0deg, transparent 0 7px, color-mix(in srgb, var(--c) 45%, #fff) 7px 8px),
+    repeating-linear-gradient(90deg, transparent 0 8px, color-mix(in srgb, var(--c) 45%, #fff) 8px 9px); }
+.wr-tstyle.is-grid i { border: 1px solid #000;
+  background: repeating-linear-gradient(0deg, transparent 0 7px, #000 7px 8px), repeating-linear-gradient(90deg, transparent 0 8px, #000 8px 9px); }
+/* Cell Size measure boxes and the 3x3 cell alignment buttons. */
+.wr-measure { gap: 4px; }
+.wr-measure .wr-spin { width: 86px; }
+.wr-cellalign { display: grid; grid-template-columns: repeat(3, 26px); gap: 2px; align-content: center; margin: 4px 4px 0; }
+.wr-ca { width: 26px; height: 22px; padding: 3px; }
+.wr-ca.is-on { box-shadow: inset 0 0 0 1px #8A8A8A; background: #E6E6E6; }
+.wr-ca-cell { display: block; width: 100%; height: 100%; border: 1px solid #616161; position: relative; }
+.wr-ca-cell::after { content: ""; position: absolute; width: 8px; height: 1.5px; background: #2E75B6;
+  left: calc(var(--c) * 4px + 2px); top: calc(var(--r) * 5px + 2px); box-shadow: 0 2.5px 0 #2E75B6; }
+/* Picture right-click menu and its submenus. */
+.wm-picmenu { min-width: 250px; }
+.wm-submenu { min-width: 230px; border-color: #747474; border-radius: 4px; font-size: 13px; z-index: 2; }
+.wm-item.is-open { background: #F0F0F0; }

@@ -7,7 +7,7 @@ import { PICTURES, pictureSize } from "./pictures.js";
 //   word.getDoc(); word.setDoc(doc); word.setSpotlight('home.font'); await word.demo(script);
 //   word.undo(); word.redo(); word.destroy();
 
-import { getCommand, SHORTCUTS, EFFECT_NAMES } from "./commands.js";
+import { getCommand, ensureCommand, SHORTCUTS, EFFECT_NAMES, WRAP_MENU } from "./commands.js";
 import { openDialog } from "./dialogs.js";
 import { openBackstage } from "./backstage.js";
 import { ico } from "./icons.js";
@@ -29,7 +29,7 @@ import { playDemo, validateScript } from "../demo/player.js";
 const BROWSER_KEYS = { p: "file.print", n: "file.new.blank", o: "file.openDocument", k: "insert.links.link", w: "file.close" };
 const RIBBON_TABS = new Set(TABS.map((t) => t.id).filter((id) => id !== "file"));
 // Contextual tabs: shown only while a picture / a table is selected.
-const CONTEXT_TABS = new Set(["picture", "table"]);
+const CONTEXT_TABS = new Set(["picture", "tabledesign", "table"]);
 const internals = new WeakMap();
 
 /** Engine internals for hints.js (not part of the mission API). */
@@ -260,6 +260,7 @@ export function mountWord(el, opts = {}) {
     pictureTab.hidden = !doc.p[selectedPicture]?.picture && demoPicture<0;
     page.querySelectorAll(".wd-picture").forEach(el=>el.classList.toggle("is-selected",Number(el.closest(".wd-p").dataset.p)===(demoPicture>=0?demoPicture:selectedPicture)));
     tableTab.hidden = !doc.p[sel.focus.p]?.cell && !demoDoc?.tables?.length;
+    root.querySelector('[data-tab="tabledesign"].wt-tab').hidden = tableTab.hidden;
     // A contextual tab that disappears while it is active hands the ribbon back to the tab used
     // before it (Home if that one is gone too). A demo's own tab changes are put back when it ends.
     if (!locked && CONTEXT_TABS.has(tab) && root.querySelector(`.wt-tab[data-tab="${tab}"]`)?.hidden) {
@@ -976,6 +977,17 @@ export function mountWord(el, opts = {}) {
       return;
     }
     const picture=e.target.closest(".wd-picture");
+    if (picture && e.button===2) {
+      // Word selects a picture on right-click too, then shows the picture menu (onContextMenu).
+      e.preventDefault();
+      const p=Number(picture.closest(".wd-p").dataset.p);
+      const changed=p!==selectedPicture;
+      popups.closeAll();
+      selectedPicture=p; sel=collapsedSel({p,offset:0}); pending=null;
+      focusPage(); updateUI();
+      if (changed) emit("change", { doc, prevDoc: doc, lastCommand: "picture.select" });
+      return;
+    }
     if (picture && e.button===0) {
       e.preventDefault();
       const p=Number(picture.closest(".wd-p").dataset.p);
@@ -1122,24 +1134,70 @@ export function mountWord(el, opts = {}) {
       { cmd: "context.newComment", label: "New Co&mment", icon: "comment_add_20", iconCls: "wi-greenplus" },
     ];
     const menu = popups.openMenu(null, items, { at: { x: at.x + 2, y: at.y + 2 }, className: "wm-context" });
-    // Keep the mini toolbar clear of the menu: above it when there is room, else beside it.
+    keepMiniClear(menu, mini, R);
+    updateUI();
+  }
+
+  /** The right-click menu on a picture, as in Word 365 (classroom screenshot, 2026-10-26). */
+  function openPictureMenu(x, y) {
+    const R = root.getBoundingClientRect();
+    const at = { x: x - R.left, y: y - R.top };
+    const mini = popups.float(`<div class="wr-row">${itemsHtml([big("picture.style", "pic_format", "Style", { menuOnly: true }), big("picture.crop", "pic_size", "Crop")])}</div>`,
+      { x: at.x - 10, y: at.y - 70 }, "wm-mini");
+    for (const [id, label] of [["changePicture","Change Picture"],["group","Group"],["bringFront","Bring to Front"],["sendBack","Send to Back"],["link","Link"],["saveAs","Save as Picture"],["caption","Insert Caption"],["altText","View Alt Text"],["sizePosition","Size and Position"],["format","Format Picture"],["officeMath","Convert to Office Math"],["editPicture","Edit Picture"],["cut","Cut"],["copy","Copy"]])
+      ensureCommand(`picture.menu.${id}`, label);
+    const items = [
+      { searchbox: true, cmd: "context.search", label: "Search the menus" },
+      // Word enables Cut and Copy for a picture; copying pictures is not built, so these answer as level c.
+      { cmd: "picture.menu.cut", label: "Cu&t", icon: "cut_20", iconCls: "wi-blue" },
+      { cmd: "picture.menu.copy", label: "&Copy", icon: "document_copy_20" },
+      { cmd: "home.clipboard.paste", label: "Paste Options:", icon: "clipboard_paste_20", bold: true, inert: true },
+      { icons: [{ cmd: "home.clipboard.paste", icon: "clipboard_paste_20", label: "Paste", disabled: !clip }], indent: true },
+      { sep: true },
+      { cmd: "picture.menu.officeMath", label: "C&onvert to Office Math", disabled: true },
+      { cmd: "picture.menu.officeMath", label: "Convert &All to Office Math", disabled: true },
+      { sep: true },
+      { cmd: "picture.menu.editPicture", label: "&Edit Picture", disabled: true },
+      { cmd: "picture.menu.changePicture", label: "Chan&ge Picture", icon: "pic_change", submenu: [{ cmd: "picture.menu.changePicture", label: "From a &File..." }] },
+      { sep: true },
+      { cmd: "picture.menu.group", label: "&Group", icon: "pic_group", disabled: true },
+      { cmd: "picture.menu.bringFront", label: "Bring to F&ront", icon: "pic_front", disabled: true },
+      { cmd: "picture.menu.sendBack", label: "Send to Bac&k", icon: "pic_back", disabled: true },
+      { sep: true },
+      { cmd: "picture.menu.link", label: "&Link", icon: "link_20", submenu: [{ cmd: "picture.menu.link", label: "&Insert Link" }] },
+      { cmd: "picture.menu.saveAs", label: "&Save as Picture..." },
+      { sep: true },
+      { cmd: "picture.menu.caption", label: "I&nsert Caption...", icon: "pic_caption" },
+      { cmd: "picture.wrap", label: "&Wrap Text", icon: "wrap_square", submenu: WRAP_MENU() },
+      { sep: true },
+      { cmd: "picture.menu.altText", label: "View &Alt Text...", icon: "pic_alt" },
+      { cmd: "picture.menu.sizePosition", label: "Si&ze and Position...", icon: "pic_size" },
+      { cmd: "picture.menu.format", label: "F&ormat Picture...", icon: "pic_format" },
+    ];
+    const menu = popups.openMenu(null, items, { at: { x: at.x + 2, y: at.y + 2 }, className: "wm-context wm-picmenu" });
+    keepMiniClear(menu, mini, R);
+    updateUI();
+  }
+
+  /** Keep the mini toolbar clear of the menu: above it when there is room, else beside it. */
+  function keepMiniClear(menu, mini, R) {
     const m = popups.relRect(menu);
     const t = popups.relRect(mini);
     const overlaps = t.y < m.y + m.h && t.y + t.h > m.y && t.x < m.x + m.w && t.x + t.w > m.x;
-    if (overlaps) {
-      if (m.y - t.h - 6 >= 4) mini.style.top = `${m.y - t.h - 6}px`;
-      else {
-        const right = m.x + m.w + 6;
-        mini.style.left = `${right + t.w <= R.width - 4 ? right : Math.max(4, m.x - t.w - 6)}px`;
-        mini.style.top = `${Math.max(4, m.y)}px`;
-      }
+    if (!overlaps) return;
+    if (m.y - t.h - 6 >= 4) mini.style.top = `${m.y - t.h - 6}px`;
+    else {
+      const right = m.x + m.w + 6;
+      mini.style.left = `${right + t.w <= R.width - 4 ? right : Math.max(4, m.x - t.w - 6)}px`;
+      mini.style.top = `${Math.max(4, m.y)}px`;
     }
-    updateUI();
   }
 
   function onContextMenu(e) {
     e.preventDefault();
     if (locked) return;
+    const pictureEl = e.target.closest?.(".wd-picture");
+    if (pictureEl && selectedPicture >= 0) return openPictureMenu(e.clientX, e.clientY);
     const pos = charAtPoint(e.clientX, e.clientY);
     const r = selRange(sel);
     if (pos && (isCollapsed(r) || cmpPos(pos, r.from) < 0 || cmpPos(pos, r.to) > 0)) {
@@ -1389,7 +1447,7 @@ export function mountWord(el, opts = {}) {
     const find = () => root.querySelector(bsSel ?? `.wr-card [data-cmd="${id}"],.wr-card [data-menu="${id}"],.wd-title [data-cmd="${id}"],.wd-title [data-menu="${id}"],.wd-status [data-cmd="${id}"]`);
     let b = find();
     if (!b) {
-      const t = id.startsWith("picture.") ? "picture" : id.startsWith("table.") ? "table" : getCommand(id)?.tab ?? id.split(".")[0];
+      const t = id.startsWith("picture.") ? "picture" : id.startsWith("tabledesign.") ? "tabledesign" : id.startsWith("table.") ? "table" : getCommand(id)?.tab ?? id.split(".")[0];
       if (RIBBON_TABS.has(t) && t !== tab) {
         tab = t;
         renderRibbon();

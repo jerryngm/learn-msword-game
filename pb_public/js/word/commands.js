@@ -832,17 +832,36 @@ registerCommand({id:"insert.table",label:"Table",level:"b",menu:()=>[{heading:"I
 registerCommand({id:"insert.table.create",label:"Insert Table",level:"a",run:(doc,sel,ctx)=>{
   const [columns,rows]=String(ctx.arg).split("x").map(Number); return insertTable(doc,sel.from,columns,rows);
 }});
-for (const [id,label] of [["insertBelow","Insert Below"],["insertRight","Insert Right"],["deleteRow","Delete Rows"],["deleteColumn","Delete Columns"],["deleteTable","Delete Table"]])
+for (const [id,label] of [["insertAbove","Insert Above"],["insertBelow","Insert Below"],["insertLeft","Insert Left"],["insertRight","Insert Right"],["deleteRow","Delete Rows"],["deleteColumn","Delete Columns"],["deleteTable","Delete Table"]])
   registerCommand({id:`table.${id}`,tab:"insert",label,level:"a",run:(doc,sel)=>editTable(doc,sel.from,id)});
-registerCommand({id:"table.delete",tab:"insert",label:"Delete",level:"b",menu:()=>["deleteRow","deleteColumn","deleteTable"].map(id=>({cmd:`table.${id}`,label:getCommand(`table.${id}`).label}))});
+// Word's Delete menu order: Cells…, Columns, Rows, Table.
+registerCommand({id:"table.delete",tab:"insert",label:"Delete",level:"b",menu:()=>[{cmd:"table.deleteCells",label:"Delete &Cells...",icon:"tbl_delcells"},
+  ...[["deleteColumn","Delete &Columns","tbl_delcol"],["deleteRow","Delete &Rows","tbl_delrow"],["deleteTable","Delete &Table","tbl_deltable"]].map(([id,label,icon])=>({cmd:`table.${id}`,label,icon}))]});
+ensureCommand("table.deleteCells","Delete Cells");
 for (const [name,values] of [["orientation",[["portrait","Portrait"],["landscape","Landscape"]]],["margins",[["normal","Normal — 2.54 cm"],["narrow","Narrow — 1.27 cm"]]]]) {
   registerCommand({id:`layout.${name}`,label:name,level:"b",menu:()=>values.map(([arg,label])=>({cmd:`layout.${name}.set`,arg,label}))});
   registerCommand({id:`layout.${name}.set`,label:name,level:"a",run:(doc,sel,ctx)=>values.some(([v])=>v===ctx.arg)?setPage(doc,{[name]:ctx.arg}):doc});
 }
 
-registerCommand({id:"insert.pictures",label:"Pictures",level:"b",menu:()=>[{cmd:"insert.pictures.device",label:"This Device…"}]});
+// Insert › Pictures as in Word 365: "Insert Picture From" and four sources; only This Device is built.
+registerCommand({id:"insert.pictures",label:"Pictures",level:"b",menu:()=>[{heading:"Insert Picture From"},
+  {cmd:"insert.pictures.device",label:"This &Device...",icon:"pic_device"},{cmd:"insert.pictures.generate",label:"&Generate an Image...",icon:"pic_generate"},
+  {cmd:"insert.pictures.stock",label:"&Stock Images...",icon:"pic_stock"},{cmd:"insert.pictures.online",label:"&Online Pictures...",icon:"pic_online"}]});
+ensureCommand("insert.pictures.generate","Generate an Image"); ensureCommand("insert.pictures.stock","Stock Images"); ensureCommand("insert.pictures.online","Online Pictures");
 registerCommand({id:"insert.pictures.device",label:"This Device",level:"b",popup:ctx=>ctx.ui.picturePicker()});
 registerCommand({id:"insert.pictures.choose",label:"Insert Picture",level:"a",run:(doc,sel,ctx)=>insertPicture(doc,sel.from,ctx.arg)});
-registerCommand({id:"picture.wrap",tab:"insert",label:"Wrap Text",level:"b",menu:()=>[{cmd:"picture.wrap.set",arg:"inline",label:"In Line with Text"},{cmd:"picture.wrap.set",arg:"square",label:"Square"},{cmd:"picture.wrap.set",arg:"front",label:"In Front of Text"},{cmd:"picture.wrap.set",arg:"behind",label:"Behind Text"}]});
+// Wrap Text as in Word 365. In Line, Square, Behind and In Front are built; the rest are visible but inert.
+export const WRAP_MENU = () => [
+  {cmd:"picture.wrap.set",arg:"inline",label:"&In Line with Text",icon:"wrap_inline"},{sep:true},
+  {cmd:"picture.wrap.set",arg:"square",label:"&Square",icon:"wrap_square"},{cmd:"picture.wrap.tight",label:"&Tight",icon:"wrap_square"},
+  {cmd:"picture.wrap.through",label:"T&hrough",icon:"wrap_square"},{cmd:"picture.wrap.topBottom",label:"T&op and Bottom",icon:"wrap_topbottom"},{sep:true},
+  {cmd:"picture.wrap.set",arg:"behind",label:"Behin&d Text",icon:"wrap_behind"},{cmd:"picture.wrap.set",arg:"front",label:"I&n Front of Text",icon:"wrap_front"},{sep:true},
+  {cmd:"picture.wrap.editPoints",label:"&Edit Wrap Points",icon:"wrap_points",disabled:true},{sep:true},
+  {cmd:"picture.wrap.moveWithText",label:"&Move with Text",disabled:true},{cmd:"picture.wrap.fixPosition",label:"&Fix Position on Page",disabled:true},{sep:true},
+  {cmd:"picture.wrap.more",label:"More &Layout Options...",icon:"wrap_more"},{cmd:"picture.wrap.default",label:"Set as Defa&ult Layout"},
+];
+registerCommand({id:"picture.wrap",tab:"insert",label:"Wrap Text",level:"b",menu:WRAP_MENU});
+for (const [id,label] of [["tight","Tight"],["through","Through"],["topBottom","Top and Bottom"],["editPoints","Edit Wrap Points"],["moveWithText","Move with Text"],["fixPosition","Fix Position on Page"],["more","More Layout Options"],["default","Set as Default Layout"]])
+  ensureCommand(`picture.wrap.${id}`,label);
 registerCommand({id:"picture.wrap.set",tab:"insert",label:"Wrap Text",level:"a",run:(doc,sel,ctx)=>updatePicture(doc,sel.from,{wrap:ctx.arg})});
 registerCommand({id:"picture.delete",tab:"insert",label:"Delete Picture",level:"a",run:(doc,sel)=>updatePicture(doc,sel.from,null)});
