@@ -89,6 +89,9 @@ body.trainer { font-size: 15px; line-height: 1.4; }
 .t-pair > span:first-child { font-size: 13px; color: var(--ink-2); }
 
 /* send a star */
+.t-garden p { font-size: 14px; margin-bottom: 6px; }
+.t-gpick { display: flex; flex-wrap: wrap; gap: 4px; }
+.t-gpick .t-chip { font-size: 13px; padding: 2px 8px; }
 .t-send label:not(.t-chk) { display: block; font-weight: 600; margin: 6px 0 3px; font-size: 14px; }
 .t-send select, .t-send input[type="text"], .t-admin input[type="text"], .t-admin select, .t-login input {
   width: 100%; min-height: 36px; border: 2px solid var(--line); border-radius: 10px; padding: 4px 10px; font: inherit; background: #fff;

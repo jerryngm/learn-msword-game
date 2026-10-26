@@ -114,3 +114,75 @@ export function masteredFlowers(attempts, learnerIds) {
   }
   return flowers.sort((x, y) => x.at - y.at || (x.learner + x.skill < y.learner + y.skill ? -1 : 1));
 }
+
+/* ---------- the class garden, kept across sessions ---------- */
+
+// The garden grows in areas (garden levels). When one is full the next one opens, so nothing is ever
+// taken away. Later areas need a few more stars per flower. Tuned for about 10 learners and ~150 ⭐ a
+// session: roughly one to two new flowers each class. Area 1 is the planter boxes; what areas 2–4 look
+// like is up to the scene art (the spot counts here are what the art must provide).
+export const GARDEN_AREAS = [
+  { spots: 13, starsPerFlower: 60 },
+  { spots: 6, starsPerFlower: 75 },
+  { spots: 4, starsPerFlower: 90 },
+  { spots: 3, starsPerFlower: 100 },
+];
+export const GARDEN_SPOTS = GARDEN_AREAS.reduce((n, a) => n + a.spots, 0);
+
+/**
+ * Where the class garden is, from the class's all-time star total.
+ * @returns {{stars: number, flowers: number, level: number, full: boolean, towardNext: number, perFlower: number}}
+ *   level: how many areas are open (1 = the planter boxes). towardNext/perFlower: the flower growing now.
+ */
+export function gardenProgress(totalStars) {
+  let left = Math.max(0, Math.floor(Number(totalStars) || 0));
+  let flowers = 0;
+  for (let i = 0; i < GARDEN_AREAS.length; i++) {
+    const { spots, starsPerFlower } = GARDEN_AREAS[i];
+    const grown = Math.min(spots, Math.floor(left / starsPerFlower));
+    flowers += grown;
+    left -= grown * starsPerFlower;
+    if (grown < spots) return { stars: totalStars, flowers, level: i + 1, full: false, towardNext: left, perFlower: starsPerFlower };
+  }
+  return { stars: totalStars, flowers, level: GARDEN_AREAS.length, full: true, towardNext: 0, perFlower: 1 };
+}
+
+/** The class's all-time stars (every attempt counts: class, revision and free practice). */
+export const totalStars = (attempts) => (attempts ?? []).reduce((sum, a) => sum + starsOf(a), 0);
+
+/** A fixed shuffle of `keys` for deck number `n` (small seeded random: same answer on every screen). */
+function deck(keys, n) {
+  let seed = (n + 1) * 0x9e3779b1;
+  const rand = () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const out = [...keys];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/**
+ * The plant kind for garden flower `index`: the teacher's pick if there is one, otherwise a surprise.
+ * Surprises come from a shuffled deck, so every run of keys.length flowers holds each kind once,
+ * a flower never changes, and the same kind never grows twice in a row.
+ * @param {string[]} keys plant-kind keys to choose from
+ * @param {Record<string, string>} picks teacher picks, flower index -> kind key
+ */
+export function gardenKind(index, keys, picks = {}) {
+  const chosen = picks?.[String(index)];
+  if (chosen && keys.includes(chosen)) return chosen;
+  const n = Math.floor(index / keys.length);
+  const cards = deck(keys, n);
+  const i = index % keys.length;
+  // A new deck must not start with the kind the last deck ended on.
+  if (n > 0 && i <= 1 && cards[0] === deck(keys, n - 1)[keys.length - 1]) [cards[0], cards[1]] = [cards[1], cards[0]];
+  const mine = cards[i];
+  const before = index > 0 ? picks?.[String(index - 1)] : null; // a teacher pick just before
+  return mine !== before ? mine : cards[(i + 1) % keys.length];
+}

@@ -1,8 +1,10 @@
 // Trainer dashboard (#s10): ask queue, learners × skills heatmap, struggle flags, who can help,
-// send ⭐ / 🤝, and learner admin. Everything redraws from the shared live store.
+// the class garden (pick the next flower), send ⭐ / 🤝, and learner admin. Everything redraws from the shared live store.
 import { pb } from "../live.js";
 import { skillsOfTopic, skillById } from "../content/skills.js";
 import { gardenState } from "../rules.js";
+import { PLANT_KINDS } from "../plants.js";
+import { GARDEN_AREAS, gardenKind, gardenProgress, totalStars } from "../projector/class-stats.js";
 import { ago, errText, esc, face, flash, sessionLine, topicList } from "./util.js";
 
 const STAR_MESSAGES = [
@@ -14,6 +16,12 @@ const STAR_MESSAGES = [
 const ASK_LABEL = { stuck: "I'm stuck 😕", learn_more: "Wants to learn more 💡", classmate: "Asked for a classmate 🤝" };
 const STAGE_MARK = { seed: "–", sprout: "🌱", leafy: "🌿", bud: "🌷", flowering: "🌼" };
 const HELP_SHOW_ME = 3; // mission Help 3 = Show me
+const KIND_KEYS = PLANT_KINDS.map((k) => k.key);
+const KIND_NAME = new Map(PLANT_KINDS.map((k) => [k.key, k.en]));
+const gardenPicks = (settings) => {
+  const p = settings?.garden_picks;
+  return p && typeof p === "object" && !Array.isArray(p) ? p : {};
+};
 const WRONG_TRIES = 3; // tries counts the right try too, so 3 wrong = tries ≥ 4
 
 /** "keys", "screen parts": a short column label from a skill id. */
@@ -79,6 +87,12 @@ export function render(root, { store, logout }) {
         <section class="t-card">
           <h2>🤝 Who can help?</h2>
           <div id="helpers" class="t-scroll t-short"></div>
+        </section>
+        <section class="t-card t-garden">
+          <h2>🌻 Class garden</h2>
+          <p id="gardenLine"></p>
+          <div class="t-gpick" id="gardenPick" role="group" aria-label="Next flower"></div>
+          <p class="t-msg" id="gardenMsg" role="status"></p>
         </section>
         <section class="t-card t-send">
           <h2>⭐ Send a star</h2>
@@ -178,7 +192,26 @@ export function render(root, { store, logout }) {
       ? helperRows
           .map((r) => `<div class="t-pair"><span>${esc(s0(r.s))}</span><span>${r.who.map((l) => `${face(l, "t-face-sm")}${esc(l.name)}`).join(" ")}</span></div>`)
           .join("")
-      : `<p class="t-empty">Nobody has mastered a skill yet (3 clean days).</p>`;
+      : `<p class="t-empty">Nobody has mastered a skill yet (3★ on 2 different days).</p>`;
+
+    /* class garden: kept across sessions; the next flower is a surprise unless the trainer picks it */
+    const garden = gardenProgress(totalStars(attempts));
+    const picks = gardenPicks(state.settings);
+    const nextKey = gardenKind(garden.flowers, KIND_KEYS, picks);
+    const picked = picks[String(garden.flowers)];
+    const area = `level ${garden.level} of ${GARDEN_AREAS.length}`;
+    $("#gardenLine").innerHTML = garden.full
+      ? `<b>${garden.flowers} flowers</b> · the garden is full 🌻 (${garden.stars} ★)`
+      : `<b>${garden.flowers} flowers</b> · ${area} · ${garden.perFlower - garden.towardNext} ★ to the next one<br>
+         <small class="t-muted">Next flower: ${picked ? `<b>${esc(KIND_NAME.get(nextKey))}</b> (your pick)` : "a surprise 🎲"}</small>`;
+    $("#gardenPick").innerHTML = garden.full
+      ? ""
+      : [["", "🎲 Surprise"], ...PLANT_KINDS.map((k) => [k.key, k.en])]
+          .map(([key, name]) => {
+            const on = (picked ?? "") === key;
+            return `<button type="button" class="t-chip ${on ? "is-on" : ""}" data-pick="${esc(key)}" data-at="${garden.flowers}" aria-pressed="${on}" ${busy || !state.settings ? "disabled" : ""}>${esc(name)}</button>`;
+          })
+          .join("");
 
     /* send a star */
     if (!active.some((l) => l.id === ui.to)) ui.to = active[0]?.id ?? "";
@@ -262,6 +295,20 @@ export function render(root, { store, logout }) {
       $("#custom").value = "";
       return draw(store.state);
     }
+    if (b.dataset.at != null && b.dataset.pick != null) {
+      const settings = store.state.settings;
+      if (!settings) return;
+      // Only the flower growing now can be picked; bloomed flowers keep their kind.
+      const picks = { ...gardenPicks(settings) };
+      if (b.dataset.pick) picks[b.dataset.at] = b.dataset.pick;
+      else delete picks[b.dataset.at];
+      const name = KIND_NAME.get(b.dataset.pick);
+      return act(
+        $("#gardenMsg"),
+        () => pb.collection("class_settings").update(settings.id, { garden_picks: picks }, { requestKey: null }),
+        name ? `The next flower will be a ${name.toLowerCase()} 🌱` : "The next flower will be a surprise 🎲",
+      );
+    }
     if (b.id === "send") {
       const learner = store.state.learners.find((l) => l.id === ui.to);
       if (!learner) return;
@@ -286,7 +333,7 @@ export function render(root, { store, logout }) {
     }
     if (b.dataset.delete) {
       const l = store.state.learners.find((x) => x.id === b.dataset.delete);
-      if (!l || !confirm(`Delete ${l.name} and all their stars? This can't be undone.`)) return;
+      if (!l || !confirm(`Delete ${l.name} and all their stars? Their stars also leave the class garden. This can't be undone.`)) return;
       return act($("#adminMsg"), () => pb.collection("learners").delete(l.id, { requestKey: null }), `${l.name} deleted.`);
     }
   });
