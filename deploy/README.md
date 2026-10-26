@@ -7,10 +7,16 @@
 JS migrations in `pb_migrations/` use the v0.23+ API (`new Collection({fields: [...]})`, `app.save`). Re-check them before bumping the server version.
 
 ## Tests
-`node --test tests/rules.test.mjs tests/content.test.mjs` (Node 22.7 or newer, which loads the `.js` ES modules without a `package.json`).
+`node --test tests/` (Node 22.7 or newer, which loads the `.js` ES modules without a `package.json`).
 
 ## Local dev
 ```sh
 ./pocketbase serve --http=127.0.0.1:8090
 ```
-The learner app is at `/`; the admin UI is at `/_/`. Create the superuser and the one `trainers` record in the admin UI. Passwords are never stored in files.
+Pages:
+- `/`: learner app
+- `/trainer.html`: trainer portal (log in with the `trainers` account, not the superuser); session setup is `/trainer.html#/setup`
+- `/projector.html`: class garden for the projector (no login, read-only, made for 1920×1080)
+- `/_/`: PocketBase admin UI
+
+Create the superuser and the one `trainers` record in the admin UI. Passwords are never stored in files.
