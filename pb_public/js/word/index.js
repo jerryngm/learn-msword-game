@@ -22,6 +22,7 @@ import {
 } from "./selection.js";
 import { createHistory } from "./undo.js";
 import { createPopups, decArg } from "./ui.js";
+import { createPictureDialogs, PICTURE_INSERT, PICTURE_CANCEL, PICTURE_NAV, ONLINE_CATEGORY } from "./picture-dialogs.js";
 import { esc, labelPair, ws, biPair } from "./strings.js";
 import { playDemo, validateScript } from "../demo/player.js";
 
@@ -414,63 +415,12 @@ export function mountWord(el, opts = {}) {
     return true;
   }
 
-  /* ---------- Insert Picture file picker (Insert › Pictures › This Device) ---------- */
-  // As in Windows Word: a click highlights a file, Insert (or a double-click, or Enter on a file)
-  // inserts it, Cancel / X / Escape insert nothing. Spotlight and demo ids: `insert.pictures.insert`
-  // (the Insert button) and `choice:insert.pictures.choose:<id>` (a file).
-  const PICKER_INSERT = "insert.pictures.insert";
-  const pickerEl = () => root.querySelector(".wd-dlg-back .wd-picture-files")?.closest(".wd-dlg") ?? null;
-  const pickerInsertBtn = () => pickerEl()?.querySelector(`[data-spot="${PICKER_INSERT}"]`) ?? null;
-  /** Highlight one file (the others lose it) and enable Insert. Returns the file id or null. */
-  function pickFile(id) {
-    const dlg = pickerEl();
-    if (!dlg) return null;
-    let picked = null;
-    dlg.querySelectorAll(".wd-picture-files [data-picture-file]").forEach((b) => {
-      const on = b.dataset.pictureFile === id;
-      b.classList.toggle("is-picked", on);
-      b.setAttribute("aria-pressed", String(on));
-      if (on) picked = id;
-    });
-    const insert = pickerInsertBtn();
-    if (insert) insert.disabled = !picked;
-    return picked;
-  }
-  const pickedFile = () => pickerEl()?.querySelector(".wd-picture-files .is-picked")?.dataset.pictureFile ?? null;
-
-  function openPicturePicker() {
-    const files = PICTURES.map((p) => `<button type="button" data-picture-file="${p.id}" data-cmd="insert.pictures.choose" data-arg="${p.id}" aria-pressed="false" aria-label="${p.name}.png"><img src="${p.src}" alt=""><span>${p.name}.png</span></button>`).join("");
-    const shown = popups.dialog({
-      title: "Insert Picture",
-      width: 620,
-      body: `<div class="wd-picture-folder">This PC › Pictures</div><div class="wd-picture-files" role="group" aria-label="Pictures">${files}</div>`,
-      buttons: [{ label: "Insert", value: "insert", primary: true }, { label: "Cancel", value: "cancel" }],
-      read: (dlg, v) => (v === "insert" ? dlg.querySelector(".wd-picture-files .is-picked")?.dataset.pictureFile ?? null : null),
-      onMount(dlg) {
-        const insert = dlg.querySelector('.wd-dbtn[data-dlg="insert"]');
-        insert.dataset.spot = PICKER_INSERT;
-        insert.disabled = true;
-        const grid = dlg.querySelector(".wd-picture-files");
-        // Clicks on files are handled here, not by the engine's command dispatch (a click only selects).
-        grid.addEventListener("click", (e) => {
-          const b = e.target.closest("[data-picture-file]");
-          if (!b) return;
-          e.stopPropagation();
-          if (locked) return;
-          pickFile(b.dataset.pictureFile);
-          if (e.detail >= 2) popups.closeDialog(b.dataset.pictureFile);
-        });
-        grid.addEventListener("keydown", (e) => {
-          const b = e.target.closest?.("[data-picture-file]");
-          if (!b || e.key !== "Enter" || locked) return;
-          e.preventDefault();
-          e.stopPropagation();
-          popups.closeDialog(b.dataset.pictureFile);
-        });
-        // Insert starts disabled, so the focus goes to the first file (keeps keys inside the dialog).
-        grid.querySelector("[data-picture-file]")?.focus({ preventScroll: true });
-      },
-    });
+  /* ---------- Insert › Pictures windows (This Device, Stock Images, Online Pictures) ---------- */
+  // The windows live in picture-dialogs.js (layout, demo ids). Each resolves with a picture id; the insert
+  // itself goes through `insert.pictures.choose`, so undo, goals and Picture Format work as for any command.
+  const pictureDialogs = createPictureDialogs({ root, popups, isLocked: () => locked });
+  function openPictureDialog(kind) {
+    const shown = pictureDialogs.open(kind);
     applySpotlight();
     return shown
       .then((id) => {
@@ -479,14 +429,14 @@ export function mountWord(el, opts = {}) {
         applySpotlight();
         if (typeof id === "string" && PICTURES.some((p) => p.id === id)) return exec("insert.pictures.choose", id);
       })
-      .catch((err) => console.error("picture picker failed", err));
+      .catch((err) => console.error("picture window failed", err));
   }
 
   /* ---------- ui surface handed to commands ---------- */
   const ui = {
     toast: (key, o) => popups.toast(ws(key), o),
     note: (key, anchor) => popups.note(ws(key), anchor),
-    picturePicker: openPicturePicker,
+    pictureDialog: openPictureDialog,
     clipboard: () => clip,
     setClipboard(frag) {
       clip = frag;
@@ -659,11 +609,20 @@ export function mountWord(el, opts = {}) {
     if (origin !== "key" && !popups.dialogOpen && !root.contains(document.activeElement?.closest?.(".wr-combo"))) focusPage();
   }
 
-  function openMenuFor(id, anchor) {
+  // A menu button inside a folded group (or its flyout) has no place on screen once the menu opens: the
+  // flyout closes and the ribbon copy is hidden. The menu then hangs under the folded group's button.
+  function menuAnchor(el) {
+    const fold = el?.closest?.(".wm-fold");
+    if (fold) return fold._anchor ?? el;
+    const group = el?.closest?.(".wr-group.is-folded");
+    return group?.querySelector("[data-expand]") ?? el;
+  }
+  function openMenuFor(id, rawAnchor) {
+    const anchor = menuAnchor(rawAnchor);
     const cmd = getCommand(id);
     if (!cmd || locked) return;
     const level = effectiveLevel(cmd);
-    if (popups.menuOpen && anchor?.classList.contains("is-open")) {
+    if (popups.menuOpen && rawAnchor?.classList.contains("is-open")) {
       popups.closeMenu();
       return;
     }
@@ -747,17 +706,17 @@ export function mountWord(el, opts = {}) {
     root.classList.toggle("is-spot", Boolean(spotlight));
     if (!spotlight) return;
     const parts = spotlight.split(".");
-    // The picker's Insert button while the picker is open; otherwise Insert › Illustrations › Pictures,
+    // The open picture window's Insert button; with no window open, Insert › Illustrations › Pictures,
     // where the route to it starts.
-    const pickerBtn = spotlight === PICKER_INSERT ? pickerInsertBtn() : null;
-    const groupId = spotlight === PICKER_INSERT ? "insert.illustrations" : parts.slice(0, 2).join(".");
+    const pickerBtn = spotlight === PICTURE_INSERT ? pictureDialogs.insertButton() : null;
+    const groupId = spotlight === PICTURE_INSERT ? "insert.illustrations" : parts.slice(0, 2).join(".");
     const g = pickerBtn ?? root.querySelector(`[data-group="${groupId}"]`);
     if (!g) return;
     let target = g;
     if (pickerBtn) pickerBtn.classList.add("is-spot-btn");
     else g.classList.add("is-spot-target");
     if (!pickerBtn && parts.length > 2) {
-      const id = spotlight === PICKER_INSERT ? "insert.pictures" : spotlight;
+      const id = spotlight === PICTURE_INSERT ? "insert.pictures" : spotlight;
       const b = g.querySelector(`[data-cmd="${id}"],[data-menu="${id}"]`);
       if (b) {
         b.classList.add("is-spot-btn");
@@ -1483,7 +1442,16 @@ export function mountWord(el, opts = {}) {
       return picture[2] ? el?.querySelector(`[data-handle="${picture[2]}"]`) : el;
     }
     const pos = parseDocTarget(target);
-    if (!pos) return commandEl(target);
+    if (!pos) {
+      const el = commandEl(target);
+      // Scripts written before Insert Picture opened on Pictures click a file straight away: the window
+      // then shows Downloads, where the files are, so the target is still on screen.
+      if (!el && target.startsWith("choice:insert.pictures.choose:") && pictureDialogs.kind() === "device") {
+        pictureDialogs.showFolder("downloads");
+        return commandEl(target);
+      }
+      return el;
+    }
     const past = linesPastEnd(target);
     ensureVisible(demoCaretRect(pos, past));
     return { getBoundingClientRect: () => demoCaretRect(pos, past) };
@@ -1553,12 +1521,18 @@ export function mountWord(el, opts = {}) {
       // Like a real click: the picture is selected and Picture Format shows, but the tab stays.
       const el=demoResolve(target); demoPicture=Number(el?.closest(".wd-p")?.dataset.p??-1); updateUI(); return;
     }
-    if(target==="insert.pictures.device") {popups.closeMenu();openPicturePicker();return;}
-    if(target===PICKER_INSERT) {demoInsertPicture(pickedFile());return;}
+    // Insert › Pictures: the ghost opens the same windows and clicks through them; only the Insert
+    // button (or a double-click on a file) changes the demo view, never the learner's document.
+    const PICTURE_SOURCES={"insert.pictures.device":"device","insert.pictures.stock":"stock","insert.pictures.online":"online"};
+    if(PICTURE_SOURCES[target]) {popups.closeMenu();openPictureDialog(PICTURE_SOURCES[target]);return;}
+    if(target.startsWith(PICTURE_NAV)) {pictureDialogs.showFolder(target.slice(PICTURE_NAV.length));return;}
+    if(target.startsWith(ONLINE_CATEGORY)) {pictureDialogs.search(target.slice(ONLINE_CATEGORY.length));return;}
+    if(target===PICTURE_INSERT) {demoInsertPicture(pictureDialogs.picked());return;}
+    if(target===PICTURE_CANCEL) {popups.closeDialog();return;}
     if(target.startsWith("choice:insert.pictures.choose:")) {
-      // A click highlights the file; a double-click inserts it at once.
-      const picked=pickFile(target.split(":")[2]);
-      if (kind==="double") demoInsertPicture(picked);
+      // A click highlights the picture; a double-click on a file inserts it at once.
+      const picked=pictureDialogs.pick(target.split(":").slice(2).join(":"));
+      if (kind==="double" && pictureDialogs.kind()==="device") demoInsertPicture(picked);
       return;
     }
     if(target==="picture.delete") {demoDeletePicture();return;}
@@ -1578,7 +1552,8 @@ export function mountWord(el, opts = {}) {
     if (target.startsWith("menu:")) {
       const id = target.slice(5);
       const cmd = getCommand(id);
-      if (cmd?.menu) popups.openMenu(commandEl(id), cmd.menu({ ui, state: computeState(), anchor: commandEl(id) }));
+      const anchor = menuAnchor(commandEl(id));
+      if (cmd?.menu) popups.openMenu(anchor, cmd.menu({ ui, state: computeState(), anchor }));
       return;
     }
     if (target.startsWith("tab.")) { setTab(target.slice(4)); return; }

@@ -843,12 +843,15 @@ for (const [name,values] of [["orientation",[["portrait","Portrait"],["landscape
   registerCommand({id:`layout.${name}.set`,label:name,level:"a",run:(doc,sel,ctx)=>values.some(([v])=>v===ctx.arg)?setPage(doc,{[name]:ctx.arg}):doc});
 }
 
-// Insert › Pictures as in Word 365: "Insert Picture From" and four sources; only This Device is built.
+// Insert › Pictures as in Word 365: "Insert Picture From" and four sources. This Device, Stock Images and
+// Online Pictures open their windows (picture-dialogs.js); Generate an Image is not in the lesson (level c).
 registerCommand({id:"insert.pictures",label:"Pictures",level:"b",menu:()=>[{heading:"Insert Picture From"},
   {cmd:"insert.pictures.device",label:"This &Device...",icon:"pic_device"},{cmd:"insert.pictures.generate",label:"&Generate an Image...",icon:"pic_generate"},
   {cmd:"insert.pictures.stock",label:"&Stock Images...",icon:"pic_stock"},{cmd:"insert.pictures.online",label:"&Online Pictures...",icon:"pic_online"}]});
-ensureCommand("insert.pictures.generate","Generate an Image"); ensureCommand("insert.pictures.stock","Stock Images"); ensureCommand("insert.pictures.online","Online Pictures");
-registerCommand({id:"insert.pictures.device",label:"This Device",level:"b",popup:ctx=>ctx.ui.picturePicker()});
+ensureCommand("insert.pictures.generate","Generate an Image");
+registerCommand({id:"insert.pictures.device",label:"This Device",level:"b",popup:ctx=>ctx.ui.pictureDialog("device")});
+registerCommand({id:"insert.pictures.stock",label:"Stock Images",level:"b",popup:ctx=>ctx.ui.pictureDialog("stock")});
+registerCommand({id:"insert.pictures.online",label:"Online Pictures",level:"b",popup:ctx=>ctx.ui.pictureDialog("online")});
 registerCommand({id:"insert.pictures.choose",label:"Insert Picture",level:"a",run:(doc,sel,ctx)=>insertPicture(doc,sel.from,ctx.arg)});
 // Wrap Text as in Word 365. In Line, Square, Behind and In Front are built; the rest are visible but inert.
 export const WRAP_MENU = () => [

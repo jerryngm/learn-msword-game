@@ -201,7 +201,11 @@ export function createPopups(root) {
       const buttons = (spec.buttons ?? [{ label: "OK", value: "ok", primary: true }])
         .map((b) => `<button type="button" class="wd-dbtn${b.primary ? " is-primary" : ""}" data-dlg="${esc(b.value)}">${esc(b.label)}</button>`)
         .join("");
-      dialogEl.innerHTML = `<div class="wd-dlg" role="dialog" aria-label="${esc(spec.title)}" style="width:${spec.width ?? 420}px">
+      // spec.bare: the body draws its own title bar and buttons (Windows-style windows such as Insert Picture);
+      // spec.cls is an extra class on the window. `data-dlg` buttons inside the body still close it.
+      dialogEl.innerHTML = spec.bare
+        ? `<div class="wd-dlg is-bare ${esc(spec.cls ?? "")}" role="dialog" aria-modal="true" aria-label="${esc(spec.title)}">${spec.body}</div>`
+        : `<div class="wd-dlg" role="dialog" aria-label="${esc(spec.title)}" style="width:${spec.width ?? 420}px">
         <div class="wd-dlg-title"><span>${esc(spec.title)}</span><button type="button" class="wd-dlg-x" data-dlg="__close" aria-label="Close">${ico("dismiss_16")}</button></div>
         <div class="wd-dlg-body">${spec.body}</div>
         <div class="wd-dlg-foot">${buttons}</div></div>`;
