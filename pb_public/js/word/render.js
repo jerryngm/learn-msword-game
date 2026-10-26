@@ -1,3 +1,5 @@
+import { PICTURES } from "./pictures.js";
+import { spellingRanges } from "./model.js";
 // Model -> DOM for the page. Paragraph elements are reused by object identity, so a change
 // re-renders only the paragraphs whose snapshot objects changed.
 
@@ -76,7 +78,7 @@ export function runStyle(run, el) {
   if (run.effect === "outline") s.color = "#fff";
 }
 
-function buildPara(para, marker) {
+function buildPara(para, marker, spellings) {
   const el = document.createElement("p");
   el.className = "wd-p";
   const s = el.style;
@@ -98,11 +100,39 @@ function buildPara(para, marker) {
     s.setProperty("--wd-mk-size", `${first.size}pt`);
     s.setProperty("--wd-mk-colour", first.colour ?? "inherit");
   }
+  if (para.picture) {
+    const picture=para.picture, asset=PICTURES.find(p=>p.id===picture.id);
+    const frame=document.createElement("span"); frame.className=`wd-picture is-${picture.wrap}`; frame.contentEditable="false";
+    frame.style.width=`${picture.width}px`; frame.style.height=`${picture.height}px`; frame.setAttribute("role","img"); frame.setAttribute("aria-label",asset.name);
+    const img=document.createElement("img"); img.src=asset.src; img.alt=asset.name; img.draggable=false; frame.append(img);
+    for (const handle of ["n","ne","e","se","s","sw","w","nw"]) {
+      const b=document.createElement("button"); b.type="button"; b.className="wd-picture-handle"; b.dataset.handle=handle;
+      b.setAttribute("aria-label",`Resize ${handle}`); b.tabIndex=-1; frame.append(b);
+    }
+    el.append(frame);
+  }
+  let offset = 0;
   for (const run of para.runs) {
     const span = document.createElement("span");
     span.className = "wd-r";
     runStyle(run, span);
-    if (run.text) span.textContent = run.text;
+    if (run.text) {
+      const end = offset + run.text.length;
+      let at = offset;
+      for (const spelling of spellings) {
+        const from = Math.max(offset, spelling.from.offset);
+        const to = Math.min(end, spelling.to.offset);
+        if (to <= from) continue;
+        span.append(document.createTextNode(run.text.slice(at - offset, from - offset)));
+        const mark = document.createElement("span");
+        mark.className = "wd-spelling";
+        mark.textContent = run.text.slice(from - offset, to - offset);
+        span.append(mark);
+        at = to;
+      }
+      span.append(document.createTextNode(run.text.slice(at - offset)));
+      offset = end;
+    }
     else span.appendChild(document.createElement("br"));
     el.appendChild(span);
   }
@@ -119,18 +149,31 @@ export function createRenderer(pageEl) {
       const next = new Map();
       const els = doc.p.map((para, i) => {
         const pool = cache.get(para);
-        let hit = pool?.find((x) => x.marker === markers[i]);
+        let hit = pool?.find((x) => x.marker === markers[i] && x.spellings === doc.spellings);
         if (hit) pool.splice(pool.indexOf(hit), 1);
-        else hit = { el: buildPara(para, markers[i]), marker: markers[i] };
+        else hit = { el: buildPara(para, markers[i], spellingRanges(doc, i)), marker: markers[i], spellings: doc.spellings };
         hit.el.dataset.p = String(i);
+        const picture=hit.el.querySelector(".wd-picture"); if (picture) picture.dataset.picture=String(doc.p.slice(0,i).filter(p=>p.picture).length);
         if (!next.has(para)) next.set(para, []);
         next.get(para).push(hit);
         return hit.el;
       });
-      els.forEach((el, i) => {
-        if (pageEl.children[i] !== el) pageEl.insertBefore(el, pageEl.children[i] ?? null);
+      const blocks = [], tables = new Map();
+      els.forEach((el,i) => {
+        const cell = doc.p[i].cell;
+        if (!cell) { blocks.push(el); return; }
+        let table = tables.get(cell.table);
+        if (!table) { table=document.createElement("table"); table.className="wd-table"; table.dataset.table=cell.table; tables.set(cell.table,table); blocks.push(table); }
+        while (table.rows.length <= cell.row) table.insertRow();
+        const row=table.rows[cell.row];
+        while (row.cells.length <= cell.col) row.insertCell();
+        const td=row.cells[cell.col]; td.dataset.cell=`${cell.table},${cell.row},${cell.col}`; td.append(el);
       });
-      while (pageEl.children.length > els.length) pageEl.lastElementChild.remove();
+      pageEl.replaceChildren(...blocks);
+      const landscape = doc.page?.orientation === "landscape";
+      pageEl.style.width = landscape ? "11in" : "8.5in";
+      pageEl.style.minHeight = landscape ? "8.5in" : "11in";
+      pageEl.style.padding = doc.page?.margins === "narrow" ? "0.5in" : "1in";
       cache = next;
     },
     /** Forget cached elements (after the browser changed the DOM itself, e.g. IME composition). */
@@ -139,7 +182,7 @@ export function createRenderer(pageEl) {
       pageEl.replaceChildren();
     },
     paraEl(p) {
-      return pageEl.querySelector(`:scope > .wd-p[data-p="${p}"]`);
+      return pageEl.querySelector(`.wd-p[data-p="${p}"]`);
     },
   };
 }

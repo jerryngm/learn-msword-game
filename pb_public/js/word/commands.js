@@ -9,7 +9,7 @@
 
 import {
   ALIGNS, BULLET_GLYPHS, DEFAULT_PARA, DEFAULT_RUN, FONTS, MAX_INDENT, NUMBER_FORMATS, SIZES, UNDERLINES,
-  applyFormat, applyParaFormat, createDoc, deleteRange, fragment, insertFragment, isWordChar, paraProps, propsAt, slices, transformText,
+  insertPicture, updatePicture, insertTable, editTable, setPage, applyFormat, applyParaFormat, createDoc, deleteRange, fragment, insertFragment, isWordChar, paraProps, propsAt, slices, transformText,
 } from "./model.js";
 
 const registry = new Map();
@@ -568,7 +568,7 @@ registerCommand({
     if (sorted.every((p, i) => p === part[i])) return doc;
     const list = doc.p.slice();
     list.splice(a, sorted.length, ...sorted);
-    return createDoc({ p: list });
+    return createDoc({ p: list, spellings: doc.spellings });
   },
 });
 registerCommand({
@@ -826,3 +826,23 @@ export const SHORTCUTS = {
   "ctrl+s": "qat.save",
   "f12": "file.saveas",
 };
+
+
+registerCommand({id:"insert.table",label:"Table",level:"b",menu:()=>[{heading:"Insert Table"},{tableGrid:true}]});
+registerCommand({id:"insert.table.create",label:"Insert Table",level:"a",run:(doc,sel,ctx)=>{
+  const [columns,rows]=String(ctx.arg).split("x").map(Number); return insertTable(doc,sel.from,columns,rows);
+}});
+for (const [id,label] of [["insertBelow","Insert Below"],["insertRight","Insert Right"],["deleteRow","Delete Rows"],["deleteColumn","Delete Columns"],["deleteTable","Delete Table"]])
+  registerCommand({id:`table.${id}`,tab:"insert",label,level:"a",run:(doc,sel)=>editTable(doc,sel.from,id)});
+registerCommand({id:"table.delete",tab:"insert",label:"Delete",level:"b",menu:()=>["deleteRow","deleteColumn","deleteTable"].map(id=>({cmd:`table.${id}`,label:getCommand(`table.${id}`).label}))});
+for (const [name,values] of [["orientation",[["portrait","Portrait"],["landscape","Landscape"]]],["margins",[["normal","Normal — 2.54 cm"],["narrow","Narrow — 1.27 cm"]]]]) {
+  registerCommand({id:`layout.${name}`,label:name,level:"b",menu:()=>values.map(([arg,label])=>({cmd:`layout.${name}.set`,arg,label}))});
+  registerCommand({id:`layout.${name}.set`,label:name,level:"a",run:(doc,sel,ctx)=>values.some(([v])=>v===ctx.arg)?setPage(doc,{[name]:ctx.arg}):doc});
+}
+
+registerCommand({id:"insert.pictures",label:"Pictures",level:"b",menu:()=>[{cmd:"insert.pictures.device",label:"This Device…"}]});
+registerCommand({id:"insert.pictures.device",label:"This Device",level:"b",popup:ctx=>ctx.ui.picturePicker()});
+registerCommand({id:"insert.pictures.choose",label:"Insert Picture",level:"a",run:(doc,sel,ctx)=>insertPicture(doc,sel.from,ctx.arg)});
+registerCommand({id:"picture.wrap",tab:"insert",label:"Wrap Text",level:"b",menu:()=>[{cmd:"picture.wrap.set",arg:"inline",label:"In Line with Text"},{cmd:"picture.wrap.set",arg:"square",label:"Square"}]});
+registerCommand({id:"picture.wrap.set",tab:"insert",label:"Wrap Text",level:"a",run:(doc,sel,ctx)=>updatePicture(doc,sel.from,{wrap:ctx.arg})});
+registerCommand({id:"picture.delete",tab:"insert",label:"Delete Picture",level:"a",run:(doc,sel)=>updatePicture(doc,sel.from,null)});

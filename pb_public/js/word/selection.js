@@ -6,7 +6,7 @@ import { clampPos, cmpPos, docEnd, orderRange } from "./model.js";
 function paraElOf(pageEl, node) {
   let n = node?.nodeType === Node.TEXT_NODE ? node.parentNode : node;
   while (n && n !== pageEl) {
-    if (n.classList?.contains("wd-p") && n.parentNode === pageEl) return n;
+    if (n.classList?.contains("wd-p")) return n;
     n = n.parentNode;
   }
   return null;
@@ -17,7 +17,7 @@ export function domToPos(pageEl, node, offset) {
   if (!node || !pageEl.contains(node)) return null;
   if (node === pageEl) {
     // Between paragraphs: the start of the paragraph at `offset`, or the end of the last one.
-    const kids = pageEl.children;
+    const kids = pageEl.querySelectorAll(".wd-p");
     if (offset < kids.length) return { p: Number(kids[offset].dataset.p), offset: 0 };
     const last = kids[kids.length - 1];
     return last ? { p: Number(last.dataset.p), offset: last.textContent.length } : { p: 0, offset: 0 };
@@ -36,7 +36,7 @@ export function domToPos(pageEl, node, offset) {
 
 /** DOM point {node, offset} for a model position. */
 export function posToDom(pageEl, pos) {
-  const para = pageEl.querySelector(`:scope > .wd-p[data-p="${pos.p}"]`);
+  const para = pageEl.querySelector(`.wd-p[data-p="${pos.p}"]`);
   if (!para) return { node: pageEl, offset: 0 };
   const walker = document.createTreeWalker(para, NodeFilter.SHOW_TEXT);
   let left = pos.offset;

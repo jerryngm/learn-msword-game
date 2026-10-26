@@ -1,3 +1,4 @@
+import { PICTURES } from "./pictures.js";
 // Document model for the Word mock. Pure functions over frozen snapshots; nothing here touches the DOM.
 //
 // doc  = { p: [Para, ...] }
@@ -53,7 +54,7 @@ export const DEFAULT_PARA = Object.freeze({
   shading: null,
   borders: Object.freeze([]),
 });
-const PARA_KEYS = Object.freeze(Object.keys(DEFAULT_PARA));
+const PARA_KEYS = Object.freeze([...Object.keys(DEFAULT_PARA), "cell", "picture"]);
 
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 
@@ -128,6 +129,9 @@ export class Para {
   constructor(props = {}, runs = []) {
     const spacing = props.spacing ?? {};
     const indent = props.indent ?? {};
+    const picture = PICTURES.find(p=>p.id===props.picture?.id);
+    if (picture) this.picture=Object.freeze({id:picture.id,width:num(props.picture.width,240,24,600),height:num(props.picture.height,240*picture.height/picture.width,24,600),wrap:props.picture.wrap==="square"?"square":"inline"});
+    if (props.cell) this.cell = Object.freeze({ table: props.cell.table | 0, row: props.cell.row | 0, col: props.cell.col | 0 });
     this.style = typeof props.style === "string" ? props.style : DEFAULT_PARA.style;
     this.align = oneOf(props.align, ALIGNS, DEFAULT_PARA.align);
     this.spacing = Object.freeze({
@@ -185,9 +189,24 @@ export function updatePara(para, patch) {
 
 /* ---------- documents ---------- */
 
-function freezeDoc(paras) {
+function freezeDoc(paras, spellings, page) {
   if (!paras.length) paras = [new Para()];
-  return Object.freeze({ p: Object.freeze(paras) });
+  const tables = [];
+  for (const para of paras) if (para.cell) {
+    const {table, row, col} = para.cell;
+    tables[table] ??= {rows: []};
+    tables[table].rows[row] ??= [];
+    tables[table].rows[row][col] ??= {p: []};
+    tables[table].rows[row][col].p.push(para);
+  }
+  for (const table of tables) if (table) {
+    for (const row of table.rows) if (row) { for (const cell of row) if (cell) { Object.freeze(cell.p); Object.freeze(cell); } Object.freeze(row); }
+    Object.freeze(table.rows); Object.freeze(table);
+  }
+  return Object.freeze({ p: Object.freeze(paras), ...(spellings ? { spellings } : {}),
+    ...(paras.some(p=>p.picture) ? {pictures:Object.freeze(paras.filter(p=>p.picture).map(p=>p.picture))} : {}),
+    ...(tables.length ? {tables: Object.freeze(tables)} : {}),
+    ...(page ? {page: Object.freeze({orientation: page.orientation === "landscape" ? "landscape" : "portrait", margins: page.margins === "narrow" ? "narrow" : "normal"})} : {}) });
 }
 
 /**
@@ -209,7 +228,16 @@ export function createDoc(input) {
     const runs = Array.isArray(raw.runs) ? raw.runs : [{ text: String(raw.text ?? "") }];
     return new Para(raw, runs.map((r) => makeRun(String(r?.text ?? ""), r ?? {})));
   });
-  return freezeDoc(paras);
+  if (input.tables && !paras.some(p => p.cell)) input.tables.forEach((table, t) => table.rows.forEach((row, r) => row.forEach((cell, c) => {
+    const items = createDoc(cell.p ?? [""]).p;
+    paras.push(...items.map(p => new Para({...paraProps(p), cell: {table:t,row:r,col:c}}, p.runs)));
+  })));
+  const spellings = input.spellings && typeof input.spellings === "object"
+    ? Object.freeze(Object.fromEntries(Object.entries(input.spellings)
+      .filter(([word, suggestions]) => word && Array.isArray(suggestions))
+      .map(([word, suggestions]) => [word.toLowerCase(), Object.freeze(suggestions.filter((x) => typeof x === "string" && x.trim()).map((x) => x.trim()))])))
+    : undefined;
+  return freezeDoc(paras, spellings, input.page);
 }
 
 export function docToJSON(doc) {
@@ -314,7 +342,7 @@ export function slices(doc, range) {
 function replaceParas(doc, start, count, paras) {
   const list = doc.p.slice();
   list.splice(start, count, ...paras);
-  return freezeDoc(list);
+  return freezeDoc(list, doc.spellings, doc.page);
 }
 
 /* ---------- pure edits ---------- */
@@ -440,6 +468,12 @@ export function insertText(doc, pos, text, props) {
 export function deleteRange(doc, from, to) {
   const r = orderRange(clampPos(doc, from), clampPos(doc, to));
   if (isCollapsed(r)) return doc;
+  // Cell boundaries are structural: Delete clears text across them without merging cells.
+  if (r.from.p !== r.to.p && JSON.stringify(doc.p[r.from.p].cell) !== JSON.stringify(doc.p[r.to.p].cell)) {
+    let next = doc;
+    for (let p = r.to.p; p >= r.from.p; p--) next = deleteRange(next, {p, offset:p === r.from.p ? r.from.offset : 0}, {p, offset:p === r.to.p ? r.to.offset : next.p[p].length});
+    return next;
+  }
   const first = doc.p[r.from.p];
   const last = doc.p[r.to.p];
   const head = cutRuns(first, [r.from.offset])
@@ -465,7 +499,7 @@ export function splitParagraph(doc, pos) {
   const left = pieces.filter(({ start }) => start < at.offset).map(({ run }) => run);
   const right = pieces.filter(({ start }) => start >= at.offset).map(({ run }) => run);
   const carry = makeRun("", propsAt(doc, at));
-  return replaceParas(doc, at.p, 1, [withRuns(para, left.length ? left : [carry]), withRuns(para, right.length ? right : [carry])]);
+  return replaceParas(doc, at.p, 1, [withRuns(para, left.length ? left : [carry]), new Para({...paraProps(para),picture:null}, right.length ? right : [carry])]);
 }
 
 /* ---------- copy / paste fragments ---------- */
@@ -592,4 +626,74 @@ export function paraOf(doc, needle, { ignoreCase = false } = {}) {
       return ignoreCase ? t.toLowerCase().includes(String(needle).toLowerCase()) : t.includes(needle);
     }) ?? null
   );
+}
+
+/** Mission-owned proofing only: no browser dictionary or network lookup. */
+export function spellingRanges(doc, p) {
+  const text = doc.p[p]?.text ?? "";
+  const out = [];
+  for (const match of text.matchAll(/[\p{L}\p{M}]+(?:['’][\p{L}\p{M}]+)*/gu)) {
+    const suggestions = doc.spellings?.[match[0].toLowerCase()];
+    if (suggestions?.length) out.push({ from: { p, offset: match.index }, to: { p, offset: match.index + match[0].length }, suggestions });
+  }
+  return out;
+}
+
+
+/** Table cells retain ordinary paragraphs, with flat positions for all text commands. */
+export function insertTable(doc, at, columns, rows) {
+  columns = Math.max(1, Math.min(10, columns | 0)); rows = Math.max(1, Math.min(8, rows | 0));
+  if (doc.p[at.p].cell) return {doc};
+  const table = doc.tables?.length ?? 0;
+  const parts = [];
+  for (let row=0; row<rows; row++) for (let col=0; col<columns; col++) parts.push(new Para({cell:{table,row,col}}));
+  const index = at.p + 1;
+  parts.push(new Para());
+  const next = replaceParas(doc,index,0,parts);
+  const pos = {p:index,offset:0};
+  return {doc:next,sel:{anchor:pos,focus:pos}};
+}
+
+export function editTable(doc, pos, action) {
+  const cell = doc.p[pos.p]?.cell;
+  if (!cell) return {doc};
+  const table = doc.tables[cell.table];
+  const rows = table.rows.length, cols = table.rows[0].length;
+  const rowAction = action === "insertBelow" || action === "deleteRow";
+  const deleting = action.startsWith("delete");
+  if (deleting && ((rowAction ? rows : cols) === 1 || action === "deleteTable")) {
+    const paras = doc.p.filter(p => p.cell?.table !== cell.table).map(p => p.cell?.table > cell.table ? new Para({...paraProps(p),cell:{...p.cell,table:p.cell.table-1}},p.runs) : p);
+    const next = freezeDoc(paras,doc.spellings,doc.page);
+    const at = clampPos(next,pos); return {doc:next,sel:{anchor:at,focus:at}};
+  }
+  const grid = table.rows.map(row => row.map(c => c.p));
+  if (rowAction) {
+    if (deleting) grid.splice(cell.row,1);
+    else grid.splice(cell.row+1,0,Array.from({length:cols},()=>[new Para()]));
+  } else for (const row of grid) {
+    if (deleting) row.splice(cell.col,1);
+    else row.splice(cell.col+1,0,[new Para()]);
+  }
+  const parts = grid.flatMap((row,r)=>row.flatMap((ps,c)=>ps.map(p=>new Para({...paraProps(p),cell:{table:cell.table,row:r,col:c}},p.runs))));
+  const start = doc.p.findIndex(p=>p.cell?.table===cell.table);
+  const count = doc.p.filter(p=>p.cell?.table===cell.table).length;
+  const next = replaceParas(doc,start,count,parts);
+  const r = Math.min(cell.row+(action === "insertBelow" ? 1:0),grid.length-1);
+  const c = Math.min(cell.col+(action === "insertRight" ? 1:0),grid[0].length-1);
+  const p = next.p.findIndex(p=>p.cell?.table===cell.table && p.cell.row===r && p.cell.col===c);
+  const at = {p,offset:0}; return {doc:next,sel:{anchor:at,focus:at}};
+}
+export function setPage(doc, patch) { return freezeDoc(doc.p,doc.spellings,{...doc.page,...patch}); }
+
+
+export function insertPicture(doc,pos,id) {
+  const asset=PICTURES.find(p=>p.id===id); if (!asset) return {doc};
+  const picture={id,width:240,height:Math.round(240*asset.height/asset.width),wrap:"inline"};
+  const index=pos.p+1;
+  const next=replaceParas(doc,index,0,[new Para({picture}),new Para()]);
+  const at={p:index,offset:0}; return {doc:next,sel:{anchor:at,focus:at}};
+}
+export function updatePicture(doc,pos,patch) {
+  const para=doc.p[pos.p]; if (!para?.picture) return doc;
+  return replaceParas(doc,pos.p,1,[new Para({...paraProps(para),picture:patch===null?null:{...para.picture,...patch}},para.runs)]);
 }

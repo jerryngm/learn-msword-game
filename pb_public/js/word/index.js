@@ -1,3 +1,4 @@
+import { PICTURES, pictureSize } from "./pictures.js";
 // mountWord(): the Windows Word mock. The model is the source of truth: keyboard and beforeinput
 // events are intercepted and turned into model edits, then the page is re-rendered from the model.
 //
@@ -11,8 +12,8 @@ import { openDialog } from "./dialogs.js";
 import { openBackstage } from "./backstage.js";
 import { ico } from "./icons.js";
 import {
-  FONTS, RUN_KEYS, applyFormat, clampPos, cmpPos, createDoc, deleteRange, docEnd, fragment, insertText, isCollapsed,
-  orderRange, propsAt, slices, splitParagraph, applyParaFormat, wordAround, wordCount, wordSelectionAt,
+  updatePicture, editTable, FONTS, RUN_KEYS, applyFormat, clampPos, cmpPos, createDoc, deleteRange, docEnd, fragment, insertText, isCollapsed,
+  spellingRanges, orderRange, propsAt, slices, splitParagraph, applyParaFormat, wordAround, wordCount, wordSelectionAt,
 } from "./model.js";
 import { createRenderer } from "./render.js";
 import { fitRibbon, itemsHtml, ribbonHtml, tabRowHtml, TABS, ribbonParts } from "./ribbon.js";
@@ -93,6 +94,7 @@ function statusHtml() {
     <button type="button" class="wd-sb" data-cmd="status.words" data-status="words">0 words</button>
     <button type="button" class="wd-sb" data-cmd="status.proofing" aria-label="Proofing">${ico("book_letter_20")}</button>
     <button type="button" class="wd-sb" data-cmd="status.accessibility">${ico("accessibility_checkmark_20")}Accessibility: Good to go</button>
+    <span class="wd-caps" role="status" hidden>Caps Lock</span>
     <span class="wd-sright">
       <button type="button" class="wd-sb" data-cmd="status.focus">${ico("page_fit_24")}Focus</button>
       <button type="button" class="wd-sb" data-cmd="status.readMode" aria-label="Read Mode">${ico("book_open_20")}</button>
@@ -144,6 +146,7 @@ export function mountWord(el, opts = {}) {
   let painter = null;
   let clip = null;
   let clipEvent = null;
+  let spellingMenu = null;
   const lastColours = { highlight: "#FFFF00", font: "#FF0000", shading: null };
   const lastLists = { bullet: "•", number: "1." };
   let lastBorderSide = "bottom";
@@ -161,6 +164,10 @@ export function mountWord(el, opts = {}) {
   let spotlight = null;
   let backstage = null;
   let demoToken = 0;
+  let demoDoc = null;
+  let selectedPicture = -1;
+  let cancelResize = null;
+  let demoPicture = -1;
   const listeners = new Map();
 
   /* ---------- DOM ---------- */
@@ -245,6 +252,10 @@ export function mountWord(el, opts = {}) {
   function updateUI() {
     if (destroyed) return;
     const s = computeState();
+    const tableTab = root.querySelector('[data-tab="table"].wt-tab');
+    root.querySelector('[data-tab="picture"].wt-tab').hidden = !doc.p[selectedPicture]?.picture && demoPicture<0;
+    page.querySelectorAll(".wd-picture").forEach(el=>el.classList.toggle("is-selected",Number(el.closest(".wd-p").dataset.p)===(demoPicture>=0?demoPicture:selectedPicture)));
+    tableTab.hidden = !doc.p[sel.focus.p]?.cell && !demoDoc?.tables?.length;
     root.querySelectorAll("[data-cmd]").forEach((b) => {
       const cmd = getCommand(b.dataset.cmd);
       if (!cmd) return;
@@ -347,6 +358,8 @@ export function mountWord(el, opts = {}) {
     if (!group) history.seal();
     doc = next;
     sel = clampSel(next, newSel ?? sel);
+    if (id === "insert.pictures.choose") selectedPicture=sel.focus.p;
+    else if (!doc.p[selectedPicture]?.picture) selectedPicture=-1;
     pending = null;
     render();
     writeSel();
@@ -361,6 +374,7 @@ export function mountWord(el, opts = {}) {
   function restore(entry, id) {
     const prev = doc;
     doc = entry.doc;
+    selectedPicture=-1;
     sel = clampSel(doc, entry.sel);
     pending = null;
     render();
@@ -385,10 +399,18 @@ export function mountWord(el, opts = {}) {
     return true;
   }
 
+  function openPicturePicker() {
+    return popups.dialog({title:"Insert Picture",width:620,
+      body:`<div class="wd-picture-folder">This PC › Pictures</div><div class="wd-picture-files">${PICTURES.map(p=>`<button type="button" data-cmd="insert.pictures.choose" data-arg="${p.id}" aria-label="Insert ${p.name}"><img src="${p.src}" alt=""><span>${p.name}.png</span></button>`).join("")}</div>`,
+      buttons:[{label:"Cancel",value:"cancel"}],
+    }).finally(()=>{if(!destroyed&&!locked) focusPage();});
+  }
+
   /* ---------- ui surface handed to commands ---------- */
   const ui = {
     toast: (key, o) => popups.toast(ws(key), o),
     note: (key, anchor) => popups.note(ws(key), anchor),
+    picturePicker: openPicturePicker,
     clipboard: () => clip,
     setClipboard(frag) {
       clip = frag;
@@ -475,6 +497,18 @@ export function mountWord(el, opts = {}) {
     if (id === "qat.undoTo") {
       emit("command", { id, level: "a", effectName: getCommand("qat.undo")?.effectName ?? EFFECT_NAMES.undo });
       for (let n = Number(arg) || 1; n > 0; n--) if (!undo()) break;
+      return;
+    }
+    if (id.startsWith("spelling.")) {
+      const suggestion = id.slice(9);
+      const match = spellingMenu;
+      spellingMenu = null;
+      if (!match?.suggestions.includes(suggestion)) return;
+      const result = insertText(deleteRange(doc, match.from, match.to), match.from, suggestion);
+      const effectName = { en: "corrected the spelling", vi: "sửa chính tả" };
+      emit("command", { id, level: "a", effectName });
+      commit(result, { id, label: suggestion, newSel: collapsedSel({ p: match.from.p, offset: match.from.offset + suggestion.length }), cmd: { level: "a", effectName } });
+      focusPage();
       return;
     }
     const cmd = getCommand(id);
@@ -680,6 +714,7 @@ export function mountWord(el, opts = {}) {
 
   function typeText(text, range = selRange(sel)) {
     if (!text) return;
+    selectedPicture=-1;
     const r = orderRange(range.from, range.to);
     const collapsed = isCollapsed(r);
     const props = collapsed
@@ -761,26 +796,54 @@ export function mountWord(el, opts = {}) {
     else if (FORMAT_INPUTS[t]) exec(FORMAT_INPUTS[t], undefined, { origin: "key" });
   }
 
+  function updateCapsLock(e) {
+    if (locked) return;
+    const indicator = root.querySelector(".wd-caps");
+    indicator.hidden = !e.getModifierState?.("CapsLock");
+  }
+
   function onKeyDown(e) {
+    updateCapsLock(e);
     if (locked || popups.dialogOpen) {
       e.preventDefault();
       return;
     }
     if (e.isComposing || composing) return;
     if (e.key === "Escape") {
+      selectedPicture=-1; updateUI();
       popups.closeAll();
       if (painter) ui.stopPainter();
       return;
     }
+    if ((e.key === "Delete" || e.key === "Backspace") && doc.p[selectedPicture]?.picture) {
+      e.preventDefault(); exec("picture.delete",undefined,{origin:"key"}); return;
+    }
     if (e.key === "Tab") {
+      selectedPicture=-1;
       e.preventDefault();
       const r = selRange(sel);
       const para = doc.p[r.from.p];
+      if (para.cell) {
+        const c = para.cell;
+        const cells = doc.p.map((p,i)=>({p,i})).filter(({p},i,all)=>p.cell?.table===c.table && (i===0 || JSON.stringify(all[i-1].p.cell)!==JSON.stringify(p.cell)));
+        const index = cells.findIndex(({p})=>p.cell.row===c.row && p.cell.col===c.col);
+        const next = cells[index+(e.shiftKey?-1:1)];
+        if (next) { sel= {anchor:{p:next.i,offset:0},focus:{p:next.i,offset:next.p.length}}; focusPage(); updateUI(); }
+        else if (!e.shiftKey) { const result=editTable(doc,r.from,"insertBelow"); const p=result.doc.p.findIndex(p=>p.cell?.table===c.table && p.cell.row===c.row+1 && p.cell.col===0); commit(result.doc,{id:"table.insertBelow",label:"Insert row",newSel:collapsedSel({p,offset:0})}); focusPage(); }
+        return;
+      }
       if ((para.list && r.from.offset === 0) || r.from.p !== r.to.p) exec(e.shiftKey ? "home.paragraph.indentDec" : "home.paragraph.indentInc", undefined, { origin: "key" });
       else if (!e.shiftKey) typeText("\t");
       return;
     }
     const key = shortcutOf(e);
+    const clipboardCommand = { "ctrl+c": "home.clipboard.copy", "ctrl+x": "home.clipboard.cut", "ctrl+v": "home.clipboard.paste" }[key];
+    if (clipboardCommand && (key !== "ctrl+v" || clip)) {
+      e.preventDefault();
+      syncSelFromDom();
+      exec(clipboardCommand, undefined, { origin: "key" });
+      return;
+    }
     const id = SHORTCUTS[key];
     if (id) {
       e.preventDefault();
@@ -829,6 +892,15 @@ export function mountWord(el, opts = {}) {
       e.preventDefault();
       return;
     }
+    const picture=e.target.closest(".wd-picture");
+    if (picture && e.button===0) {
+      e.preventDefault(); selectedPicture=Number(picture.closest(".wd-p").dataset.p);
+      sel=collapsedSel({p:selectedPicture,offset:0}); focusPage(); setTab("picture"); updateUI();
+      const handle=e.target.closest("[data-handle]")?.dataset.handle;
+      if (handle) startPictureResize(e,picture,handle);
+      return;
+    }
+    selectedPicture=-1; updateUI();
     if (composing && e.button === 0 && e.detail === 1) {
       // Page-relative, because committing the text may scroll the canvas before compositionend.
       const P = page.getBoundingClientRect();
@@ -854,6 +926,16 @@ export function mountWord(el, opts = {}) {
       updateUI();
     }
   }
+  function startPictureResize(e,element,handle) {
+    cancelResize?.();
+    const p=selectedPicture, original=doc.p[p].picture, x=e.clientX,y=e.clientY;
+    let size={width:original.width,height:original.height};
+    const move=ev=>{size=pictureSize(original,handle,(ev.clientX-x)/(zoom/100),(ev.clientY-y)/(zoom/100)); element.style.width=`${size.width}px`; element.style.height=`${size.height}px`;};
+    const cleanup=()=>{document.removeEventListener("mousemove",move);document.removeEventListener("mouseup",up);cancelResize=null;};
+    const up=()=>{cleanup(); if (size.width!==original.width || size.height!==original.height) commit(updatePicture(doc,{p},size),{id:"picture.resize",label:"Resize Picture"});};
+    cancelResize=()=>{cleanup();element.style.width=`${original.width}px`;element.style.height=`${original.height}px`;};
+    document.addEventListener("mousemove",move);document.addEventListener("mouseup",up,{once:true});
+  }
   /**
    * Position of the character under a point. posFromPoint returns the nearest caret boundary, so the
    * right half of a letter maps to the offset after it; step back when the point is on that letter.
@@ -874,7 +956,8 @@ export function mountWord(el, opts = {}) {
     applyPainterNow();
   }
 
-  function openContextMenu(x, y) {
+  function openContextMenu(x, y, position = selRange(sel).from) {
+    spellingMenu = spellingRanges(doc, position.p).find((r) => position.offset >= r.from.offset && position.offset < r.to.offset) ?? null;
     const r = selRange(sel);
     const hasSel = !isCollapsed(r);
     const R = root.getBoundingClientRect();
@@ -886,6 +969,15 @@ export function mountWord(el, opts = {}) {
       "wm-mini",
     );
     const items = [
+      ...((demoDoc??doc).p[position.p]?.cell ? [
+        {cmd:"table.insertBelow",label:"Insert Rows Below"},{cmd:"table.insertRight",label:"Insert Columns to the Right"},
+        {cmd:"table.deleteRow",label:"Delete Rows"},{cmd:"table.deleteColumn",label:"Delete Columns"},{sep:true},
+      ] : []),
+      ...(spellingMenu ? [
+        { heading: "Spelling" },
+        ...spellingMenu.suggestions.map((word) => ({ cmd: `spelling.${word}`, label: word })),
+        { sep: true },
+      ] : []),
       { searchbox: true, cmd: "context.search", label: "Search the menus" },
       ...(hasSel ? [{ cmd: "context.editor", label: "Review selection in &Editor", icon: "pen_24", iconCls: "wi-blue" }] : []),
       { sep: true },
@@ -927,13 +1019,13 @@ export function mountWord(el, opts = {}) {
   function onContextMenu(e) {
     e.preventDefault();
     if (locked) return;
-    const pos = posFromPoint(page, e.clientX, e.clientY);
+    const pos = charAtPoint(e.clientX, e.clientY);
     const r = selRange(sel);
     if (pos && (isCollapsed(r) || cmpPos(pos, r.from) < 0 || cmpPos(pos, r.to) > 0)) {
       sel = collapsedSel(pos);
       focusPage();
     }
-    openContextMenu(e.clientX, e.clientY);
+    openContextMenu(e.clientX, e.clientY, pos ?? r.from);
   }
 
   /* ---------- clipboard events ---------- */
@@ -1114,11 +1206,14 @@ export function mountWord(el, opts = {}) {
     demoState?.ctrl.abort();
     root.querySelectorAll(".is-demo-press").forEach((x) => x.classList.remove("is-demo-press"));
     demoState = null;
+    demoPicture=-1;
+    if (demoDoc) { demoDoc=null; render(); writeSel(); }
   }
   function cancelDemo() {
     const was = demoState?.was;
     demoToken += 1;
     clearDemo();
+    popups.closeAll();
     locked = false;
     root.classList.remove("is-demo");
     if (was && !destroyed) restoreBackstage(was);
@@ -1135,22 +1230,43 @@ export function mountWord(el, opts = {}) {
     }
   }
   function rangeRects(range) {
-    const r = { from: clampPos(doc, range.from), to: clampPos(doc, range.to) };
+    const r = { from: clampPos(demoDoc??doc, range.from), to: clampPos(demoDoc??doc, range.to) };
     const dr = domRange(page, r);
     return Array.from(dr.getClientRects()).filter((x) => x.width > 0.5);
   }
   function parseDocTarget(target) {
+    const cell = /^cell:(\d+),(\d+),(\d+)(?:,(\d+))?$/.exec(target);
+    if (cell) {
+      const source=demoDoc??doc;
+      const p=source.p.findIndex(p=>p.cell?.table===Number(cell[1]) && p.cell.row===Number(cell[2]) && p.cell.col===Number(cell[3]));
+      return p<0 ? null : clampPos(source,{p,offset:Number(cell[4]??0)});
+    }
     const m = /^doc:(\d+),(\d+)$/.exec(target);
-    return m ? clampPos(doc, { p: Number(m[1]), offset: Number(m[2]) }) : null;
+    return m ? clampPos(demoDoc??doc, { p: Number(m[1]), offset: Number(m[2]) }) : null;
   }
   function commandEl(id) {
+    if (id.startsWith("menu:")) return commandEl(id.slice(5));
+    if (id.startsWith("tab.")) return root.querySelector(`.wt-tab[data-tab="${id.slice(4)}"]`);
+    if (id.startsWith("choice:")) {
+      const [, command, ...parts] = id.split(":");
+      const value = parts.join(":");
+      return Array.from(root.querySelectorAll(".wm-menu [data-cmd],.wd-dlg [data-cmd]"))
+        .find((el) => el.dataset.cmd === command && String(decArg(el)).toLowerCase() === value.toLowerCase()) ?? null;
+    }
+    if (id.startsWith("spelling.") || id.startsWith("context.") || id.startsWith("home.clipboard.")) {
+      const item = Array.from(root.querySelectorAll(".wm-menu [data-cmd]" )).find((el) => el.dataset.cmd === id);
+      if (item) return item;
+    }
+    if (id.startsWith("insert.pictures.")) {
+      const item=root.querySelector(`.wm-menu [data-cmd="${id}"],.wd-dlg [data-cmd="${id}"]`); if(item) return item;
+    }
     // "file" is the File tab; "bs.<page>" is a Backstage list item (e.g. "bs.saveas"); "sa.browse|documents|name|save" are Save As controls.
     const BS_TARGETS = { file: '.wt-tab[data-tab="file"]', "sa.browse": ".bs .sa-browse", "sa.documents": '.bs .sa-n[data-folder="documents"]', "sa.name": ".bs .sa-name", "sa.save": ".bs .sa-save" };
     const bsSel = BS_TARGETS[id] ?? (id.startsWith("bs.") ? `.bs .bs-item[data-bs="${id.slice(3)}"]` : null);
     const find = () => root.querySelector(bsSel ?? `.wr-card [data-cmd="${id}"],.wr-card [data-menu="${id}"],.wd-title [data-cmd="${id}"],.wd-title [data-menu="${id}"],.wd-status [data-cmd="${id}"]`);
     let b = find();
     if (!b) {
-      const t = getCommand(id)?.tab ?? id.split(".")[0];
+      const t = id.startsWith("picture.") ? "picture" : id.startsWith("table.") ? "table" : getCommand(id)?.tab ?? id.split(".")[0];
       if (RIBBON_TABS.has(t) && t !== tab) {
         tab = t;
         renderRibbon();
@@ -1170,7 +1286,7 @@ export function mountWord(el, opts = {}) {
     if (!past) return caretRect(page, pos);
     const last = doc.p.length - 1;
     const end = caretRect(page, { p: last, offset: doc.p[last].length });
-    const para = page.querySelector(`:scope > .wd-p[data-p="${last}"]`);
+    const para = page.querySelector(`.wd-p[data-p="${last}"]`);
     const pr = para?.getBoundingClientRect() ?? end;
     const pad = para ? (parseFloat(getComputedStyle(para).paddingLeft) || 0) * (zoom / 100) : 0;
     const h = end.height || 18;
@@ -1179,6 +1295,12 @@ export function mountWord(el, opts = {}) {
 
   /** Targets the player can point at: command ids, `file`, `bs.*`, `sa.*`, or `doc:p,offset`. */
   function demoResolve(target) {
+    const picture=/^picture:(\d+)(?::(n|ne|e|se|s|sw|w|nw))?$/.exec(target);
+    if(picture) {
+      const el=page.querySelector(`.wd-picture[data-picture="${picture[1]}"]`);
+      if(el) {ensureVisible(el.getBoundingClientRect());el.classList.add("is-selected");}
+      return picture[2] ? el?.querySelector(`[data-handle="${picture[2]}"]`) : el;
+    }
     const pos = parseDocTarget(target);
     if (!pos) return commandEl(target);
     const past = linesPastEnd(target);
@@ -1200,7 +1322,7 @@ export function mountWord(el, opts = {}) {
     }
     ensureVisible(demoCaretRect(pos, past));
     const cr = demoCaretRect(pos, past);
-    const para = page.querySelector(`:scope > .wd-p[data-p="${pos.p}"]`) ?? page;
+    const para = page.querySelector(`.wd-p[data-p="${pos.p}"]`) ?? page;
     const pr = para.getBoundingClientRect();
     const pcs = getComputedStyle(para);
     const { node } = posToDom(page, pos);
@@ -1217,7 +1339,7 @@ export function mountWord(el, opts = {}) {
     };
   }
   function demoSelectRects(range) {
-    const r = orderRange(clampPos(doc, range.from), clampPos(doc, range.to));
+    const r = orderRange(clampPos(demoDoc??doc, range.from), clampPos(demoDoc??doc, range.to));
     const first = rangeRects(r)[0];
     if (first) ensureVisible(first);
     return rangeRects(r);
@@ -1226,7 +1348,47 @@ export function mountWord(el, opts = {}) {
   // A ghost click on File, a Backstage item, Browse or a Save As folder opens what the real click
   // opens, so the next target is on screen. The file name box and Save are never pressed: a demo
   // must not save.
-  function demoAct(target) {
+  function demoAct(target, kind) {
+    if(target.startsWith("picture:")) {
+      const el=demoResolve(target); demoPicture=Number(el?.closest(".wd-p")?.dataset.p??-1); setTab("picture"); updateUI(); return;
+    }
+    if(target==="insert.pictures.device") {popups.closeMenu();openPicturePicker();return;}
+    if(target.startsWith("choice:insert.pictures.choose:") || target.startsWith("choice:picture.wrap.set:")) {
+      const [,id,arg]=target.split(":"); const source=demoDoc??doc;
+      const at=demoPicture>=0?{p:demoPicture,offset:0}:selRange(sel).from;
+      const result=getCommand(id).run(source,{from:at,to:at},{arg,ui});
+      demoDoc=result.doc??result; demoPicture=result.sel?.focus.p??demoPicture;
+      renderer.render(demoDoc);observer.takeRecords();popups.closeAll();updateUI();return;
+    }
+    const pos = parseDocTarget(target);
+    if (pos && kind === "right") {
+      const rect = demoCaretRect(pos, 0);
+      openContextMenu(rect.left, rect.bottom, pos);
+      return;
+    }
+    if (target.startsWith("menu:")) {
+      const id = target.slice(5);
+      const cmd = getCommand(id);
+      if (cmd?.menu) popups.openMenu(commandEl(id), cmd.menu({ ui, state: computeState(), anchor: commandEl(id) }));
+      return;
+    }
+    if (target.startsWith("tab.")) { setTab(target.slice(4)); return; }
+    if (target.startsWith("choice:insert.table.create:") || target.startsWith("table.") || target.startsWith("choice:layout.")) {
+      const parts=target.split(":"); const id=parts[0]==="choice" ? parts[1] : target; const arg=parts.slice(2).join(":");
+      const cmd=getCommand(id);
+      if (cmd?.run) {
+        const source=demoDoc??doc;
+        const pos=source.p.findIndex(p=>p.cell);
+        const at=id.startsWith("table.") && pos>=0 ? {p:pos,offset:0} : selRange(sel).from;
+        const result=cmd.run(source,{from:at,to:at,anchor:at,focus:at},{arg,ui});
+        demoDoc=result.doc??result; renderer.render(demoDoc); observer.takeRecords();
+      }
+      popups.closeAll(); return;
+    }
+    if (target.startsWith("choice:") || target.startsWith("spelling.") || target.startsWith("home.clipboard.")) {
+      popups.closeAll();
+      return;
+    }
     if (target === "file") return openFile("home");
     if (target === "sa.name" || target === "sa.save") return;
     if (target.startsWith("bs.") || target.startsWith("sa.")) commandEl(target)?.click();
@@ -1263,11 +1425,23 @@ export function mountWord(el, opts = {}) {
         caret: demoCaret,
         selectRects: demoSelectRects,
         act: demoAct,
+        drag: (target,delta)=>{
+          const el=demoResolve(target), handle=el?.dataset.handle;
+          const p=Number(el?.closest(".wd-p")?.dataset.p);
+          const source=demoDoc??doc, picture=source.p[p]?.picture;
+          if(!handle||!picture) return;
+          demoDoc=updatePicture(source,{p},pictureSize(picture,handle,delta.dx/(zoom/100),delta.dy/(zoom/100)));
+          demoPicture=p;renderer.render(demoDoc);observer.takeRecords();updateUI();
+        },
         reducedMotion: reducedMotion(),
         signal: ctrl.signal,
       });
     } finally {
       if (token === demoToken) {
+        popups.closeAll();
+        demoPicture=-1;
+        if (demoDoc) { demoDoc=null; render(); writeSel(); }
+        updateUI();
         locked = false;
         root.classList.remove("is-demo");
         if (JSON.stringify(doc) !== before || JSON.stringify(sel) !== beforeSel) console.error("demo changed the document or selection; this must never happen");
@@ -1317,6 +1491,7 @@ export function mountWord(el, opts = {}) {
   /* ---------- wire up ---------- */
   page.addEventListener("beforeinput", onBeforeInput);
   page.addEventListener("keydown", onKeyDown);
+  page.addEventListener("keyup", updateCapsLock);
   page.addEventListener("mousedown", onPageMouseDown);
   page.addEventListener("mouseup", onPageMouseUp);
   page.addEventListener("contextmenu", onContextMenu);
@@ -1329,6 +1504,10 @@ export function mountWord(el, opts = {}) {
   page.addEventListener("drop", (e) => e.preventDefault());
   root.addEventListener("mousedown", onRootMouseDown);
   root.addEventListener("click", onRootClick);
+  root.addEventListener("pointerover", e=>{
+    const cell=e.target.closest?.(".wm-table-grid button"); if (!cell) return;
+    cell.parentElement.querySelectorAll("button").forEach(b=>b.classList.toggle("is-on",+b.dataset.cols<=+cell.dataset.cols && +b.dataset.rows<=+cell.dataset.rows));
+  });
   root.addEventListener("keydown", onComboKey);
   root.addEventListener("focusin", onComboFocus);
   root.addEventListener("focusout", onComboBlur);
@@ -1382,6 +1561,7 @@ export function mountWord(el, opts = {}) {
     },
     getDoc: () => doc,
     setDoc(next) {
+      selectedPicture=-1;
       doc = createDoc(next);
       sel = collapsedSel({ p: 0, offset: 0 });
       history.clear();
@@ -1412,6 +1592,7 @@ export function mountWord(el, opts = {}) {
     destroy() {
       if (destroyed) return;
       cancelDemo();
+      cancelResize?.();
       destroyed = true;
       backstage?.close();
       document.removeEventListener("selectionchange", onSelectionChange);

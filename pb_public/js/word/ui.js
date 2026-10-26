@@ -34,6 +34,7 @@ function relRect(root, el) {
 const UL_CSS = { single: "solid", double: "double", thick: "solid", dotted: "dotted", dashed: "dashed", wave: "wavy" };
 
 function itemHtml(it) {
+  if (it.tableGrid) return `<div class="wm-table-grid" aria-label="Choose table size">${Array.from({length:80},(_,i)=>{ const cols=i%10+1,rows=Math.floor(i/10)+1; return `<button type="button" data-cmd="insert.table.create" data-arg="${cols}x${rows}" data-cols="${cols}" data-rows="${rows}" aria-label="${cols} columns, ${rows} rows" title="${cols} columns, ${rows} rows"></button>`; }).join("")}</div>`;
   if (it.sep) return `<div class="wm-sep" role="separator"></div>`;
   if (it.searchbox) return `<button type="button" class="wm-searchbox" data-cmd="${it.cmd}">${esc(it.label)}</button>`;
   if (it.inert) return `<div class="wm-item is-inert"><span class="wm-lead">${ico(it.icon)}</span><span class="wm-label"><b>${esc(it.label)}</b></span></div>`;

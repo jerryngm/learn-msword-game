@@ -77,6 +77,7 @@ export function validateScript(script) {
     if ("target" in step) {
       if (typeof step.target !== "string" || !step.target) bad("needs a target id");
       if (step.click !== undefined && !CLICKS.has(step.click)) bad("click must be single, double or right");
+      if (step.drag !== undefined && (!Number.isFinite(step.drag?.dx) || !Number.isFinite(step.drag?.dy))) bad("drag needs finite dx and dy");
     } else if ("select" in step) {
       if (!isPos(step.select?.from) || !isPos(step.select?.to)) bad("select needs from/to {p, offset}");
     } else if ("type" in step) {
@@ -404,12 +405,30 @@ export async function playDemo(host, script, opts = {}) {
     const r = rel(el.getBoundingClientRect());
     setAvoid([r]);
     const tag = CLICK_TAG[kind] ?? null;
+    if (step.drag) {
+      const x=r.x+r.w/2,y=r.y+r.h/2;
+      const label={en:"Drag",vi:"Kéo"};
+      if(reduced) {
+        marker(x-18,y-24,label);
+        marker(x+step.drag.dx-18,y+step.drag.dy+8,label);
+        const line=add("dm-drag-path");
+        Object.assign(line.style,{position:"absolute",left:`${x}px`,top:`${y}px`,width:`${Math.hypot(step.drag.dx,step.drag.dy)}px`,borderTop:"3px dashed #3466b3",transformOrigin:"0 0",transform:`rotate(${Math.atan2(step.drag.dy,step.drag.dx)}rad)`});
+        await sleep(700);
+      } else {
+        await moveTo(x-4,y-2); if(aborted()) return;
+        ghost.querySelector(".wg-ghost-lbl").innerHTML=biPair(label);
+        ripple(x,y,"single"); await sleep(300);
+        await moveTo(x+step.drag.dx-4,y+step.drag.dy-2); await sleep(300);
+      }
+      if(!aborted()) opts.drag?.(step.target,step.drag);
+      return;
+    }
     if (reduced) {
       // A caret spot in the text gets its marker to the left, so it doesn't cover the next line.
       if (caretSpot) marker(r.x - 44, r.y + r.h / 2 - 18, tag);
       else marker(r.x + r.w / 2 - 18, r.y + r.h + 4, tag);
       await sleep(kind === "single" ? 700 : 1100);
-      if (!aborted() && el instanceof Element) opts.act?.(step.target);
+      if (!aborted()) opts.act?.(step.target, kind);
       return;
     }
     const cx = r.x + r.w / 2;
@@ -431,8 +450,8 @@ export async function playDemo(host, script, opts = {}) {
     if (el instanceof Element) {
       el.classList.remove("is-demo-press");
       pressed.delete(el);
-      if (!aborted()) opts.act?.(step.target);
     }
+    if (!aborted()) opts.act?.(step.target, kind);
     if (tag) lbl.textContent = "Watch";
   }
 

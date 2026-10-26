@@ -18,6 +18,8 @@ export const TABS = [
   { id: "review", label: "Review" },
   { id: "view", label: "View" },
   { id: "help", label: "Help" },
+  { id: "picture", label: "Picture Format" },
+  { id: "table", label: "Table Layout" },
 ];
 
 /* ---------- layout primitives ---------- */
@@ -89,9 +91,9 @@ const HOME = [
 
 const INSERT = [
   group("insert.pages", "Pages", [big("insert.pages.cover", "document_text_24", "Cover Page", { menuOnly: true }), big("insert.pages.blank", "document_add_24", "Blank Page"), big("insert.pages.break", "document_page_break_24", "Page Break")]),
-  group("insert.tables", "Tables", [big("insert.tables.table", "table_32", "Table", { menuOnly: true })]),
+  group("insert.tables", "Tables", [big("insert.table", "table_32", "Table", { menuOnly: true })]),
   group("insert.illustrations", "Illustrations", [
-    big("insert.illustrations.pictures", "image_32", "Pictures", { menuOnly: true }), big("insert.illustrations.shapes", "shapes_32", "Shapes", { menuOnly: true }),
+    big("insert.pictures", "image_32", "Pictures", { menuOnly: true }), big("insert.illustrations.shapes", "shapes_32", "Shapes", { menuOnly: true }),
     big("insert.illustrations.icons", "icons_24", "Icons"), big("insert.illustrations.models", "cube_32", "3D Models", { menuOnly: true }),
     big("insert.illustrations.smartart", "organization_24", "SmartArt", { cls: "wi-green" }), big("insert.illustrations.chart", "data_bar_vertical_add_24", "Chart", { cls: "wi-blue" }),
     big("insert.illustrations.screenshot", "screenshot_24", "Screenshot", { menuOnly: true }),
@@ -111,7 +113,7 @@ const INSERT = [
 
 const LAYOUT = [
   group("layout.pageSetup", "Page Setup", [
-    big("layout.pageSetup.margins", "document_margins_24", "Margins", { menuOnly: true }), big("layout.pageSetup.orientation", "orientation_24", "Orientation", { menuOnly: true }),
+    big("layout.margins", "document_margins_24", "Margins", { menuOnly: true }), big("layout.orientation", "orientation_24", "Orientation", { menuOnly: true }),
     big("layout.pageSetup.size", "document_24", "Size", { menuOnly: true }), big("layout.pageSetup.columns", "text_column_two_24", "Columns", { menuOnly: true }),
     stack(smt("layout.pageSetup.breaks", "document_page_break_24", "Breaks", { menuOnly: true }), smt("layout.pageSetup.lineNumbers", "text_number_list_ltr_20", "Line Numbers", { menuOnly: true }), smt("layout.pageSetup.hyphenation", "text_font_size_20", "Hyphenation", { menuOnly: true })),
   ], { launcher: "layout.pageSetup.dialog" }),
@@ -181,6 +183,8 @@ const HELP = [
 ];
 
 const TAB_GROUPS = new Map([
+  ["picture", [group("picture.arrange", "Arrange", [big("picture.wrap", "document_24", "Wrap Text", {menuOnly:true}),big("picture.delete", "delete_20", "Delete Picture")])]],
+  ["table", [group("table.rows", "Rows & Columns", [big("table.insertBelow", "table_32", "Insert Below"),big("table.insertRight", "table_32", "Insert Right"),big("table.delete", "delete_20", "Delete", {menuOnly:true})])]],
   ["home", HOME], ["insert", INSERT], ["design", DESIGN], ["layout", LAYOUT], ["references", REFERENCES],
   ["mailings", MAILINGS], ["review", REVIEW], ["view", VIEW], ["help", HELP],
 ]);
