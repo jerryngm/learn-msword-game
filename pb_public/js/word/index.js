@@ -1346,6 +1346,13 @@ export function mountWord(el, opts = {}) {
     return rangeRects(r);
   }
 
+  // Ghost Delete Picture (button or key): the demo view loses the demo-selected picture; the learner's document is untouched.
+  function demoDeletePicture() {
+    const source=demoDoc??doc;
+    if(demoPicture<0||!source.p[demoPicture]?.picture) return;
+    demoDoc=updatePicture(source,{p:demoPicture},null); demoPicture=-1;
+    renderer.render(demoDoc); observer.takeRecords(); popups.closeAll(); updateUI();
+  }
   // A ghost click on File, a Backstage item, Browse or a Save As folder opens what the real click
   // opens, so the next target is on screen. The file name box and Save are never pressed: a demo
   // must not save.
@@ -1354,6 +1361,7 @@ export function mountWord(el, opts = {}) {
       const el=demoResolve(target); demoPicture=Number(el?.closest(".wd-p")?.dataset.p??-1); setTab("picture"); updateUI(); return;
     }
     if(target==="insert.pictures.device") {popups.closeMenu();openPicturePicker();return;}
+    if(target==="picture.delete") {demoDeletePicture();return;}
     if(target.startsWith("choice:insert.pictures.choose:") || target.startsWith("choice:picture.wrap.set:")) {
       const [,id,arg]=target.split(":"); const source=demoDoc??doc;
       const at=demoPicture>=0?{p:demoPicture,offset:0}:selRange(sel).from;
@@ -1434,6 +1442,7 @@ export function mountWord(el, opts = {}) {
           demoDoc=updatePicture(source,{p},pictureSize(picture,handle,delta.dx/(zoom/100),delta.dy/(zoom/100)));
           demoPicture=p;renderer.render(demoDoc);observer.takeRecords();updateUI();
         },
+        key: (combo)=>{ if(combo==="Delete"||combo==="Backspace") demoDeletePicture(); },
         reducedMotion: reducedMotion(),
         signal: ctrl.signal,
       });

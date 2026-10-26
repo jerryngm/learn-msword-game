@@ -23,6 +23,8 @@
 //   caret(target|null) -> {x, y, h, left, right, font} | null   (client px) optional host hook for a
 //                   text host (Word): where typing starts for a target, or the current caret for null
 //   selectRects(select) -> DOMRect[]   optional host hook: client rects of a model range
+//   key(combo)      optional host hook, called after a `key` step lights its keys: the host may
+//                   show the key's effect in its temporary demo view only (Word: Delete on a picture)
 //   act(target)     optional host hook, called after each ghost click on an element: the host may
 //                   open what the click opens (a menu, a Backstage page) so later targets exist.
 //                   It must never change the document; the host restores the UI when the demo ends.
@@ -558,6 +560,7 @@ export async function playDemo(host, script, opts = {}) {
       }
     }
     await lightKeys(ids, reduced ? 1200 : 1400);
+    if (!aborted()) opts.key?.(step.key);
     await sleep(500);
   }
 
@@ -580,6 +583,8 @@ export async function playDemo(host, script, opts = {}) {
       else if ("say" in step) await doSay(step);
       else if ("wait" in step) await sleep(Math.min(10000, step.wait));
     }
+    // Reduced motion: hold the last result briefly, because the host clears its demo view on return.
+    if (!aborted() && reduced) await sleep(900);
     if (!aborted() && !reduced) {
       await sleep(needsKeyboard ? 900 : 400);
       layer.classList.add("is-fading");

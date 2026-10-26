@@ -32,5 +32,7 @@ const CUSTOM = {
   replace: `<svg viewBox="0 0 20 20"><text x="8" y="8.5" font-family="Segoe UI,Arial,sans-serif" font-size="8" fill="#424242">b</text><text x="9.5" y="18" font-family="Segoe UI,Arial,sans-serif" font-size="8" fill="#424242">c</text><path d="M5 5.5a4 4 0 0 0 0 7.2" fill="none" stroke="#2A62B8" stroke-width="1.4"/><path d="M3.2 11.2 5.3 13l1.6-2.3" fill="none" stroke="#2A62B8" stroke-width="1.4"/></svg>`,
   // Borders: a dotted grid with a solid bottom line.
   borders: `<svg viewBox="0 0 20 20" fill="none" stroke="#424242"><path d="M3 3.5h14M3 10h14M3.5 3v13M10 3v13M16.5 3v13" stroke-dasharray="1 1.6"/><path d="M2.5 16.5h15" stroke-width="1.3"/></svg>`,
+  // Delete: a neutral trash can (no Fluent delete icon is vendored).
+  delete: `<svg viewBox="0 0 20 20" fill="none" stroke="#424242" stroke-width="1.2" stroke-linejoin="round"><path d="M3.5 5.5h13M8 5.5V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M5 5.5l.8 10.6a1 1 0 0 0 1 .9h6.4a1 1 0 0 0 1-.9L15 5.5M8.5 8.5v6M11.5 8.5v6"/></svg>`,
   ghost: `<svg viewBox="0 0 30 36" aria-hidden="true"><path d="M3 2 L3 28 L10 21 L15 33 L20 31 L15 19 L25 19 Z" fill="#fff" stroke="#17324D" stroke-width="2" stroke-linejoin="round"/></svg>`,
 };

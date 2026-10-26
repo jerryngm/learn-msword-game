@@ -183,8 +183,8 @@ const HELP = [
 ];
 
 const TAB_GROUPS = new Map([
-  ["picture", [group("picture.arrange", "Arrange", [big("picture.wrap", "document_24", "Wrap Text", {menuOnly:true}),big("picture.delete", "delete_20", "Delete Picture")])]],
-  ["table", [group("table.rows", "Rows & Columns", [big("table.insertBelow", "table_32", "Insert Below"),big("table.insertRight", "table_32", "Insert Right"),big("table.delete", "delete_20", "Delete", {menuOnly:true})])]],
+  ["picture", [group("picture.arrange", "Arrange", [big("picture.wrap", "text_wrap_24", "Wrap Text", {menuOnly:true}),big("picture.delete", "delete", "Delete Picture")])]],
+  ["table", [group("table.rows", "Rows & Columns", [big("table.insertBelow", "table_32", "Insert Below"),big("table.insertRight", "table_32", "Insert Right"),big("table.delete", "delete", "Delete", {menuOnly:true})])]],
   ["home", HOME], ["insert", INSERT], ["design", DESIGN], ["layout", LAYOUT], ["references", REFERENCES],
   ["mailings", MAILINGS], ["review", REVIEW], ["view", VIEW], ["help", HELP],
 ]);
