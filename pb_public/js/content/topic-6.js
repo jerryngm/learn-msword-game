@@ -38,6 +38,8 @@ const ratioOf = (id) => {
 };
 // A corner drag keeps the shape exactly (up to rounding); a side drag changes it.
 const keepsShape = (p) => Math.abs(p.width / p.height / ratioOf(p.id) - 1) < 0.03;
+// The trainer teaches "make it smaller": any real change down from the 480 px start counts, with no size target.
+const smaller = (p) => p.width < 470;
 /** Exactly one picture, the right one, and it sits right after the paragraph `before` (the heading or the line above). */
 const onePictureAfter = (doc, id, before) => {
   const all = pictures(doc);
@@ -112,12 +114,12 @@ export const items = [
     [option('corner', 'A corner handle', 'Điểm kéo ở góc hình'), option('side', 'A side handle', 'Điểm kéo ở giữa một cạnh')], 'corner',
     replay(bigFlower, [go('picture:0'), drag('picture:0:se', -200, -140), say('A corner keeps the flower the same shape.', 'Kéo ở góc thì hình hoa vẫn giữ nguyên hình dạng.')])),
   doItem('t6-resize-do', 't6-resize',
-    T('The flower picture fills half of your flyer. Make it about half as wide. Drag a corner, so it keeps its shape.', 'Hình hoa chiếm tới nửa tờ rơi. Hãy thu nhỏ hình, chỉ còn khoảng một nửa bề ngang. Kéo ở góc hình để hình giữ nguyên hình dạng.'),
+    T('The flower picture fills half of your flyer. Make it smaller. Drag a corner, so it keeps its shape.', 'Hình hoa chiếm tới nửa tờ rơi. Hãy làm hình nhỏ lại. Kéo ở góc hình để hình giữ nguyên hình dạng.'),
     T('Click the picture once. Point at the small square on the bottom-right corner (the handle). Hold the mouse button and drag towards the middle of the picture. If it looks stretched, press Ctrl+Z and try again.', 'Bấm vào hình một lần. Đưa chuột tới ô vuông nhỏ ở góc dưới bên phải (điểm kéo). Giữ nút chuột và kéo vào phía giữa hình. Nếu hình bị méo, nhấn Ctrl+Z rồi làm lại.'),
     bigFlower,
     (doc) => {
       const all = pictures(doc);
-      return all.length === 1 && all[0].width >= 120 && all[0].width <= 360 && keepsShape(all[0]) && sameLines(doc, ['Garden club', ...gardenLines]);
+      return all.length === 1 && smaller(all[0]) && keepsShape(all[0]) && sameLines(doc, ['Garden club', ...gardenLines]);
     },
     [go('picture:0'), drag('picture:0:se', -200, -140)]),
   pick('t6-stretched-pick', 't6-resize',
@@ -195,14 +197,14 @@ const insertSteps = [
 const resizeStart = flyer('Garden club', pic('flower', 480), flyerLines);
 const resizeCheck = (doc) => {
   const all = pictures(doc);
-  return all.length === 1 && all[0].id === 'flower' && all[0].width >= 120 && all[0].width <= 360 && keepsShape(all[0]) && sameLines(doc, flyerText);
+  return all.length === 1 && all[0].id === 'flower' && smaller(all[0]) && keepsShape(all[0]) && sameLines(doc, flyerText);
 };
 const resized = (doc) => pictures(doc)[0]?.width !== 480;
 const resizeSteps = [
   step(T('Click the flower picture once.', 'Bấm vào hình hoa một lần.'),
     T('Click anywhere on the picture. Small squares show on its corners and sides. They are called handles.', 'Bấm vào chỗ nào trên hình cũng được. Các ô vuông nhỏ sẽ hiện ra ở các góc và các cạnh của hình. Các ô này gọi là điểm kéo (handle).'),
     (doc, ctx) => pictureSelected(doc, ctx) || resized(doc), [go('picture:0')]),
-  step(T('Drag the small square on the bottom-right corner towards the middle, until the picture is about half as wide.', 'Kéo ô vuông nhỏ ở góc dưới bên phải vào phía giữa hình, đến khi hình chỉ còn khoảng một nửa bề ngang.'),
+  step(T('Drag the small square on the bottom-right corner towards the middle, to make the picture smaller.', 'Kéo ô vuông nhỏ ở góc dưới bên phải vào phía giữa hình để làm hình nhỏ lại.'),
     T('Use a corner, not a side, so the flower keeps its shape. Hold the mouse button down while you drag. If it looks stretched, press Ctrl+Z and try again.', 'Kéo ở góc, đừng kéo ở cạnh, để hình hoa giữ nguyên hình dạng. Giữ nút chuột trong lúc kéo. Nếu hình bị méo, nhấn Ctrl+Z rồi làm lại.'),
     resizeCheck, [go('picture:0'), drag('picture:0:se', -240, -168)]),
 ];
@@ -227,7 +229,7 @@ export const missions = [
     T('Your garden club flyer has text but no picture. Add the Flower picture on a new line under the heading Garden club.', 'Tờ rơi của câu lạc bộ làm vườn mới có chữ mà chưa có hình. Hãy chèn hình Flower vào một dòng mới dưới tiêu đề Garden club.'),
     flyerText.join('\n'), createDoc({ p: ['Garden club', '', pic('flower', 240), '', ...flyerLines] }), insertSteps, insertCheck),
   mission('t6-m-smaller-picture', 't6-resize', T('Make the picture smaller', 'Làm hình nhỏ lại'),
-    T('The flower picture is too big for your flyer. Make it about half as wide. Drag a corner, so the flower does not get squashed.', 'Hình hoa quá to so với tờ rơi. Hãy làm hình chỉ còn khoảng một nửa bề ngang. Kéo ở góc hình để hình hoa không bị bẹp.'),
+    T('The flower picture is too big for your flyer. Make it smaller. Drag a corner, so the flower does not get squashed.', 'Hình hoa quá to so với tờ rơi. Hãy làm hình nhỏ lại. Kéo ở góc hình để hình hoa không bị bẹp.'),
     resizeStart, flyer('Garden club', pic('flower', 240), flyerLines), resizeSteps, resizeCheck),
   mission('t6-m-picture-beside-text', 't6-move-wrap', T('Put the picture beside the text', 'Đặt hình bên cạnh chữ'),
     T('Your notice for a free computer class has a laptop picture. The text is under the picture, so the notice is too long. Put the text next to the picture, so the notice fits on one page: set Wrap Text to Square.', 'Tờ thông báo lớp máy tính miễn phí của bạn có một hình laptop. Chữ đang nằm dưới hình nên tờ thông báo bị dài. Hãy đưa chữ lên cạnh hình cho vừa một trang: đặt Wrap Text thành Square.'),

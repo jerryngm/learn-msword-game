@@ -476,7 +476,7 @@ const REPLAYS = {
   },
   "t1-open-word-order": {
     mock: "start-menu",
-    script: [key("Win"), typ("Word", "search-box"), go("word-app"), go("blank-document"), say("A blank page. Well done!", "Một trang trống. Bạn làm tốt lắm!")],
+    script: [key("Win"), typ("Word", "search-box"), go("word-app"), go("blank-document")],
   },
   "t1-open-word-start": {
     mock: "start-menu",
@@ -520,7 +520,7 @@ const REPLAYS = {
   },
   "t1-save-order-full": {
     mock: "word-static",
-    script: [go("file"), go("bs.saveas"), go("sa.browse"), go("sa.documents"), say("Next: a name, then Save.", "Tiếp theo: gõ tên tệp, rồi bấm Save.")],
+    script: [go("file"), go("bs.saveas"), go("sa.browse"), go("sa.documents")],
   },
   "t1-save-order-window": {
     mock: "word-static",
