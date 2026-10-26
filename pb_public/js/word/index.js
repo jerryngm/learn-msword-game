@@ -28,6 +28,8 @@ import { playDemo, validateScript } from "../demo/player.js";
 // Ctrl+key combos that Word owns but the browser would act on (print, new window, open, link, close tab).
 const BROWSER_KEYS = { p: "file.print", n: "file.new.blank", o: "file.openDocument", k: "insert.links.link", w: "file.close" };
 const RIBBON_TABS = new Set(TABS.map((t) => t.id).filter((id) => id !== "file"));
+// Contextual tabs: shown only while a picture / a table is selected.
+const CONTEXT_TABS = new Set(["picture", "table"]);
 const internals = new WeakMap();
 
 /** Engine internals for hints.js (not part of the mission API). */
@@ -151,6 +153,7 @@ export function mountWord(el, opts = {}) {
   const lastLists = { bullet: "•", number: "1." };
   let lastBorderSide = "bottom";
   let tab = "home";
+  let prevTab = "home"; // the tab in use before a contextual tab was opened
   let goalFired = false;
   // True while the goal already holds without the learner having made it hold (a start doc that
   // meets it). `goal` only fires on a false -> true transition, so it is cleared once the goal fails.
@@ -253,9 +256,17 @@ export function mountWord(el, opts = {}) {
     if (destroyed) return;
     const s = computeState();
     const tableTab = root.querySelector('[data-tab="table"].wt-tab');
-    root.querySelector('[data-tab="picture"].wt-tab').hidden = !doc.p[selectedPicture]?.picture && demoPicture<0;
+    const pictureTab = root.querySelector('[data-tab="picture"].wt-tab');
+    pictureTab.hidden = !doc.p[selectedPicture]?.picture && demoPicture<0;
     page.querySelectorAll(".wd-picture").forEach(el=>el.classList.toggle("is-selected",Number(el.closest(".wd-p").dataset.p)===(demoPicture>=0?demoPicture:selectedPicture)));
     tableTab.hidden = !doc.p[sel.focus.p]?.cell && !demoDoc?.tables?.length;
+    // A contextual tab that disappears while it is active hands the ribbon back to the tab used
+    // before it (Home if that one is gone too). A demo's own tab changes are put back when it ends.
+    if (!locked && CONTEXT_TABS.has(tab) && root.querySelector(`.wt-tab[data-tab="${tab}"]`)?.hidden) {
+      const back = RIBBON_TABS.has(prevTab) && !CONTEXT_TABS.has(prevTab) ? prevTab : "home";
+      setTab(back);
+      return; // setTab re-renders the ribbon and runs updateUI again
+    }
     root.querySelectorAll("[data-cmd]").forEach((b) => {
       const cmd = getCommand(b.dataset.cmd);
       if (!cmd) return;
@@ -358,12 +369,15 @@ export function mountWord(el, opts = {}) {
     if (!group) history.seal();
     doc = next;
     sel = clampSel(next, newSel ?? sel);
-    if (id === "insert.pictures.choose") selectedPicture=sel.focus.p;
+    const inserted = id === "insert.pictures.choose" && Boolean(doc.p[sel.focus.p]?.picture);
+    if (inserted) selectedPicture=sel.focus.p;
     else if (!doc.p[selectedPicture]?.picture) selectedPicture=-1;
     pending = null;
     render();
     writeSel();
     scrollCaretIntoView();
+    // Word opens Picture Format by itself only right after a picture is inserted.
+    if (inserted) setTab("picture");
     updateUI();
     emit("change", { doc, prevDoc: prev, lastCommand: id });
     // A pressed button that is no longer pressed means the command switched its format off.
@@ -399,11 +413,72 @@ export function mountWord(el, opts = {}) {
     return true;
   }
 
+  /* ---------- Insert Picture file picker (Insert › Pictures › This Device) ---------- */
+  // As in Windows Word: a click highlights a file, Insert (or a double-click, or Enter on a file)
+  // inserts it, Cancel / X / Escape insert nothing. Spotlight and demo ids: `insert.pictures.insert`
+  // (the Insert button) and `choice:insert.pictures.choose:<id>` (a file).
+  const PICKER_INSERT = "insert.pictures.insert";
+  const pickerEl = () => root.querySelector(".wd-dlg-back .wd-picture-files")?.closest(".wd-dlg") ?? null;
+  const pickerInsertBtn = () => pickerEl()?.querySelector(`[data-spot="${PICKER_INSERT}"]`) ?? null;
+  /** Highlight one file (the others lose it) and enable Insert. Returns the file id or null. */
+  function pickFile(id) {
+    const dlg = pickerEl();
+    if (!dlg) return null;
+    let picked = null;
+    dlg.querySelectorAll(".wd-picture-files [data-picture-file]").forEach((b) => {
+      const on = b.dataset.pictureFile === id;
+      b.classList.toggle("is-picked", on);
+      b.setAttribute("aria-pressed", String(on));
+      if (on) picked = id;
+    });
+    const insert = pickerInsertBtn();
+    if (insert) insert.disabled = !picked;
+    return picked;
+  }
+  const pickedFile = () => pickerEl()?.querySelector(".wd-picture-files .is-picked")?.dataset.pictureFile ?? null;
+
   function openPicturePicker() {
-    return popups.dialog({title:"Insert Picture",width:620,
-      body:`<div class="wd-picture-folder">This PC › Pictures</div><div class="wd-picture-files">${PICTURES.map(p=>`<button type="button" data-cmd="insert.pictures.choose" data-arg="${p.id}" aria-label="Insert ${p.name}"><img src="${p.src}" alt=""><span>${p.name}.png</span></button>`).join("")}</div>`,
-      buttons:[{label:"Cancel",value:"cancel"}],
-    }).finally(()=>{if(!destroyed&&!locked) focusPage();});
+    const files = PICTURES.map((p) => `<button type="button" data-picture-file="${p.id}" data-cmd="insert.pictures.choose" data-arg="${p.id}" aria-pressed="false" aria-label="${p.name}.png"><img src="${p.src}" alt=""><span>${p.name}.png</span></button>`).join("");
+    const shown = popups.dialog({
+      title: "Insert Picture",
+      width: 620,
+      body: `<div class="wd-picture-folder">This PC › Pictures</div><div class="wd-picture-files" role="group" aria-label="Pictures">${files}</div>`,
+      buttons: [{ label: "Insert", value: "insert", primary: true }, { label: "Cancel", value: "cancel" }],
+      read: (dlg, v) => (v === "insert" ? dlg.querySelector(".wd-picture-files .is-picked")?.dataset.pictureFile ?? null : null),
+      onMount(dlg) {
+        const insert = dlg.querySelector('.wd-dbtn[data-dlg="insert"]');
+        insert.dataset.spot = PICKER_INSERT;
+        insert.disabled = true;
+        const grid = dlg.querySelector(".wd-picture-files");
+        // Clicks on files are handled here, not by the engine's command dispatch (a click only selects).
+        grid.addEventListener("click", (e) => {
+          const b = e.target.closest("[data-picture-file]");
+          if (!b) return;
+          e.stopPropagation();
+          if (locked) return;
+          pickFile(b.dataset.pictureFile);
+          if (e.detail >= 2) popups.closeDialog(b.dataset.pictureFile);
+        });
+        grid.addEventListener("keydown", (e) => {
+          const b = e.target.closest?.("[data-picture-file]");
+          if (!b || e.key !== "Enter" || locked) return;
+          e.preventDefault();
+          e.stopPropagation();
+          popups.closeDialog(b.dataset.pictureFile);
+        });
+        // Insert starts disabled, so the focus goes to the first file (keeps keys inside the dialog).
+        grid.querySelector("[data-picture-file]")?.focus({ preventScroll: true });
+      },
+    });
+    applySpotlight();
+    return shown
+      .then((id) => {
+        if (destroyed || locked) return;
+        focusPage();
+        applySpotlight();
+        if (typeof id === "string" && PICTURES.some((p) => p.id === id)) return exec("insert.pictures.choose", id);
+      })
+      .catch((err) => console.error("picture picker failed", err));
   }
 
   /* ---------- ui surface handed to commands ---------- */
@@ -630,6 +705,7 @@ export function mountWord(el, opts = {}) {
   function setTab(id) {
     if (id === "file") return openFile("home");
     if (!RIBBON_TABS.has(id) || id === tab) return;
+    if (CONTEXT_TABS.has(id) && !CONTEXT_TABS.has(tab)) prevTab = tab;
     tab = id;
     popups.closeAll();
     renderRibbon();
@@ -670,13 +746,18 @@ export function mountWord(el, opts = {}) {
     root.classList.toggle("is-spot", Boolean(spotlight));
     if (!spotlight) return;
     const parts = spotlight.split(".");
-    const groupId = parts.slice(0, 2).join(".");
-    const g = root.querySelector(`[data-group="${groupId}"]`);
+    // The picker's Insert button while the picker is open; otherwise Insert › Illustrations › Pictures,
+    // where the route to it starts.
+    const pickerBtn = spotlight === PICKER_INSERT ? pickerInsertBtn() : null;
+    const groupId = spotlight === PICKER_INSERT ? "insert.illustrations" : parts.slice(0, 2).join(".");
+    const g = pickerBtn ?? root.querySelector(`[data-group="${groupId}"]`);
     if (!g) return;
-    g.classList.add("is-spot-target");
     let target = g;
-    if (parts.length > 2) {
-      const b = g.querySelector(`[data-cmd="${spotlight}"],[data-menu="${spotlight}"]`);
+    if (pickerBtn) pickerBtn.classList.add("is-spot-btn");
+    else g.classList.add("is-spot-target");
+    if (!pickerBtn && parts.length > 2) {
+      const id = spotlight === PICKER_INSERT ? "insert.pictures" : spotlight;
+      const b = g.querySelector(`[data-cmd="${id}"],[data-menu="${id}"]`);
       if (b) {
         b.classList.add("is-spot-btn");
         target = b;
@@ -866,6 +947,8 @@ export function mountWord(el, opts = {}) {
     const next = clampSel(doc, s);
     if (sameSel(next, sel)) return;
     sel = next;
+    // The caret left the picture (arrow keys, a click in the text): the picture is deselected.
+    if (selectedPicture >= 0 && (sel.anchor.p !== selectedPicture || sel.focus.p !== selectedPicture)) selectedPicture = -1;
     pending = null;
     history.seal();
     updateUI();
@@ -894,8 +977,17 @@ export function mountWord(el, opts = {}) {
     }
     const picture=e.target.closest(".wd-picture");
     if (picture && e.button===0) {
-      e.preventDefault(); selectedPicture=Number(picture.closest(".wd-p").dataset.p);
-      sel=collapsedSel({p:selectedPicture,offset:0}); focusPage(); setTab("picture"); updateUI();
+      e.preventDefault();
+      const p=Number(picture.closest(".wd-p").dataset.p);
+      const changed=p!==selectedPicture || sel.focus.p!==p || sel.anchor.p!==p;
+      popups.closeAll();
+      selectedPicture=p;
+      sel=collapsedSel({p,offset:0}); pending=null; history.seal();
+      // Clicking a picture shows Picture Format but keeps the current tab (as in Word).
+      focusPage(); updateUI();
+      // A selection is not a document change, but mission and revision checks re-run on `change`
+      // ("the picture is selected" must tick on the click itself).
+      if (changed) emit("change", { doc, prevDoc: doc, lastCommand: "picture.select" });
       const handle=e.target.closest("[data-handle]")?.dataset.handle;
       if (handle) startPictureResize(e,picture,handle);
       return;
@@ -1217,6 +1309,7 @@ export function mountWord(el, opts = {}) {
     popups.closeAll();
     locked = false;
     root.classList.remove("is-demo");
+    if (!destroyed) updateUI();
     if (was && !destroyed) restoreBackstage(was);
   }
 
@@ -1259,7 +1352,7 @@ export function mountWord(el, opts = {}) {
       if (item) return item;
     }
     if (id.startsWith("insert.pictures.")) {
-      const item=root.querySelector(`.wm-menu [data-cmd="${id}"],.wd-dlg [data-cmd="${id}"]`); if(item) return item;
+      const item=root.querySelector(`.wm-menu [data-cmd="${id}"],.wd-dlg [data-cmd="${id}"],.wd-dlg [data-spot="${id}"]`); if(item) return item;
     }
     // "file" is the File tab; "bs.<page>" is a Backstage list item (e.g. "bs.saveas"); "sa.browse|documents|name|save" are Save As controls.
     const BS_TARGETS = { file: '.wt-tab[data-tab="file"]', "sa.browse": ".bs .sa-browse", "sa.documents": '.bs .sa-n[data-folder="documents"]', "sa.name": ".bs .sa-name", "sa.save": ".bs .sa-save" };
@@ -1353,16 +1446,36 @@ export function mountWord(el, opts = {}) {
     demoDoc=updatePicture(source,{p:demoPicture},null); demoPicture=-1;
     renderer.render(demoDoc); observer.takeRecords(); popups.closeAll(); updateUI();
   }
+  // Ghost insert of the file chosen in the picker: the picture lands in the demo view only, and
+  // Picture Format opens, as after a real insert.
+  function demoInsertPicture(id) {
+    if (!id) return;
+    const source=demoDoc??doc;
+    const at=selRange(sel).from;
+    const result=getCommand("insert.pictures.choose").run(source,{from:at,to:at},{arg:id,ui});
+    demoDoc=result.doc??result; demoPicture=result.sel?.focus.p??demoPicture;
+    renderer.render(demoDoc);observer.takeRecords();popups.closeAll();popups.closeDialog();
+    if (demoPicture>=0) setTab("picture");
+    updateUI();
+  }
   // A ghost click on File, a Backstage item, Browse or a Save As folder opens what the real click
   // opens, so the next target is on screen. The file name box and Save are never pressed: a demo
   // must not save.
   function demoAct(target, kind) {
     if(target.startsWith("picture:")) {
-      const el=demoResolve(target); demoPicture=Number(el?.closest(".wd-p")?.dataset.p??-1); setTab("picture"); updateUI(); return;
+      // Like a real click: the picture is selected and Picture Format shows, but the tab stays.
+      const el=demoResolve(target); demoPicture=Number(el?.closest(".wd-p")?.dataset.p??-1); updateUI(); return;
     }
     if(target==="insert.pictures.device") {popups.closeMenu();openPicturePicker();return;}
+    if(target===PICKER_INSERT) {demoInsertPicture(pickedFile());return;}
+    if(target.startsWith("choice:insert.pictures.choose:")) {
+      // A click highlights the file; a double-click inserts it at once.
+      const picked=pickFile(target.split(":")[2]);
+      if (kind==="double") demoInsertPicture(picked);
+      return;
+    }
     if(target==="picture.delete") {demoDeletePicture();return;}
-    if(target.startsWith("choice:insert.pictures.choose:") || target.startsWith("choice:picture.wrap.set:")) {
+    if(target.startsWith("choice:picture.wrap.set:")) {
       const [,id,arg]=target.split(":"); const source=demoDoc??doc;
       const at=demoPicture>=0?{p:demoPicture,offset:0}:selRange(sel).from;
       const result=getCommand(id).run(source,{from:at,to:at},{arg,ui});
@@ -1451,9 +1564,9 @@ export function mountWord(el, opts = {}) {
         popups.closeAll();
         popups.closeDialog();
         demoPicture=-1;
-        if (demoDoc) { demoDoc=null; render(); writeSel(); }
-        updateUI();
         locked = false;
+        if (demoDoc) { demoDoc=null; render(); writeSel(); }
+        updateUI(); // a contextual tab the demo opened goes away with the demo view
         root.classList.remove("is-demo");
         if (JSON.stringify(doc) !== before || JSON.stringify(sel) !== beforeSel) console.error("demo changed the document or selection; this must never happen");
         // A demo that ran to the end puts the Backstage back itself; cancelDemo does it for one cut short.

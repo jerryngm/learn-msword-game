@@ -3,10 +3,11 @@
 // wrong 1 → the gentle toast; wrong 2 → the hint; wrong 3 → the answer is shown, then the learner does it.
 // One attempt is written per finished item, and finishing always earns at least 1 ⭐.
 
-import { biPair, esc, labelPair, t } from "../i18n.js";
+import { bi, biPair, esc, label, labelPair, t } from "../i18n.js";
 import { skillById } from "../content/skills.js";
 import { mountWord, getInternals } from "../word/index.js";
 import { createHints } from "../word/hints.js";
+import { playDemo, validateScript } from "../demo/player.js";
 import { buildRound } from "../revision.js";
 import { skillState, starsFor } from "../rules.js";
 import { mountAsk } from "../ask.js";
@@ -119,6 +120,216 @@ function placeholderMock(host, item, onRegion) {
     destroy() {
       host.removeEventListener("click", onClick);
     },
+  };
+}
+
+/* ---------- replay: the real actions, played once after the answer ---------- */
+// item.replay = {mock: 'word' | 'word-static' | 'start-menu' | 'explorer' | 'keyboard' | 'none', doc?, script}.
+// The stage is mounted read-only (inert: no clicks, no focus); the shared player draws everything over it and never
+// changes a model. The replay never writes an attempt.
+
+const REPLAY_STAGES = new Set(["word", "word-static", "start-menu", "explorer", "keyboard", "none"]);
+const REPLAY_DELAY_MS = 900; // the learner sees their right answer (stars, green choice) before the replay covers it
+
+const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+const nextFrame = () => new Promise((done) => requestAnimationFrame(() => done()));
+
+/** A replay that can be played: a known stage and a script the player accepts. Logs and returns null otherwise. */
+function replayOf(item) {
+  const r = item?.replay;
+  if (!r) return null;
+  try {
+    if (!REPLAY_STAGES.has(r.mock)) throw new TypeError(`unknown replay stage "${r.mock}"`);
+    validateScript(r.script);
+    return r.script.length ? r : null;
+  } catch (err) {
+    console.error(`replay for ${item.id} is not playable`, err);
+    return null;
+  }
+}
+
+/** The mocks share css/mocks.css; measure targets only after it applies (a mock hides itself until then). */
+function mockStylesReady(signal) {
+  const link = document.head.querySelector("link[data-wg-mocks]");
+  if (!link || link.sheet) return Promise.resolve();
+  return new Promise((done) => {
+    const t = setTimeout(finish, 2000);
+    function finish() {
+      clearTimeout(t);
+      link.removeEventListener("load", finish);
+      link.removeEventListener("error", finish);
+      signal.removeEventListener("abort", finish);
+      done();
+    }
+    link.addEventListener("load", finish);
+    link.addEventListener("error", finish);
+    signal.addEventListener("abort", finish);
+  });
+}
+
+/** Where ghost typing starts on the keyboard-only and caption-only stages: the empty line at the top. */
+function lineAnchor(line) {
+  const r = line.getBoundingClientRect();
+  const cs = getComputedStyle(line);
+  const size = parseFloat(cs.fontSize) || 24;
+  const h = size * 1.35;
+  return {
+    x: r.left,
+    y: r.top + (r.height - h) / 2,
+    h,
+    left: r.left,
+    right: r.right,
+    font: { family: cs.fontFamily, size, weight: cs.fontWeight, style: cs.fontStyle, color: cs.color },
+  };
+}
+
+/**
+ * Mounts the replay stage in `stageEl` and returns {resolve, caret?, destroy()} for the player, or plays the whole
+ * thing itself for `word` (the engine owns its demo hooks). Every stage is visual only.
+ */
+async function mountReplayStage(stageEl, replay, { item, learner, signal }) {
+  if (replay.mock === "word") {
+    const word = mountWord(stageEl, {
+      doc: replay.doc ?? "",
+      tabs: Array.isArray(item.tabs) ? item.tabs : ["home"],
+      title: "Document1",
+      initials: initialsOf(learner?.name),
+    });
+    return { word, destroy: () => word.destroy() };
+  }
+  if (replay.mock === "keyboard" || replay.mock === "none") {
+    stageEl.innerHTML = `<div class="wg-replay-blank"><div class="wg-replay-line"></div></div>`;
+    const line = stageEl.querySelector(".wg-replay-line");
+    return { resolve: () => null, caret: () => lineAnchor(line), destroy: () => stageEl.replaceChildren() };
+  }
+  const mod = await loadMock(replay.mock);
+  if (signal.aborted) return null;
+  if (!mod) {
+    // The captions still play; targets on this stage are skipped (the player warns for each one).
+    console.error(`replay for ${item.id}: mock ${replay.mock} is not available`);
+    return { resolve: () => null, destroy: () => stageEl.replaceChildren() };
+  }
+  // No onRegion: the mock mounts as a replay stage (its "before" state) and resolve() switches its stages.
+  const ctl = mod.mount(stageEl, { item, learner });
+  await mockStylesReady(signal);
+  await nextFrame();
+  return {
+    resolve: (id) => (typeof ctl?.resolve === "function" ? ctl.resolve(id) : null),
+    destroy: () => ctl?.destroy?.(),
+  };
+}
+
+/**
+ * Plays `item.replay` in a panel inside `card`, laid over the `cover` elements (the prompt and the item area), with a
+ * small Skip link; the footer (stars, Next) stays visible. Returns stop(), safe to call more than once; it aborts the
+ * player, destroys the stage and removes the panel. `onEnd` runs once when the panel goes, for any reason.
+ */
+function startReplay(card, cover, item, { learner, onEnd }) {
+  const replay = replayOf(item);
+  if (!replay) return null;
+  const reduced = prefersReducedMotion();
+  const ctrl = new AbortController();
+  const { signal } = ctrl;
+  const panel = document.createElement("div");
+  panel.className = "wg-replay";
+  panel.setAttribute("role", "region");
+  panel.setAttribute("aria-label", label("replayLabel"));
+  panel.innerHTML = `<div class="wg-replay-bar">
+      <p class="wg-replay-h">${bi("replayTitle")}</p>
+      <button type="button" class="wg-replay-skip">${bi("replaySkip")}</button>
+    </div>
+    <div class="wg-replay-stage" inert></div>`;
+  const stageEl = panel.querySelector(".wg-replay-stage");
+  const skipBtn = panel.querySelector(".wg-replay-skip");
+  let stage = null;
+
+  // The panel covers the union of the cover elements, in the card's own coordinates.
+  const place = () => {
+    const rects = cover.filter(Boolean).map((el) => el.getBoundingClientRect());
+    if (!rects.length) return;
+    const C = card.getBoundingClientRect();
+    const top = Math.min(...rects.map((r) => r.top)) - C.top - card.clientTop;
+    const left = Math.min(...rects.map((r) => r.left)) - C.left - card.clientLeft;
+    const bottom = Math.max(...rects.map((r) => r.bottom)) - C.top - card.clientTop;
+    const right = Math.max(...rects.map((r) => r.right)) - C.left - card.clientLeft;
+    Object.assign(panel.style, { top: `${top}px`, left: `${left}px`, width: `${right - left}px`, height: `${bottom - top}px` });
+  };
+  const resizeObserver = new ResizeObserver(place);
+
+  const stop = () => {
+    if (signal.aborted) return;
+    const hadFocus = panel.contains(document.activeElement);
+    resizeObserver.disconnect();
+    ctrl.abort();
+    try {
+      stage?.destroy?.();
+    } catch (err) {
+      console.error("replay stage could not be removed", err);
+    }
+    stage = null;
+    panel.remove();
+    card.classList.remove("is-replaying");
+    onEnd?.({ hadFocus });
+  };
+  skipBtn.addEventListener("click", stop);
+  place();
+  card.classList.add("is-replaying");
+  card.appendChild(panel);
+  resizeObserver.observe(card);
+
+  (async () => {
+    try {
+      const mounted = await mountReplayStage(stageEl, replay, { item, learner, signal });
+      if (signal.aborted) {
+        // Stopped while the stage was loading: nothing may stay behind.
+        mounted?.destroy?.();
+        return;
+      }
+      stage = mounted;
+      if (!stage) return;
+      if (stage.word) {
+        // The engine's own demo: Word targets, caret typing, ghost menus. stop() destroys the engine, which cancels it.
+        await stage.word.demo(replay.script);
+      } else {
+        await playDemo(stageEl, replay.script, { resolve: stage.resolve, caret: stage.caret, reducedMotion: reduced, signal });
+      }
+    } catch (err) {
+      console.error(`replay for ${item.id} failed`, err);
+      stop();
+      return;
+    }
+    if (signal.aborted) return;
+    // Reduced motion: the numbered markers and the typed text stay for the learner to read, until Close or Next.
+    if (reduced) skipBtn.innerHTML = bi("replayClose");
+    else stop();
+  })();
+  return stop;
+}
+
+/** The optional "where you are" picture (item.context = {mock, at}): a mock without handlers, put on the right stage. */
+function mountContext(hostEl, item, learner) {
+  const c = item.context;
+  if (!c || typeof c.mock !== "string") return null;
+  let ctl = null;
+  let alive = true;
+  loadMock(c.mock).then((mod) => {
+    if (!alive) return;
+    if (!mod) {
+      console.error(`context picture for ${item.id}: mock ${c.mock} is not available`);
+      hostEl.closest(".wg-q-context")?.remove();
+      return;
+    }
+    try {
+      ctl = mod.mount(hostEl, { item, learner });
+      if (typeof c.at === "string" && c.at) ctl?.resolve?.(c.at);
+    } catch (err) {
+      console.error(`context picture for ${item.id} failed`, err);
+      hostEl.closest(".wg-q-context")?.remove();
+    }
+  });
+  return () => {
+    alive = false;
+    ctl?.destroy?.();
   };
 }
 
@@ -502,6 +713,19 @@ export async function render(root, { learner }) {
   let toastTimer = 0;
   let closed = false;
   let savedNoteShown = false;
+  let stopReplay = null; // aborts the running replay (Skip, Next, leaving the screen)
+  let replayTimer = 0;
+  let stopContext = null;
+
+  /** Ends the replay and the "where you are" picture of the card being left. */
+  function clearCardExtras() {
+    clearTimeout(replayTimer);
+    replayTimer = 0;
+    stopReplay?.();
+    stopReplay = null;
+    stopContext?.();
+    stopContext = null;
+  }
 
   root.innerHTML = `<main class="screen wg-rev">
       <header class="lhead"><span class="brand">🌱 ${esc(t("brand").en)}</span></header>
@@ -537,6 +761,7 @@ export async function render(root, { learner }) {
   }
 
   function show(i) {
+    clearCardExtras();
     current?.ctl?.destroy?.();
     current = null;
     clearTimeout(toastTimer);
@@ -544,10 +769,18 @@ export async function render(root, { learner }) {
     const item = round[i];
     currentSkill = item.skill;
     const isDo = item.type === "do";
+    const heading = `<h1 class="wg-q-h">${biPair(pair(item.prompt))}</h1>`;
+    const hasContext = !isDo && item.context && typeof item.context.mock === "string";
     body.innerHTML = `
       <div class="wg-q-top">${dotsHtml(i, round.length)}${chipHtml(i, round.length, item)}</div>
       <section class="card wg-q-card${isDo ? " is-do" : ""} type-${esc(item.type)}" data-item="${esc(item.id)}">
-        <h1 class="wg-q-h">${biPair(pair(item.prompt))}</h1>
+        ${hasContext
+          ? `<div class="wg-q-hrow">${heading}
+              <figure class="wg-q-context" role="img" aria-label="${esc(label("contextLabel"))}">
+                <div class="wg-q-ctx-pic" inert><div class="wg-q-ctx-in"></div></div>
+                <figcaption>${bi("contextHere")}</figcaption>
+              </figure></div>`
+          : heading}
         <div class="wg-q-main"></div>
         <div class="wg-q-foot">
           <div class="wg-q-fbcol"><div class="wg-q-feedback" aria-live="polite"></div><p class="wg-proof" hidden></p></div>
@@ -558,6 +791,7 @@ export async function render(root, { learner }) {
         </div>
       </section>`;
     const card = body.querySelector(".wg-q-card");
+    const mainEl = card.querySelector(".wg-q-main");
     const fb = card.querySelector(".wg-q-feedback");
     const checkBtn = card.querySelector(".wg-q-check");
     const nextBtn = card.querySelector(".wg-q-next");
@@ -638,6 +872,23 @@ export async function render(root, { learner }) {
         // Keep focus in the document while a `do` item is open; elsewhere Enter moves on.
         if (!isDo) nextBtn.focus({ preventScroll: true });
         save(item, { stars, help_level: state.help, tries });
+        // Then the real actions play once, over the item. Next works the whole time: it stops the replay and moves on.
+        clearTimeout(replayTimer);
+        replayTimer = setTimeout(() => {
+          replayTimer = 0;
+          if (closed || current?.item !== item) return;
+          // The prompt and the item area; a `do` card keeps its prompt row, because Next sits beside it.
+          const cover = isDo ? [mainEl] : [card.querySelector(".wg-q-hrow") ?? card.querySelector(".wg-q-h"), mainEl];
+          stopReplay = startReplay(card, cover, item, {
+            learner,
+            onEnd: ({ hadFocus }) => {
+              stopReplay = null;
+              // Skip had focus, or the hidden item lost it while the replay covered it: Enter should move on.
+              const lost = !document.activeElement || document.activeElement === document.body;
+              if ((hadFocus || lost) && !closed && nextBtn.isConnected) nextBtn.focus({ preventScroll: true });
+            },
+          });
+        }, REPLAY_DELAY_MS);
       },
     };
 
@@ -646,6 +897,7 @@ export async function render(root, { learner }) {
     });
     // A held Enter would otherwise "press" Next again and again.
     nextBtn.addEventListener("keydown", (e) => e.repeat && e.preventDefault());
+    if (hasContext) stopContext = mountContext(card.querySelector(".wg-q-ctx-in"), item, learner);
 
     // This item was already answered and its attempt written (a reload or Back): show the result, don't replay it.
     if (run.solved?.index === i) {
@@ -655,7 +907,7 @@ export async function render(root, { learner }) {
       return;
     }
     try {
-      current = { item, ctl: RUNNERS[item.type](card.querySelector(".wg-q-main"), item, api) };
+      current = { item, ctl: RUNNERS[item.type](mainEl, item, api) };
     } catch (err) {
       console.error(`item ${item.id} could not be shown; skipping it`, err);
       advance();
@@ -687,6 +939,7 @@ export async function render(root, { learner }) {
 
   function advance() {
     if (closed) return;
+    clearCardExtras();
     run.index += 1;
     run.solved = null;
     setRun(run);
@@ -702,6 +955,7 @@ export async function render(root, { learner }) {
   return () => {
     closed = true;
     clearTimeout(toastTimer);
+    clearCardExtras();
     current?.ctl?.destroy?.();
     stopAsk();
   };

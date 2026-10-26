@@ -90,6 +90,14 @@ const STR = {
     vi: "Phần này của trò chơi đang được hoàn thiện.",
   },
   backHome: { en: "Back to home", vi: "Về trang chính" },
+
+  // Revision replay: a short demo of the real actions after each answer
+  replayTitle: { en: "▶ Watch how it is done", vi: "Xem lại cách làm nhé" },
+  replaySkip: { en: "Skip", vi: "Bỏ qua" },
+  replayClose: { en: "Close", vi: "Đóng" },
+  replayLabel: { en: "A short demo of the steps", vi: "Đoạn xem lại ngắn các bước làm" },
+  contextHere: { en: "You are here", vi: "Bạn đang ở đây" },
+  contextLabel: { en: "A picture of where you are now", vi: "Hình ảnh màn hình bạn đang ở" },
 };
 
 // Avatars: a stable key is stored in `learners.avatar`; the emoji is only for display.

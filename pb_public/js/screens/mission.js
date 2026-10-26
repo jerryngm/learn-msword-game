@@ -295,6 +295,8 @@ export async function render(root, { id, learner }) {
     /* ----- completion ----- */
     function evaluate() {
       if (complete || !alive) return;
+      // A picture click selects it without a browser selectionchange; refresh before the steps check it.
+      if (word) ctx.selection = word.selection;
       const met = goalMet();
       if (met && !wasMet) finish();
       wasMet = met;

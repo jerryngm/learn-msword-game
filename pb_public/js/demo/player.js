@@ -308,12 +308,38 @@ export async function playDemo(host, script, opts = {}) {
       right: Math.max(left + 40, r.right - padR),
       font: { family: cs.fontFamily, size, weight: cs.fontWeight, style: cs.fontStyle, color: cs.color },
       single: true,
+      source: el, // the element typed into; see dropHiddenTyping()
       // Typing into a box replaces what it shows (Windows selects a file name when the box gets focus).
       cover: { top: r.top + parseFloat(cs.borderTopWidth || 0), bottom: r.bottom - parseFloat(cs.borderBottomWidth || 0), bg: opaque(cs.backgroundColor) },
     };
   }
   const opaque = (c) => (!c || c === "transparent" || /rgba\(.*,\s*0\)$/.test(c) ? "#fff" : c);
   const isTextEntry = (el) => el instanceof Element && (el.matches("input, textarea, [contenteditable='true'], [data-demo-type]") || el.isContentEditable);
+
+  // Ghost text typed into a host element (a search box), keyed by its line box.
+  const typedSource = new WeakMap();
+  /** True when `el` is still on screen: connected, laid out, and not covered by another part of the host. */
+  function onScreen(el) {
+    if (!el.isConnected) return false;
+    const r = el.getBoundingClientRect();
+    if (r.width < 1 && r.height < 1) return false;
+    const x = r.left + Math.min(r.width / 2, 8);
+    const y = r.top + r.height / 2;
+    const hit = document.elementsFromPoint?.(x, y).find((n) => !layer.contains(n));
+    return !hit || hit === el || el.contains(hit) || hit.contains(el);
+  }
+  // Reduced motion keeps the typed text on screen after each step. When a click changes the host's
+  // screen (the Start menu gives way to Word's start screen), text typed into a box that is no longer
+  // shown must go with it. Normal motion clears everything when it ends, so it never needs this.
+  function dropHiddenTyping() {
+    layer.querySelectorAll(".dm-type").forEach((box) => {
+      const src = typedSource.get(box);
+      if (src && !onScreen(src)) {
+        box.remove();
+        if (typing?.lines.some((l) => l.box === box)) typing = null;
+      }
+    });
+  }
 
   // `strict` (key steps): only a real caret or a text box, never a button the cursor just clicked.
   function typingAnchor(at, strict) {
@@ -332,6 +358,7 @@ export async function playDemo(host, script, opts = {}) {
     // Only the line being typed shows a caret.
     layer.querySelectorAll(".dm-caret").forEach((c) => c.remove());
     const box = add(`dm-type${a.single ? " is-single" : ""}`, `<span class="dm-typed"></span><span class="dm-caret"></span>`);
+    if (a.source) typedSource.set(box, a.source);
     const r = rel(new DOMRect(a.left, a.y, Math.max(20, a.right - a.left), a.h));
     Object.assign(box.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, lineHeight: `${a.h}px`, minHeight: `${a.h}px`, textIndent: `${indent}px` });
     if (a.cover) {
@@ -428,11 +455,16 @@ export async function playDemo(host, script, opts = {}) {
       return;
     }
     if (reduced) {
+      // resolve() may have switched the host's screen already (start-menu: 'blank-document').
+      dropHiddenTyping();
       // A caret spot in the text gets its marker to the left, so it doesn't cover the next line.
       if (caretSpot) marker(r.x - 44, r.y + r.h / 2 - 18, tag);
       else marker(r.x + r.w / 2 - 18, r.y + r.h + 4, tag);
       await sleep(kind === "single" ? 700 : 1100);
-      if (!aborted()) opts.act?.(step.target, kind);
+      if (!aborted()) {
+        opts.act?.(step.target, kind);
+        dropHiddenTyping();
+      }
       return;
     }
     const cx = r.x + r.w / 2;
