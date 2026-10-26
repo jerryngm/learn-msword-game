@@ -1,0 +1,62 @@
+/* Projector cards (#s9): the shared-goal strip and the side cards. Scoped pg-* classes and --pg-*
+   tokens from the garden art kit; laid out for the fixed 1920×1080 stage (no narrow layouts). */
+:root {
+  --pg-ink: #071847;
+  --pg-green: #377b42;
+  --pg-green-light: #4d914c;
+  --pg-cream: #fffdf5;
+  --pg-track: #d9ddbe;
+  --pg-border: #e9e0c7;
+  --pg-peach: #ffe7c6;
+  --pg-task-ink: #123d29;
+  --pg-radius: 26px;
+  --pg-gap: 20px;
+  --pg-padding: 26px;
+  --pg-shadow: 0 3px 7px #62583216;
+  --pg-font: var(--font);
+}
+.pg-goal, .pg-sidebar { color: var(--pg-ink); font-family: var(--pg-font); font-variant-numeric: tabular-nums; }
+.pg-goal *, .pg-sidebar * { box-sizing: border-box; }
+
+/* Shared-goal strip */
+.pg-goal { display: grid; grid-template-columns: 80px minmax(0, 1fr) 96px; gap: var(--pg-gap); align-items: center; padding: 14px var(--pg-padding); background: var(--pg-cream); border: 1px solid var(--pg-border); border-radius: var(--pg-radius); box-shadow: var(--pg-shadow); }
+.pg-star { display: block; width: 100%; height: auto; }
+.pg-goal-body { min-width: 0; display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; gap: 8px var(--pg-gap); }
+.pg-goal h2 { margin: 0; font-size: 42px; font-weight: 800; line-height: 1.12; letter-spacing: -.03em; }
+.pg-meter { height: 36px; overflow: hidden; border-radius: 999px; background: var(--pg-track); border: 1px solid var(--pg-border); }
+.pg-meter > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(100deg, var(--pg-green-light), var(--pg-green)); transition: width 1.2s var(--ease); }
+.pg-goal-caption { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; font-size: 26px; line-height: 1.3; }
+.pg-goal-caption > span + span { border-left: 2px solid var(--pg-green); padding-left: 20px; }
+.pg-how { grid-column: 1 / -1; margin: 0; font-size: 22px; line-height: 1.3; color: var(--ink-2); }
+/* Decorative sunflower: the first cell of the 4×3 mature-plant atlas */
+.pg-sunflower { width: 100%; aspect-ratio: 1; display: block; background: url("../img/projector-garden/mature-plant-kinds.png") 0 0 / 400% 300% no-repeat; }
+
+/* Side cards */
+/* Today's progress takes what the other two cards leave; its roster starts under the heading. */
+.pg-sidebar { display: grid; grid-template-rows: minmax(0, 1fr) auto auto; gap: var(--pg-gap); height: 100%; min-width: 0; }
+.pg-card { container-type: inline-size; min-width: 0; min-height: 0; overflow: hidden; padding: 22px var(--pg-padding); background: var(--pg-cream); border: 2px solid var(--pg-border); border-radius: var(--pg-radius); box-shadow: var(--pg-shadow); display: flex; flex-direction: column; justify-content: center; }
+.pg-card h2 { margin: 0 0 12px; font-size: 40px; line-height: 1.1; letter-spacing: -.025em; }
+.pg-completion { margin: 0; font-weight: 800; font-size: 68px; line-height: 1.1; letter-spacing: -.045em; }
+.pg-finished { color: var(--pg-green); }
+.pg-today { justify-content: flex-start; }
+.pg-today:has(.is-many, .is-crowd) .pg-completion { font-size: 56px; }
+.pg-today:has(.is-many, .is-crowd) h2 { margin-bottom: 6px; }
+.pg-support { font-size: 30px; line-height: 1.3; margin: 14px 0 0; }
+.pg-success-body { display: grid; grid-template-columns: 130px minmax(0, 1fr); align-items: center; gap: 28px; }
+.pg-ring { display: block; width: 100%; }
+.pg-ring-track, .pg-ring-value { stroke-width: 19; fill: none; }
+.pg-ring-track { stroke: var(--pg-track); }
+.pg-ring-value { stroke: var(--pg-green); transition: stroke-dasharray 1.2s var(--ease); }
+.pg-ring-centre { fill: var(--pg-green); }
+.pg-ring-check { fill: none; stroke: var(--pg-cream); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.pg-percentage { font-size: 80px; line-height: 1; margin: 0; font-weight: 800; letter-spacing: -.05em; }
+.pg-success .pg-support { margin-top: 8px; }
+.pg-practice { background: var(--pg-peach); }
+.pg-task { margin: 0; font-size: 44px; font-weight: 800; line-height: 1.16; letter-spacing: -.025em; color: var(--pg-task-ink); overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.pg-prompt { font-size: 26px; line-height: 1.35; margin: 10px 0 0; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-meter > span, .pg-ring-value { transition: none; }
+}

@@ -1,4 +1,5 @@
-/* Word Garden projector (#s9): one 1920×1080 stage, scaled to fit the window, readable from the back of the room. */
+/* Word Garden projector (#s9): one 1920×1080 stage, scaled to fit the window, readable from the back of the room.
+   The goal strip and side cards are styled in projector-components.css. */
 
 html, body.pj-body { height: 100%; overflow: hidden; }
 body.pj-body { background: #1E1E22; }
@@ -6,105 +7,60 @@ body.pj-body { background: #1E1E22; }
 .pj-stage {
   position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px;
   transform: translate(-50%, -50%); transform-origin: center;
-  background: var(--cream); overflow: hidden;
-  display: grid; grid-template-columns: 1060px 1fr; grid-template-rows: auto 1fr;
-  gap: 28px 40px; padding: 44px 64px 48px;
+  background: #fff8e9; color: #071847; overflow: hidden;
+  display: grid; grid-template-columns: 1180px 1fr; grid-template-rows: auto minmax(0, 1fr);
+  gap: 24px 32px; padding: 32px 48px 40px;
 }
 .pj-loading { grid-column: 1 / -1; align-self: center; text-align: center; font-size: 48px; color: var(--ink-2); }
 
 /* Header */
 .pj-h { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 32px; }
-.pj-h h1 { font-size: 72px; line-height: 1; }
+.pj-h h1 { font-size: 76px; line-height: 1; letter-spacing: -.035em; }
 .pj-chips { display: flex; align-items: center; gap: 16px; }
 .pj-chip {
   display: inline-flex; align-items: center; padding: 12px 28px; border-radius: 999px;
-  background: var(--teal-l); color: var(--teal-d); font-size: 30px; font-weight: 700; white-space: nowrap;
+  background: #e6f0df; color: #2c5e33; font-size: 30px; font-weight: 700; white-space: nowrap;
 }
 .pj-chip.is-quiet { background: var(--orange-l); color: var(--orange-d); }
 .pj-chip[hidden] { display: none; }
 
-/* Garden */
-.pj-garden { min-height: 0; border-radius: 36px; overflow: hidden; background: #fff; box-shadow: var(--sh); display: flex; flex-direction: column; }
-.pj-scene { flex: 1; min-height: 0; }
+/* Garden: the painted scene with the shared-goal strip under it */
+.pj-garden { min-height: 0; display: flex; flex-direction: column; gap: 16px; }
+.pj-scene { flex: 1; min-height: 0; border-radius: 24px; overflow: hidden; border: 1px solid #e6d9b8; background: #fffdf5; }
 .pj-scene svg { display: block; width: 100%; height: 100%; }
-.pj-milestone { padding: 20px 36px 22px; min-height: 160px; } /* same height live and waiting, so the scene crops the same */
-.pj-milestone .top { padding-right: 64px; display: flex; justify-content: space-between; align-items: baseline; gap: 24px; font-size: 36px; font-weight: 800; }
-.pj-milestone small { font-size: 26px; font-weight: 600; color: var(--ink-2); }
-.pj-mbar { position: relative; height: 40px; border-radius: 999px; background: var(--cream-2); margin-top: 14px; }
-.pj-mbar .fill {
-  position: absolute; left: 0; top: 0; bottom: 0; width: 0; min-width: 40px; border-radius: 999px;
-  background: linear-gradient(90deg, var(--leaf), #8CC56A); transition: width 1.2s var(--ease);
-}
-.pj-mbar .fill { overflow: hidden; }
-.pj-mbar .fill::after {
-  content: ""; position: absolute; inset: 0; border-radius: inherit;
-  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, .45) 50%, transparent 70%) no-repeat;
-  background-size: 40% 100%; animation: pjShine 4.5s ease-in-out infinite;
-}
-@keyframes pjShine { 0% { background-position: -60% 0; } 60%, 100% { background-position: 160% 0; } }
-.pj-how { list-style: none; margin: 12px 0 0; padding: 0; font-size: 28px; line-height: 1.3; color: var(--ink-2); }
-.pj-how b { color: var(--ink); }
-.pj-mbar .flag { position: absolute; right: -14px; top: 50%; transform: translateY(-50%); font-size: 58px; line-height: 1; }
 
 /* Side cards */
-.pj-side { display: flex; flex-direction: column; gap: 22px; min-height: 0; }
-.pj-card { background: #fff; border-radius: 36px; box-shadow: var(--sh); padding: 24px 36px; }
-.pj-card h2 { font-size: 44px; }
-.pj-who { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
-.pj-who p { font-size: 28px; color: var(--ink-2); margin-top: 8px; }
+.pj-side { min-height: 0; }
 
-.pj-avs { --cols: 6; display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 14px 16px; margin-top: 16px; align-content: start; }
-.pj-avs.is-many { --cols: 8; }
-.pj-avs.is-crowd { --cols: 10; gap: 10px 10px; }
+/* Who is in the room, inside "Today's progress" */
+.pj-avs { --cols: 6; display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 12px 14px; margin-top: 16px; align-content: start; min-height: 0; }
+.pj-avs.is-many { --cols: 8; gap: 10px 10px; }
+.pj-avs.is-crowd { --cols: 12; gap: 8px 8px; }
 .pj-p { text-align: center; min-width: 0; }
-.pj-av { position: relative; display: grid; place-items: center; aspect-ratio: 1; border-radius: 50%; background: var(--leaf-l); font-size: 52px; }
-.pj-avs.is-many .pj-av { font-size: 40px; }
-.pj-avs.is-crowd .pj-av { font-size: 32px; }
-.pj-av::after {
-  position: absolute; right: -4px; bottom: -4px; width: 40%; height: 40%; border-radius: 50%;
+.pj-av { position: relative; display: grid; place-items: center; aspect-ratio: 1; border-radius: 50%; background: #e6f0df; font-size: 46px; }
+.pj-avs.is-many .pj-av { font-size: 34px; }
+.pj-avs.is-crowd .pj-av { font-size: 26px; }
+.pj-av.is-done { background: #fff8e9; box-shadow: inset 0 0 0 3px #b9d6ae; }
+.pj-av.is-done::after {
+  content: "✓"; position: absolute; right: -4px; bottom: -4px; width: 40%; height: 40%; border-radius: 50%;
   display: grid; place-items: center; font-size: .45em; border: 3px solid #fff;
+  background: var(--pg-green, #377b42); color: #fff; font-weight: 900;
 }
-.pj-av.is-done { background: var(--cream); }
-.pj-av.is-done::after { content: "✓"; background: var(--leaf); color: #fff; font-weight: 900; }
-/* the learner's plant kind, bottom-left (the finished ✓ sits bottom-right) */
-.pj-kind { position: absolute; left: -8px; bottom: -8px; width: 56%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(23, 50, 77, .18); }
-.pj-kind svg { width: 88%; height: 88%; }
-.pj-n { display: none; font-size: 24px; font-weight: 700; color: var(--ink-2); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pj-avs.is-many .pj-n, .pj-avs.is-crowd .pj-n { font-size: 19px; }
+/* the learner's plant kind, bottom-left (the finished ✓ sits bottom-right): a cell of the mature-plant atlas */
+.pj-kind {
+  position: absolute; left: -8px; bottom: -8px; width: 56%; aspect-ratio: 1; border-radius: 50%;
+  background: #fff url("../img/projector-garden/mature-plant-kinds.png") no-repeat;
+  background-size: 400% 300%; background-position: calc(var(--kx) * 100% / 3) calc(var(--ky) * 100% / 2);
+  box-shadow: 0 2px 6px rgba(23, 50, 77, .18);
+}
+.pj-n { display: none; font-size: 22px; font-weight: 700; color: var(--ink-2); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pj-avs.is-many .pj-n, .pj-avs.is-crowd .pj-n { font-size: 18px; }
 .pj-stage.show-names .pj-n { display: block; }
+.pj-stage.show-names .is-crowd .pj-n { display: none; } /* too small for a name to be readable */
 
-.pj-ring { display: flex; align-items: center; gap: 24px; }
-.pj-ring svg { width: 116px; height: 116px; flex: none; }
-.pj-ring .arc { transition: stroke-dasharray 1.2s var(--ease); }
-.pj-ring b { font-size: 58px; line-height: 1; display: block; }
-.pj-ring span { font-size: 28px; color: var(--ink-2); }
-
-.pj-tricky { background: var(--orange-l); }
-.pj-tricky .k { font-size: 24px; font-weight: 800; color: var(--orange-d); text-transform: uppercase; letter-spacing: .06em; }
-.pj-tricky b { display: block; font-size: 46px; line-height: 1.15; margin: 2px 0 6px; }
-.pj-tricky .prompt {
-  font-size: 28px; line-height: 1.35; color: var(--ink);
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
-}
-.pj-tricky p { font-size: 26px; color: var(--ink-2); margin-top: 6px; }
-
-/* Waiting for class (no live session) */
-.pj-wait { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 20px; text-align: center; }
-.pj-wait .big { font-size: 96px; line-height: 1; }
-.pj-wait h2 { font-size: 52px; }
-.pj-wait p { font-size: 32px; color: var(--ink-2); }
-
-/* Growth: a new flower grows up from its soil (with a few sparkles), and the growing plant gives a small nudge when stars arrive. */
-.pj-plant { transform-box: fill-box; transform-origin: 50% 100%; } /* on a <g> at the plant's soil point, so it grows in place */
-.pj-bloom { animation: pjBloom 1.4s var(--ease) both; }
-.pj-nudge { animation: pjNudge 1s var(--ease) both; }
-.pj-spark { transform-box: fill-box; transform-origin: center; opacity: 0; animation: pjSpark 1.3s ease-out both; }
-@keyframes pjBloom { from { opacity: 0; transform: scale(.3); } 70% { opacity: 1; transform: scale(1.08); } to { opacity: 1; transform: none; } }
-@keyframes pjNudge { 0%, 100% { transform: none; } 40% { transform: scale(1.12) rotate(-3deg); } 70% { transform: scale(.98) rotate(2deg); } }
-@keyframes pjSpark { 0% { opacity: 0; transform: scale(.2) rotate(0); } 35% { opacity: 1; transform: scale(1.2) rotate(45deg); } 100% { opacity: 0; transform: scale(.6) rotate(90deg); } }
-
-/* Life in the garden. Every ambient loop is offset by the time since the page loaded (--t, set on
-   the scene) so a redraw carries on where the last one was. Transforms only: cheap on any laptop. */
+/* Life in the garden: plants stand still; the sun, clouds, birds, butterflies, bee and watering can move.
+   Every loop is offset by the time since the page loaded (--t, set on the scene) so a redraw carries
+   on where the last one was. Transforms only: cheap on any laptop. */
 .amb { transform-box: fill-box; }
 .pj-spin { transform-origin: center; animation: pjSpin 120s linear infinite; }
 .pj-glow { transform-origin: center; animation: pjGlow 6s ease-in-out infinite alternate; }
@@ -112,60 +68,44 @@ body.pj-body { background: #1E1E22; }
 .pj-fly { animation: pjFly var(--dur, 60s) linear infinite; }
 .pj-bob { animation: pjBob 3.4s ease-in-out infinite alternate; }
 .pj-flap { transform-origin: center; animation: pjFlap .5s ease-in-out infinite alternate; }
-.pj-sway { transform-origin: 50% 100%; animation: pjSway var(--dur, 6s) ease-in-out infinite alternate; }
-.pj-swayc { transform-origin: 50% 100%; animation: pjSwayC var(--dur, 7s) ease-in-out infinite alternate; }
 .pj-bfA { animation: pjBfA 26s ease-in-out infinite; }
 .pj-bfB { animation: pjBfB 31s ease-in-out infinite; }
-.pj-bfC { animation: pjBfC 23s ease-in-out infinite; }
 .pj-wings { transform-origin: center; animation: pjWings .32s ease-in-out infinite alternate; }
-.pj-bee { animation: pjBee 16s ease-in-out infinite; }
+.pj-bee { animation: pjBee 18s ease-in-out infinite; }
 .pj-buzz { transform-origin: center; animation: pjBuzz .18s linear infinite alternate; }
 .pj-drip { animation: pjDrip 1.5s ease-in infinite; }
-.pj-rays { animation: pjRays 9s ease-in-out infinite alternate; }
-.pj-spin, .pj-glow, .pj-drift, .pj-fly, .pj-bob, .pj-flap, .pj-sway, .pj-swayc, .pj-bfA, .pj-bfB, .pj-bfC, .pj-wings, .pj-bee, .pj-buzz, .pj-drip, .pj-rays {
+.pj-spin, .pj-glow, .pj-drift, .pj-fly, .pj-bob, .pj-flap, .pj-bfA, .pj-bfB, .pj-wings, .pj-bee, .pj-buzz, .pj-drip {
   animation-delay: calc(var(--d, 0s) - var(--t, 0s));
 }
-/* The bed and box plants sway around their soil point; the sway sits outside the bloom group. */
-.pj-sway { --amp: 2.2deg; }
 
 @keyframes pjSpin { to { transform: rotate(360deg); } }
-@keyframes pjGlow { from { transform: scale(.92); opacity: .8; } to { transform: scale(1.06); opacity: 1; } }
-@keyframes pjDrift { from { transform: translateX(-160px); } to { transform: translateX(1160px); } }
+@keyframes pjGlow { from { transform: scale(.9); opacity: .75; } to { transform: scale(1.08); opacity: 1; } }
+@keyframes pjDrift { from { transform: translateX(-220px); } to { transform: translateX(1760px); } }
 /* A flock crosses in the first part of its loop, then waits off-screen, so birds come by now and then. */
-@keyframes pjFly { 0% { transform: translateX(-80px); } 38% { transform: translateX(1080px); } 100% { transform: translateX(1080px); } }
-@keyframes pjBob { from { transform: translateY(-6px); } to { transform: translateY(8px); } }
+@keyframes pjFly { 0% { transform: translateX(-120px); } 38% { transform: translateX(1660px); } 100% { transform: translateX(1660px); } }
+@keyframes pjBob { from { transform: translateY(-8px); } to { transform: translateY(10px); } }
 @keyframes pjFlap { from { transform: scaleY(1); } to { transform: scaleY(-.55); } }
-@keyframes pjSway { from { transform: rotate(calc(var(--amp) * -1)); } to { transform: rotate(var(--amp)); } }
-@keyframes pjSwayC { from { transform: rotate(-1.6deg); } to { transform: rotate(1.6deg); } }
 @keyframes pjWings { from { transform: scaleX(1); } to { transform: scaleX(.25); } }
-@keyframes pjBuzz { from { transform: translateY(-1.2px); } to { transform: translateY(1.2px); } }
-@keyframes pjRays { from { opacity: .45; } to { opacity: 1; } }
-@keyframes pjDrip { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(18px); opacity: 0; } }
-/* Butterflies wander over the boxes and flowers; the bee does slow loops around the front box. */
+@keyframes pjBuzz { from { transform: translateY(-1.5px); } to { transform: translateY(1.5px); } }
+@keyframes pjDrip { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(26px); opacity: 0; } }
+/* Butterflies wander over the left and right beds; the bee loops around the rear bed. */
 @keyframes pjBfA {
-  0%, 100% { transform: translate(250px, 150px) rotate(-8deg); } 18% { transform: translate(330px, 250px) rotate(10deg); }
-  36% { transform: translate(200px, 330px) rotate(-12deg); } 54% { transform: translate(110px, 260px) rotate(6deg); }
-  72% { transform: translate(160px, 180px) rotate(-6deg); } 86% { transform: translate(300px, 120px) rotate(8deg); }
+  0%, 100% { transform: translate(300px, 470px) rotate(-8deg); } 18% { transform: translate(450px, 560px) rotate(10deg); }
+  36% { transform: translate(330px, 640px) rotate(-12deg); } 54% { transform: translate(170px, 560px) rotate(6deg); }
+  72% { transform: translate(230px, 470px) rotate(-6deg); } 86% { transform: translate(420px, 420px) rotate(8deg); }
 }
 @keyframes pjBfB {
-  0%, 100% { transform: translate(690px, 120px) rotate(6deg); } 20% { transform: translate(610px, 210px) rotate(-10deg); }
-  40% { transform: translate(560px, 380px) rotate(8deg); } 58% { transform: translate(450px, 300px) rotate(-6deg); }
-  76% { transform: translate(560px, 190px) rotate(10deg); } 90% { transform: translate(650px, 160px) rotate(-4deg); }
-}
-@keyframes pjBfC {
-  0%, 100% { transform: translate(860px, 250px) rotate(-6deg); } 22% { transform: translate(930px, 330px) rotate(8deg); }
-  44% { transform: translate(800px, 360px) rotate(-10deg); } 66% { transform: translate(760px, 260px) rotate(6deg); }
-  84% { transform: translate(890px, 200px) rotate(-8deg); }
+  0%, 100% { transform: translate(1180px, 470px) rotate(6deg); } 20% { transform: translate(1060px, 560px) rotate(-10deg); }
+  40% { transform: translate(980px, 650px) rotate(8deg); } 58% { transform: translate(1150px, 620px) rotate(-6deg); }
+  76% { transform: translate(1300px, 540px) rotate(10deg); } 90% { transform: translate(1260px, 460px) rotate(-4deg); }
 }
 @keyframes pjBee {
-  0%, 100% { transform: translate(380px, 380px); } 25% { transform: translate(520px, 350px); }
-  50% { transform: translate(650px, 392px); } 75% { transform: translate(520px, 410px); }
+  0%, 100% { transform: translate(600px, 330px); } 25% { transform: translate(800px, 300px); }
+  50% { transform: translate(1040px, 340px); } 75% { transform: translate(820px, 370px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pj-bloom, .pj-nudge, .pj-spark { animation: none !important; }
   .amb { animation-play-state: paused !important; } /* frozen mid-loop, so creatures stay in the scene */
   .pj-drift { animation: none !important; transform: translateX(var(--x, 300px)); } /* clouds rest spread out */
-  .pj-spark, .pj-birds, .pj-drip, .pj-mbar .fill::after { display: none; }
-  .pj-mbar .fill, .pj-ring .arc { transition: none; }
+  .pj-birds, .pj-drip { display: none; }
 }
