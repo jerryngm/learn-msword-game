@@ -1,21 +1,21 @@
 // Plant kinds: every learner grows their own kind (stored in `learners.plant`, picked at join so the
-// class gets a mix). Seed, sprout, leafy and wilted look the same for every kind; the grown plant
-// shows the kind. Sunflower and tomato use the page's own #p-flower and #p-fruit symbols; the others
+// class gets a mix). Seed, sprout, leafy and wilted look the same for every kind; the bud shows the
+// kind's colour and the grown plant shows the kind. Sunflower and tomato use the page's own #p-flower and #p-fruit symbols; the others
 // are added to the page's sprite by mountPlantSymbols(). No DOM work happens at import time.
 
 export const PLANT_KINDS = [
-  { key: "sunflower", symbol: "p-flower", en: "Sunflower", vi: "Hoa hướng dương" },
-  { key: "tomato", symbol: "p-fruit", en: "Tomato", vi: "Cà chua" },
-  { key: "lotus", symbol: "p-lotus", en: "Lotus", vi: "Hoa sen" },
-  { key: "apricot", symbol: "p-apricot", en: "Apricot blossom", vi: "Hoa mai" },
-  { key: "rose", symbol: "p-rose", en: "Rose", vi: "Hoa hồng" },
-  { key: "tulip", symbol: "p-tulip", en: "Tulip", vi: "Hoa tulip" },
-  { key: "chilli", symbol: "p-chilli", en: "Chilli", vi: "Cây ớt" },
-  { key: "lavender", symbol: "p-lavender", en: "Lavender", vi: "Hoa oải hương" },
-  { key: "hibiscus", symbol: "p-hibiscus", en: "Hibiscus", vi: "Hoa dâm bụt" },
-  { key: "orchid", symbol: "p-orchid", en: "Orchid", vi: "Hoa lan" },
-  { key: "peach", symbol: "p-peach", en: "Peach blossom", vi: "Hoa đào" },
-  { key: "marigold", symbol: "p-marigold", en: "Marigold", vi: "Hoa vạn thọ" },
+  { key: "sunflower", symbol: "p-flower", bud: "#F6C945", en: "Sunflower", vi: "Hoa hướng dương" },
+  { key: "tomato", symbol: "p-fruit", bud: "#E8553E", en: "Tomato", vi: "Cà chua" },
+  { key: "lotus", symbol: "p-lotus", bud: "#F2A7BE", en: "Lotus", vi: "Hoa sen" },
+  { key: "apricot", symbol: "p-apricot", bud: "#F6C945", en: "Apricot blossom", vi: "Hoa mai" },
+  { key: "rose", symbol: "p-rose", bud: "#D83A4E", en: "Rose", vi: "Hoa hồng" },
+  { key: "tulip", symbol: "p-tulip", bud: "#E8553E", en: "Tulip", vi: "Hoa tulip" },
+  { key: "chilli", symbol: "p-chilli", bud: "#E03A2E", en: "Chilli", vi: "Cây ớt" },
+  { key: "lavender", symbol: "p-lavender", bud: "#9C7BD0", en: "Lavender", vi: "Hoa oải hương" },
+  { key: "hibiscus", symbol: "p-hibiscus", bud: "#F08CC0", en: "Hibiscus", vi: "Hoa dâm bụt" },
+  { key: "orchid", symbol: "p-orchid", bud: "#C77FD3", en: "Orchid", vi: "Hoa lan" },
+  { key: "peach", symbol: "p-peach", bud: "#F5A9C0", en: "Peach blossom", vi: "Hoa đào" },
+  { key: "marigold", symbol: "p-marigold", bud: "#D9581A", en: "Marigold", vi: "Hoa vạn thọ" },
 ];
 
 const BY_KEY = new Map(PLANT_KINDS.map((k) => [k.key, k]));
@@ -41,11 +41,15 @@ export function pickPlantKey(usedKeys, random = Math.random) {
 
 const STAGE_SYMBOL = { seed: "p-seed", sprout: "p-sprout", leafy: "p-leafy" };
 
+/** The bud symbol of a kind (added by mountPlantSymbols). */
+export const budSymbol = (kind) => `p-bud-${(kind ?? PLANT_KINDS[0]).key}`;
+
 /** The sprite symbol for a skill state in the learner's kind (wilted plants droop; never red). */
 export function plantSymbol(state, kind) {
   if (!state) return "p-seed";
   if (state.wilted) return "p-wilt";
   if (state.stage === "flowering") return (kind ?? PLANT_KINDS[0]).symbol;
+  if (state.stage === "bud") return budSymbol(kind);
   return STAGE_SYMBOL[state.stage] ?? "p-seed";
 }
 
@@ -140,11 +144,21 @@ const SYMBOLS = {
   </g>${MOUND}`,
 };
 
-/** Add the plant-kind symbols to the page's #sprite once (the stage symbols already live in the page). */
+/** A closed bud in the kind's colour on the leafy stem, with green sepals hugging it. */
+const budBody = (colour) => `${STEM}
+  <g transform="translate(50 30) scale(1.25)">
+    <path d="M0 5 C-13 5 -15 -9 -7 -17 C-4 -20 -1 -23 0 -26 C1 -23 4 -20 7 -17 C15 -9 13 5 0 5Z" fill="${colour}"/>
+    <path d="M0 5 C-9 3 -11 -9 -3 -19 C-3 -8 1 -1 0 5Z" fill="#3A2A1E" opacity=".16"/>
+    <path d="M5 -14 C9 -10 9 -4 6 0" stroke="#fff" stroke-width="2" fill="none" opacity=".4" stroke-linecap="round"/>
+    <path d="M0 6 C-11 6 -14 -2 -13 -8 C-7 -4 -3 0 0 6Z M0 6 C11 6 14 -2 13 -8 C7 -4 3 0 0 6Z M-3 6 C-2 0 0 -4 0 -6 C0 -4 2 0 3 6Z" fill="#4F8F43"/>
+  </g>${MOUND}`;
+
+/** Add the plant-kind and bud symbols to the page's #sprite once (the stage symbols already live in the page). */
 export function mountPlantSymbols(doc = globalThis.document) {
   const sprite = doc?.getElementById("sprite");
   if (!sprite) return;
-  const html = Object.entries(SYMBOLS)
+  const all = { ...SYMBOLS, ...Object.fromEntries(PLANT_KINDS.map((k) => [budSymbol(k), budBody(k.bud)])) };
+  const html = Object.entries(all)
     .filter(([id]) => !doc.getElementById(id))
     .map(([id, body]) => `<symbol id="${id}" viewBox="0 0 100 110">${body}</symbol>`)
     .join("");

@@ -9,9 +9,10 @@ export const CONFIG = Object.freeze({
   clockSkewMs: 5 * 60 * 1000, // how far ahead of the server a laptop clock may be
   timeZone: "Australia/Melbourne",
   cleanStars: 3, // a clean success is this many stars on a skill
-  leafyCleanDays: 2, // distinct clean days for the leafy stage
-  masteryCleanDays: 3, // distinct clean days for flowering (mastered)
-  intervals: Object.freeze({ sprout: 7, leafy: 14, flowering: 28 }), // days until a plant wilts
+  leafyPracticeDays: 2, // distinct days with any attempt for the leafy stage (coming back counts)
+  budCleanDays: 1, // distinct clean days for the bud stage (the plant shows its kind)
+  masteryCleanDays: 2, // distinct clean days for flowering (mastered)
+  intervals: Object.freeze({ sprout: 7, leafy: 14, bud: 21, flowering: 28 }), // days until a plant wilts
   dish: Object.freeze({ skillShare: 0.7, minMissions: 1 }), // share of a topic's skills at sprout or higher, plus missions done
   weight: Object.freeze({
     base: 1,
@@ -87,15 +88,17 @@ export function starsFor({ kind, help_level = 0, tries = 1 } = {}) {
   return tried === 2 ? 2 : 1;
 }
 
-function stageForCleanDays(cleanDays) {
+/** seed → sprout (tried) → leafy (came back on another day) → bud (one clean day) → flowering (mastered). */
+function stageFor(cleanDays, practiceDays) {
   if (cleanDays >= CONFIG.masteryCleanDays) return "flowering";
-  if (cleanDays >= CONFIG.leafyCleanDays) return "leafy";
+  if (cleanDays >= CONFIG.budCleanDays) return "bud";
+  if (practiceDays >= CONFIG.leafyPracticeDays) return "leafy";
   return "sprout";
 }
 
 /**
  * Derived state of one skill from the learner's attempts. Every attempt is a success (finishing earns at least 1 star).
- * Stage comes from distinct clean days, so it never goes down; wilting is a separate flag.
+ * Stage comes from distinct practice and clean days, so it never goes down; wilting is a separate flag.
  */
 export function skillState(attempts, skillId, today) {
   const todayKey = dayKey(today);
@@ -105,10 +108,11 @@ export function skillState(attempts, skillId, today) {
   }
 
   const cleanDays = new Set(mine.filter((a) => a.stars >= CONFIG.cleanStars).map((a) => dayKey(attemptTime(a)))).size;
+  const practiceDays = new Set(mine.map((a) => dayKey(attemptTime(a)))).size;
   let latest = mine[0];
   for (const a of mine) if (attemptTime(a) >= attemptTime(latest)) latest = a;
 
-  const stage = stageForCleanDays(cleanDays);
+  const stage = stageFor(cleanDays, practiceDays);
   const lastSuccess = dayKey(attemptTime(latest));
   const due = addDays(lastSuccess, CONFIG.intervals[stage]);
   const wilted = todayKey > due;

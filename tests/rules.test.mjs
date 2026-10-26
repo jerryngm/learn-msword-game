@@ -49,36 +49,51 @@ test("a skill with no attempts is a seed and never wilts", () => {
   assert.deepEqual([s.stage, s.mastered, s.wilted, s.cleanDays, s.lastSuccess], ["seed", false, false, 0, null]);
 });
 
-test("3 distinct clean days make a flowering, mastered plant", () => {
-  const attempts = [attempt("t1-keys", 3, "2026-10-01"), attempt("t1-keys", 3, "2026-10-02")];
-  assert.equal(skillState(attempts, "t1-keys", "2026-10-03").stage, "leafy");
-  attempts.push(attempt("t1-keys", 3, "2026-10-03"));
-  const s = skillState(attempts, "t1-keys", "2026-10-03");
-  assert.deepEqual([s.stage, s.mastered, s.cleanDays], ["flowering", true, 3]);
+test("a clean day makes a bud, a second clean day makes a flowering, mastered plant", () => {
+  const attempts = [attempt("t1-keys", 3, "2026-10-01")];
+  let s = skillState(attempts, "t1-keys", "2026-10-01");
+  assert.deepEqual([s.stage, s.mastered, s.cleanDays], ["bud", false, 1]);
+  attempts.push(attempt("t1-keys", 3, "2026-10-08"));
+  s = skillState(attempts, "t1-keys", "2026-10-08");
+  assert.deepEqual([s.stage, s.mastered, s.cleanDays], ["flowering", true, 2]);
+});
+
+test("improving week by week grows the plant: 1 star, then 2, then 3, then 3 again", () => {
+  const days = ["2026-10-01", "2026-10-08", "2026-10-15", "2026-10-22"];
+  const steps = [1, 2, 3, 3].map((stars, i) => attempt("t1-keys", stars, days[i]));
+  const stageAfter = (n) => skillState(steps.slice(0, n), "t1-keys", days[n - 1]).stage;
+  assert.deepEqual([1, 2, 3, 4].map(stageAfter), ["sprout", "leafy", "bud", "flowering"]);
 });
 
 test("same-day repeats and non-clean attempts do not count as clean days", () => {
   const sameDay = [1, 2, 3, 4].map(() => attempt("t1-keys", 3, "2026-10-01"));
   let s = skillState(sameDay, "t1-keys", "2026-10-01");
-  assert.deepEqual([s.stage, s.cleanDays, s.mastered], ["sprout", 1, false]);
+  assert.deepEqual([s.stage, s.cleanDays, s.mastered], ["bud", 1, false]);
+
+  const sameDayLow = [1, 2, 2].map((stars) => attempt("t1-keys", stars, "2026-10-01"));
+  assert.equal(skillState(sameDayLow, "t1-keys", "2026-10-01").stage, "sprout", "leafy needs another day");
 
   const twoStars = ["2026-10-01", "2026-10-02", "2026-10-03"].map((d) => attempt("t1-keys", 2, d));
   s = skillState(twoStars, "t1-keys", "2026-10-03");
-  assert.deepEqual([s.stage, s.cleanDays, s.lastStars], ["sprout", 0, 2]);
+  assert.deepEqual([s.stage, s.cleanDays, s.lastStars, s.mastered], ["leafy", 0, 2, false]);
 });
 
-test("wilting: sprout wilts the day after 7 days, leafy after 14, flowering after 28", () => {
+test("wilting: sprout wilts the day after 7 days, leafy after 14, bud after 21, flowering after 28", () => {
   const day = "2026-10-01";
-  const sprout = [attempt("t1-keys", 3, day)];
+  const sprout = [attempt("t1-keys", 2, day)];
   assert.equal(skillState(sprout, "t1-keys", plus(day, 7)).wilted, false);
   const wilted = skillState(sprout, "t1-keys", plus(day, 8));
   assert.deepEqual([wilted.wilted, wilted.daysOverdue, wilted.due], [true, 1, plus(day, 7)]);
 
-  const leafy = [attempt("t1-keys", 3, "2026-09-30"), attempt("t1-keys", 3, day)];
+  const leafy = [attempt("t1-keys", 2, "2026-09-30"), attempt("t1-keys", 1, day)];
   assert.equal(skillState(leafy, "t1-keys", plus(day, 14)).wilted, false);
   assert.equal(skillState(leafy, "t1-keys", plus(day, 15)).wilted, true);
 
-  const flowering = [attempt("t1-keys", 3, "2026-09-29"), ...leafy];
+  const bud = [attempt("t1-keys", 3, day)];
+  assert.equal(skillState(bud, "t1-keys", plus(day, 21)).wilted, false);
+  assert.equal(skillState(bud, "t1-keys", plus(day, 22)).wilted, true);
+
+  const flowering = [attempt("t1-keys", 3, "2026-09-29"), attempt("t1-keys", 3, day)];
   assert.equal(skillState(flowering, "t1-keys", plus(day, 28)).wilted, false);
   assert.equal(skillState(flowering, "t1-keys", plus(day, 29)).wilted, true);
 });

@@ -88,7 +88,7 @@ export function classStats(attempts, session) {
 }
 
 /**
- * The skills each learner has mastered (flowering: clean on CONFIG.masteryCleanDays different days),
+ * The skills each learner has mastered (flowering: clean on CONFIG.masteryCleanDays different days, see rules.js),
  * oldest first, for the learners in `learnerIds`. A mastered skill stays mastered, even if it wilts later.
  * @param {Array<{learner: string, skill: string, stars: number, created: string, client_at?: string}>} attempts all attempts
  * @returns {Array<{learner: string, skill: string, at: number}>} at = when the last needed clean day happened

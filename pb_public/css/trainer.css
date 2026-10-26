@@ -76,6 +76,7 @@ body.trainer { font-size: 15px; line-height: 1.4; }
 .t-hm .c-seed { color: var(--ink-3); }
 .t-hm .c-sprout { background: #F4F9EF; }
 .t-hm .c-leafy { background: var(--leaf-l); }
+.t-hm .c-bud { background: #FCE4EC; }
 .t-hm .c-flowering { background: #FFF2C9; }
 .t-hm .c-wilt { background: #F6EFD6; }
 .t-hm tr.is-flagged th { box-shadow: inset 4px 0 0 #C9583F; }

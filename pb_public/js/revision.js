@@ -4,7 +4,7 @@
 import { skillById } from "./content/skills.js";
 import { CONFIG, attemptTime, dayKey, gardenState } from "./rules.js";
 
-const STAGE_RANK = { seed: 0, sprout: 1, leafy: 2, flowering: 3 };
+const STAGE_RANK = { seed: 0, sprout: 1, leafy: 2, bud: 3, flowering: 4 };
 
 /**
  * Draw weight of a skill: 1 + 3·wilted + 2·notMastered + 2·(lastStars <= 2) + min(daysOverdue/7, 2).

@@ -89,7 +89,7 @@ function topicsText(session) {
 // How the garden grows, under the bar (live and waiting, so the scene crops the same).
 const HOW_HTML = `<ul class="pj-how">
     <li><b>⭐ Every star</b> fills the bar. Full bar = a new flower in the boxes.</li>
-    <li><b>🌸 ⭐⭐⭐ on 3 different days</b> = your own flower in the front bed.</li>
+    <li><b>🌸 ⭐⭐⭐ on 2 different days</b> = your own flower in the front bed.</li>
   </ul>`;
 
 function headerHtml(session, offline) {

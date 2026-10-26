@@ -24,11 +24,12 @@ test("plants: stored kind wins, otherwise a stable pick from the id", () => {
   assert.ok(PLANT_KINDS.includes(plantKindOf(null)));
 });
 
-test("plants: only the grown plant shows the kind", () => {
+test("plants: the bud and the grown plant show the kind", () => {
   const lotus = PLANT_KINDS.find((k) => k.key === "lotus");
   assert.equal(plantSymbol({ stage: "flowering" }, lotus), "p-lotus");
   assert.equal(plantSymbol({ stage: "flowering", wilted: true }, lotus), "p-wilt");
   assert.equal(plantSymbol({ stage: "leafy" }, lotus), "p-leafy");
+  assert.equal(plantSymbol({ stage: "bud" }, lotus), "p-bud-lotus");
   assert.equal(plantSymbol(null, lotus), "p-seed");
   assert.equal(plantSymbol({ stage: "flowering" }), "p-flower");
 });
@@ -43,13 +44,13 @@ test("projector front bed: a flower per mastered skill of the learners in the ro
   const { masteredFlowers } = await import("../pb_public/js/projector/class-stats.js");
   const at = (learner, skill, stars, day) => ({ learner, skill, stars, created: `${day} 02:00:00.000Z` });
   const attempts = [
-    // a: 3 clean days on s1 (mastered on the 3rd), only 2 on s2
+    // a: 2 clean days on s1 (mastered on the 2nd; same-day repeats and 2 stars don't count), only 1 on s2
     at("a", "s1", 3, "2026-10-01"), at("a", "s1", 3, "2026-10-01"), at("a", "s1", 2, "2026-10-02"),
-    at("a", "s1", 3, "2026-10-08"), at("a", "s1", 3, "2026-10-15"),
-    at("a", "s2", 3, "2026-10-01"), at("a", "s2", 3, "2026-10-08"),
+    at("a", "s1", 3, "2026-10-08"),
+    at("a", "s2", 3, "2026-10-01"), at("a", "s2", 2, "2026-10-08"),
     // b: mastered s1 earlier than a did; c is not in the room
-    at("b", "s1", 3, "2026-10-01"), at("b", "s1", 3, "2026-10-02"), at("b", "s1", 3, "2026-10-03"),
-    at("c", "s1", 3, "2026-10-01"), at("c", "s1", 3, "2026-10-02"), at("c", "s1", 3, "2026-10-03"),
+    at("b", "s1", 3, "2026-10-01"), at("b", "s1", 3, "2026-10-03"),
+    at("c", "s1", 3, "2026-10-01"), at("c", "s1", 3, "2026-10-02"),
   ];
   const got = masteredFlowers(attempts, ["a", "b"]).map((f) => `${f.learner}|${f.skill}`);
   assert.deepEqual(got, ["b|s1", "a|s1"]);

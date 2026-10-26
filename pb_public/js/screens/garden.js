@@ -111,7 +111,7 @@ export async function render(root, { learner }) {
             <div class="wg-tpanel wg-howto" id="tpG" role="tabpanel" aria-labelledby="tabG" hidden>
             <h2 class="wg-howto-h">${gbi("howGrow")}</h2>
             <ol class="wg-steps">
-              ${["seed", "sprout", "leafy", "flowering"]
+              ${["seed", "sprout", "leafy", "bud", "flowering"]
                 .map((k) => `<li><svg viewBox="0 0 100 110" aria-hidden="true"><use href="#${plantSymbol({ stage: k }, kind)}"/></svg>
                   <span><b>${biPair(gt(`stage_${k}`))}</b><small>${biPair(gt(`grow_${k}`))}</small></span></li>`)
                 .join("")}

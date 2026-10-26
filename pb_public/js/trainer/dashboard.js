@@ -12,7 +12,7 @@ const STAR_MESSAGES = [
   "Thank you for helping a classmate.",
 ];
 const ASK_LABEL = { stuck: "I'm stuck 😕", learn_more: "Wants to learn more 💡", classmate: "Asked for a classmate 🤝" };
-const STAGE_MARK = { seed: "–", sprout: "🌱", leafy: "🌿", flowering: "🌼" };
+const STAGE_MARK = { seed: "–", sprout: "🌱", leafy: "🌿", bud: "🌷", flowering: "🌼" };
 const HELP_SHOW_ME = 3; // mission Help 3 = Show me
 const WRONG_TRIES = 3; // tries counts the right try too, so 3 wrong = tries ≥ 4
 
@@ -68,7 +68,7 @@ export function render(root, { store, logout }) {
         <h2>🌱 Learners × skills <small class="t-muted">private · only you see names</small></h2>
         <div class="t-scroll" id="heat"></div>
         <div class="t-legend">
-          <span>🌼 Mastered</span><span>🌿 2 days</span><span>🌱 1 day</span><span>💧 Wilting</span><span>– Not started</span><span>★ last stars</span>
+          <span>🌼 Mastered (3★ on 2 days)</span><span>🌷 3★ once</span><span>🌿 Came back</span><span>🌱 Tried</span><span>💧 Wilting</span><span>– Not started</span><span>★ last stars</span>
         </div>
       </section>
       <div class="t-col">
