@@ -138,11 +138,12 @@ export async function render(root, { id, learner }) {
 
   function mount(mission, run) {
     const steps = Array.isArray(mission.steps) ? mission.steps : [];
+    const completedSteps = steps.map(() => false);
     const now = new Date();
     const before = skillState(attempts, mission.skill, now);
     const support = supportLevel(before.cleanDays);
     const usesWord = (mission.mock ?? "word") === "word";
-    const ctx = { saved: null, opened: null, learner: { name: learner.name }, selection: null };
+    const ctx = { saved: null, opened: null, commands: [], learner: { name: learner.name }, selection: null };
     const n = run ? run.done.length + 1 : 0;
 
     root.innerHTML = `
@@ -271,9 +272,11 @@ export async function render(root, { id, learner }) {
       if (!steps.length) return;
       const doc = docNow();
       const nowDone = steps.map((s) => typeof s.done === "function" && safeBool(() => s.done(doc, ctx)));
-      // A step is done when it, or any later step, holds now (selecting stops holding once B is pressed).
-      const done = nowDone.map((_, i) => nowDone.slice(i).some(Boolean));
-      const next = complete ? steps.length : Math.max(0, done.indexOf(false));
+      // Keep observed actions (such as a selection) after they stop holding. An independent
+      // later step must never tick earlier work the learner has not done.
+      const done = nowDone.map((value, i) => (completedSteps[i] ||= value));
+      const firstPending = done.indexOf(false);
+      const next = complete || firstPending < 0 ? steps.length : firstPending;
       stepEls.forEach((el, i) => {
         const d = complete || done[i];
         el.classList.toggle("done", d);
@@ -369,6 +372,9 @@ export async function render(root, { id, learner }) {
           progress: (d) => (typeof mission.goal.progress === "function" ? safeNum(() => mission.goal.progress(d, ctx)) : 0),
         },
       });
+      offs.push(word.on("command", (event) => {
+        if (!event.menu && !getInternals(word).demoRunning) ctx.commands.push(event.id);
+      }));
       offs.push(word.on("change", evaluate));
       offs.push(word.on("goal", () => !complete && finish()));
       offs.push(

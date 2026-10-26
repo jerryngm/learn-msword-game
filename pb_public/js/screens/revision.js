@@ -5,7 +5,7 @@
 
 import { biPair, esc, labelPair, t } from "../i18n.js";
 import { skillById } from "../content/skills.js";
-import { mountWord } from "../word/index.js";
+import { mountWord, getInternals } from "../word/index.js";
 import { createHints } from "../word/hints.js";
 import { buildRound } from "../revision.js";
 import { skillState, starsFor } from "../rules.js";
@@ -386,7 +386,7 @@ function runFix(host, item, api) {
 
 function runDo(host, item, api) {
   host.innerHTML = `<div class="wg-do-host"></div>`;
-  const ctx = { saved: null, opened: null, learner: { name: api.learner?.name ?? "" } };
+  const ctx = { saved: null, opened: null, commands: [], selection: null, learner: { name: api.learner?.name ?? "" } };
   const word = mountWord(host.firstElementChild, {
     doc: item.doc ?? "",
     tabs: Array.isArray(item.tabs) ? item.tabs : ["home"],
@@ -395,6 +395,7 @@ function runDo(host, item, api) {
   });
   const met = () => {
     try {
+      ctx.selection = word.selection;
       return Boolean(item.check?.(word.getDoc(), ctx));
     } catch (err) {
       console.error(`check failed for ${item.id}`, err);
@@ -409,6 +410,9 @@ function runDo(host, item, api) {
     api.solved();
   };
   const offChange = word.on("change", () => met() && finish());
+  const offCommand = word.on("command", (event) => {
+    if (!event.menu && !getInternals(word).demoRunning) ctx.commands.push(event.id);
+  });
   const onSaved = (p) => {
     ctx.saved = p && typeof p === "object" ? { folder: Array.isArray(p.folder) ? p.folder : [], name: String(p.name ?? "") } : null;
     if (met()) finish();
@@ -431,6 +435,7 @@ function runDo(host, item, api) {
     },
     destroy() {
       offChange();
+      offCommand();
       offSaved();
       host.removeEventListener("wg-saved", onSavedDom);
       hints.destroy();

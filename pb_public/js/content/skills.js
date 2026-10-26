@@ -27,7 +27,9 @@
 //   steps: [{ text: {en, vi}, done(doc, ctx) → bool, hint: {en, vi}, spotlight?: groupId, demo?: script }],
 //   goal: { check(doc, ctx) → bool, progress(doc, ctx) → 0..1 } }
 // `ctx` is built by the mission screen from engine events: { saved: {folder: [..], name} | null,
-// opened: string | null, learner: {name} }. The Backstage Save As emits `saved`, and the Explorer mock emits `opened`.
+// opened: string | null, learner: {name}, selection: {anchor, focus}, commands: string[] }.
+// Both revision and mission predicates receive the current selection and real command ids; ghost demos
+// and menu openings do not count as learner actions. Backstage Save As emits `saved`; Explorer emits `opened`.
 // Predicates using runsMatching() must also check `.length > 0` (an empty match `.every()` is true).
 // Capstone missions (Topic 8) may add `skill` per step. Each step's stars then count for that step's skill.
 //
