@@ -46,7 +46,10 @@ no domain needs to be compiled into the app.
 Point the reverse proxy at `http://127.0.0.1:8090`. Enable HTTPS, pass streaming
 responses through, and disable buffering for PocketBase realtime (SSE). For
 nginx, include `proxy_buffering off;` and `proxy_read_timeout 1h;` in the proxied
-location. Optionally restrict `/_/` to the trainer's IP.
+location. Optionally restrict `/_/` to the trainer's IP. The app sends
+`Cache-Control: no-cache` on its own files (`pb_hooks/static-cache.pb.js`) so
+browsers pick up an update at once; do not add proxy caching or `expires` rules
+that override it.
 
 Verify that a learner can join and answer an item, the projector updates live,
 and `docker compose restart word-garden` preserves the learner and progress.

@@ -66,6 +66,39 @@ function renderError(root, retry) {
   root.querySelector("#retry").addEventListener("click", retry);
 }
 
+/*
+ * After an update the browser can still hold old copies of some app files, and a screen then fails to
+ * load (an import that the cached file doesn't have). Re-fetch every app file past the cache and reload
+ * once. If no file can be fetched the class computer really is unreachable: return false so the
+ * caller shows the offline screen. A second failure soon after a reload also returns false (no loop).
+ */
+const UPDATE_RELOAD_KEY = "update_reload_at";
+
+async function reloadForUpdate() {
+  try {
+    const last = Number(sessionStorage.getItem(UPDATE_RELOAD_KEY)) || 0;
+    if (Date.now() - last < 60_000) return false;
+  } catch {
+    return false; // storage blocked: no way to tell a first try from a loop
+  }
+  const urls = new Set(
+    performance
+      .getEntriesByType("resource")
+      .map((r) => r.name.split("#")[0])
+      .filter((u) => u.startsWith(location.origin) && !u.includes("/api/")),
+  );
+  urls.add(location.href.split("#")[0]);
+  // Any answer, even a 404 for a file the update removed, proves the server is reachable; only no answer at all means offline.
+  const results = await Promise.allSettled([...urls].map((u) => fetch(u, { cache: "reload" })));
+  if (!results.some((r) => r.status === "fulfilled")) {
+    console.error("could not refresh app files", results[0]?.reason);
+    return false;
+  }
+  sessionStorage.setItem(UPDATE_RELOAD_KEY, String(Date.now()));
+  location.reload();
+  return true;
+}
+
 async function navigate() {
   const token = ++navToken;
   runCleanup();
@@ -107,9 +140,16 @@ async function navigate() {
   host.style.display = "contents"; // layout-neutral: the screen's own <main> lays out as if it were a child of #app
   app.append(host);
   screenHost = host;
+  let mod;
   try {
-    const mod = await route.load();
-    if (token !== navToken) return;
+    mod = await route.load();
+  } catch (err) {
+    console.error(`screen ${route.name} failed to load`, err);
+    if (token === navToken && !(await reloadForUpdate()) && token === navToken) renderError(app, navigate);
+    return;
+  }
+  if (token !== navToken) return;
+  try {
     const done = (await mod.render(host, { ...params, learner })) ?? null;
     if (token === navToken) cleanup = done;
     else if (typeof done === "function") {
