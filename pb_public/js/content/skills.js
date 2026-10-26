@@ -101,7 +101,7 @@ export const SKILLS = [
   // Topic 6
   { id: "t6-insert-picture", topic: 6, ican: { en: "insert a picture", vi: "chèn hình ảnh" } },
   { id: "t6-resize", topic: 6, ican: { en: "make a picture bigger or smaller with a corner dot, so it doesn't stretch", vi: "kéo chấm tròn ở góc để làm hình to hơn hay nhỏ hơn mà hình không bị méo" } },
-  { id: "t6-move-wrap", topic: 6, ican: { en: "move a picture anywhere with Wrap Text › In Front of Text", vi: "dùng Wrap Text › In Front of Text để kéo hình đi chỗ nào cũng được" } },
+  { id: "t6-move-wrap", topic: 6, ican: { en: "use Wrap Text to put text beside a picture, or to drag the picture anywhere", vi: "dùng Wrap Text để chữ nằm cạnh hình, hoặc để kéo hình đi chỗ nào cũng được" } },
   { id: "t6-delete-picture", topic: 6, mission: false, ican: { en: "delete a picture", vi: "xoá hình" } },
   { id: "t6-unikey", topic: 6, mission: false, optional: true, ican: { en: "type Vietnamese with the VNI number keys", vi: "gõ tiếng Việt kiểu VNI bằng phím số" } },
   // Topic 7
