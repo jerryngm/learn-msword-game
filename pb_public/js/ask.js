@@ -201,7 +201,7 @@ export function attachAsk(button, { learner, context = () => ({}) } = {}) {
   };
 }
 
-/** Adds the Ask button to `container`. `inline` puts it in the flow (mission column) instead of the fixed corner. */
+/** Adds the Ask button to `container`. `inline` puts it in the flow (mission top bar) instead of the fixed corner. */
 export function mountAsk(container, { learner, context, inline = false } = {}) {
   const button = document.createElement("button");
   button.type = "button";

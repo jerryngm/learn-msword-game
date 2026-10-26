@@ -158,14 +158,14 @@ export async function render(root, { id, learner }) {
             .map((s, i) => `<li class="wg-mstep" data-step="${i}"><span class="wg-num" aria-hidden="true"><span>${i + 1}</span></span><span class="wg-mstep-t">${biPair(pair(s.text))}</span></li>`)
             .join("")}</ol>` : ""}
           <button type="button" class="wg-offer" hidden>${gbi("offerSpot")}</button>
-          <button type="button" class="wg-helpbtn"><span class="wg-ladder" aria-hidden="true"><i></i><i></i><i></i></span><span class="wg-help-t"></span></button>
           <p class="wg-explore">${gbi("explore")}</p>
-          <div class="wg-m-foot"><div class="wg-ask-slot"></div></div>
         </aside>
         <section class="wg-mwork">
           <div class="wg-mtop">
             ${run ? `<div class="wg-dots" aria-hidden="true">${Array.from({ length: run.target }, (_, k) => `<i class="${k < n - 1 ? "done" : k === n - 1 ? "now" : ""}"></i>`).join("")}</div>` : ""}
             <a class="wg-finish-in" href="${run ? "#/end" : "#/garden"}">${gbi(run ? "finish" : "myGarden")}</a>
+            <button type="button" class="wg-helpbtn"><span class="wg-ladder" aria-hidden="true"><i></i><i></i><i></i></span><span class="wg-help-t"></span></button>
+            <div class="wg-ask-slot"></div>
           </div>
           <div class="wg-whost"></div>
         </section>
@@ -173,12 +173,12 @@ export async function render(root, { id, learner }) {
 
     const col = root.querySelector(".wg-mcol");
     const host = root.querySelector(".wg-whost");
-    const helpBtn = col.querySelector(".wg-helpbtn");
+    const helpBtn = root.querySelector(".wg-helpbtn");
     const offerBtn = col.querySelector(".wg-offer");
     const stepEls = [...col.querySelectorAll(".wg-mstep")];
     const thumb = col.querySelector(".wg-thumb");
     const stopThumb = thumb ? drawThumb(thumb, mission.targetDoc) : () => {};
-    const stopAsk = mountAsk(col.querySelector(".wg-ask-slot"), { learner, inline: true, context: () => ({ session: sessionId, skill: mission.skill }) });
+    const stopAsk = mountAsk(root.querySelector(".wg-ask-slot"), { learner, inline: true, context: () => ({ session: sessionId, skill: mission.skill }) });
 
     let help = 0; // highest Help level used
     let lastLevel = 0; // the level the Help button last showed
@@ -253,7 +253,7 @@ export async function render(root, { id, learner }) {
       p.className = "wg-colhint";
       p.setAttribute("role", "status");
       p.innerHTML = `💡 ${biPair(stepHint())}`;
-      helpBtn.before(p);
+      offerBtn.before(p);
     }
 
     // A double-click or a held key presses a Help button once: it must not jump two levels.
