@@ -1,6 +1,7 @@
 // Join screen: name + picture for a new learner, or "Continue as" on a return visit.
 import { pb, setCurrentLearner, forgetLearner } from "../pb.js";
 import { AVATARS, avatarEmoji, bi, esc, label, labelPair, t, viHidden } from "../i18n.js";
+import { pickPlantKey } from "../plants.js";
 
 const NAME_MAX = 20;
 // Ring colours that tell apart learners who share a first name.
@@ -17,6 +18,12 @@ async function pickColour(name) {
   const same = found.filter((l) => l.name.trim().toLowerCase() === wanted);
   const used = new Set(same.map((l) => l.colour));
   return COLOURS.find((c) => !used.has(c)) ?? COLOURS[same.length % COLOURS.length];
+}
+
+/** A plant kind for the new learner: one the class grows least, so the garden gets a mix. */
+async function pickPlant() {
+  const found = await pb.collection("learners").getFullList({ filter: "active = true", fields: "plant", requestKey: null });
+  return pickPlantKey(found.map((l) => l.plant));
 }
 
 function header() {
@@ -101,9 +108,9 @@ function renderForm(root) {
     startBtn.innerHTML = bi("joinSaving");
     sync();
     try {
-      const colour = await pickColour(name);
+      const [colour, plant] = await Promise.all([pickColour(name), pickPlant()]);
       const learner = await pb.collection("learners").create(
-        { name, avatar: avatarKey, colour, helper_badges: 0, active: true, hide_vi: viHidden() },
+        { name, avatar: avatarKey, colour, plant, helper_badges: 0, active: true, hide_vi: viHidden() },
         { requestKey: null },
       );
       setCurrentLearner(learner.id);

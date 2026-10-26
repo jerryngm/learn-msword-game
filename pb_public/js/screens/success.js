@@ -1,21 +1,13 @@
 // Success (#s6): stars pop, the plant grows, one headline, a badge line only when newly earned, Next.
-// Shown in place by the mission screen: renderSuccess(root, result). Also exports the plant and
-// star helpers the garden and end screens share.
+// Shown in place by the mission screen: renderSuccess(root, result). Also exports the star and
+// "I can" helpers the garden and end screens share.
 
 import { biPair, esc, t } from "../i18n.js";
 import { skillById } from "../content/skills.js";
 import { mountAsk } from "../ask.js";
 import { getRun, tapGuard } from "../game-data.js";
 import { gbi, glabel } from "../strings-game.js";
-
-const SYMBOL = { seed: "p-seed", sprout: "p-sprout", leafy: "p-leafy", flowering: "p-flower" };
-
-/** The sprite symbol for a skill state (wilted plants droop; never red). */
-export function plantSymbol(state) {
-  if (!state) return "p-seed";
-  if (state.wilted) return "p-wilt";
-  return SYMBOL[state.stage] ?? "p-seed";
-}
+import { plantKindOf, plantSymbol } from "../plants.js";
 
 const STAR_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z" fill="#F6C945" stroke="#E0A526" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
 
@@ -60,8 +52,9 @@ function headlineKey({ stars, before, help_level = 0, tries = 1 }) {
  */
 export function renderSuccess(root, result, { learner, sessionId } = {}) {
   const { stars, skill, before, after, nextKey = "next", onNext } = result;
-  const fromSym = plantSymbol(before);
-  const toSym = plantSymbol(after ? { ...after, wilted: false } : null);
+  const kind = plantKindOf(learner);
+  const fromSym = plantSymbol(before, kind);
+  const toSym = plantSymbol(after ? { ...after, wilted: false } : null, kind);
   const grows = fromSym !== toSym;
   const newBadge = Boolean(after?.mastered && !before?.mastered);
   const ican = icanOf(skill);

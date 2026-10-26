@@ -7,9 +7,11 @@ import { TOPICS, loadTopic, skillById } from "../content/skills.js";
 import { classStats } from "./class-stats.js";
 import { SLOT_COUNT, gardenSvg } from "./garden-scene.js";
 import { mountVersionBadge } from "../version-badge.js";
+import { mountPlantSymbols, plantKindOf } from "../plants.js";
 
 const stage = document.getElementById("stage");
 mountVersionBadge();
+mountPlantSymbols();
 const STAGE_W = 1920;
 const STAGE_H = 1080;
 
@@ -113,9 +115,10 @@ function avatarsHtml(stats) {
     const learner = state.learners.get(id);
     const done = stats.finishedIds.has(id);
     const name = learner?.name ?? "";
-    const label = done ? "finished" : "still growing";
+    const kind = plantKindOf(learner ?? { id });
+    const label = `${done ? "finished" : "still growing"}, grows ${kind.en.toLowerCase()}`;
     return `<div class="pj-p">
-        <span class="pj-av ${done ? "is-done" : "is-growing"}" role="img" aria-label="${esc(label)}">${esc(avatarEmoji(learner?.avatar))}</span>
+        <span class="pj-av ${done ? "is-done" : "is-growing"}" role="img" aria-label="${esc(label)}">${esc(avatarEmoji(learner?.avatar))}<span class="pj-kind" aria-hidden="true"><svg viewBox="0 0 100 110"><use href="#${kind.symbol}"/></svg></span></span>
         <span class="pj-n">${esc(name)}</span>
       </div>`;
   });
@@ -165,6 +168,7 @@ function liveHtml(session, stats, label, offline, anim) {
         flowers: stats.flowers,
         towardNext: stats.towardNext,
         perFlower: stats.perFlower,
+        kinds: stats.learnerIds.map((id) => plantKindOf(state.learners.get(id) ?? { id }).symbol),
         newFrom: anim.newFrom,
         grew: anim.grew,
       })}</div>

@@ -3,6 +3,7 @@ import { pb, liveSession } from "../pb.js";
 import { avatarEmoji, bi, esc, label, t } from "../i18n.js";
 import { gardenState, weeklyStreak } from "../rules.js";
 import { attachAsk } from "../ask.js";
+import { plantKindOf, plantSymbol } from "../plants.js";
 
 const PEEK_PLANTS = 4;
 
@@ -20,12 +21,7 @@ function summariseGarden(attempts) {
 
 /* ---------- markup ---------- */
 
-function plantSymbol(plant) {
-  if (plant.wilted) return "p-wilt";
-  return { flowering: "p-flower", leafy: "p-leafy", sprout: "p-sprout" }[plant.stage];
-}
-
-function peekHtml(garden) {
+function peekHtml(garden, kind) {
   if (!garden.plants.length) {
     return `<div class="peek-empty">
       <svg class="peek-seed" viewBox="0 0 100 110" aria-hidden="true"><use href="#p-seed"/></svg>
@@ -35,7 +31,7 @@ function peekHtml(garden) {
   }
   const shown = [...garden.plants].sort((a, b) => b.last - a.last).slice(0, PEEK_PLANTS);
   const plants = shown
-    .map((p) => `<svg class="peek-plant" viewBox="0 0 100 110" aria-hidden="true"><use href="#${plantSymbol(p)}"/></svg>`)
+    .map((p) => `<svg class="peek-plant" viewBox="0 0 100 110" aria-hidden="true"><use href="#${plantSymbol(p, kind)}"/></svg>`)
     .join("");
   return `<div class="peek-bed">${plants}</div>`;
 }
@@ -162,7 +158,7 @@ export function render(root, { learner }) {
       const streakEl = root.querySelector("#streak");
       streakEl.innerHTML = streakHtml(garden);
       streakEl.hidden = garden.streak < 1;
-      root.querySelector("#peek").innerHTML = peekHtml(garden);
+      root.querySelector("#peek").innerHTML = peekHtml(garden, plantKindOf(learner));
     });
 
   return () => {

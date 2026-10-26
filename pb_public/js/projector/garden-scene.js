@@ -1,6 +1,8 @@
 // The community garden picture (#s9): a fixed scene with planter boxes whose slots fill with
 // flowers as the class earns stars. The next slot shows the flower that is growing now.
-// Uses the plant symbols copied from index.html into projector.html (#p-seed … #p-flower).
+// Bloomed flowers take turns through the present learners' plant kinds, so every learner's plant
+// shows up. Uses the stage symbols copied from index.html into projector.html (#p-seed … #p-fruit)
+// plus the kind symbols that js/plants.js adds.
 
 // Slots in the scene's viewBox (0 -110 1000 630), front box first, then left, then right.
 const SLOTS = [
@@ -30,16 +32,17 @@ function plant(symbol, [x, y], cls) {
 
 /**
  * SVG markup for the garden.
- * @param {{flowers: number, towardNext: number, perFlower: number, newFrom: number, grew: boolean, waiting?: boolean}} g
+ * @param {{flowers: number, towardNext: number, perFlower: number, newFrom: number, grew: boolean, kinds?: string[], waiting?: boolean}} g
+ *   kinds: flower symbols to take turns through (one per present learner); sunflowers when empty.
  *   newFrom: flowers at index >= newFrom bloomed since the last draw (they animate in).
  *   grew: stars arrived since the last draw (the growing plant gets a gentle nudge).
  *   waiting: no live session, so the boxes stay empty.
  */
-export function gardenSvg({ flowers, towardNext, perFlower, newFrom, grew, waiting = false }) {
+export function gardenSvg({ flowers, towardNext, perFlower, newFrom, grew, kinds = [], waiting = false }) {
   const shown = Math.min(flowers, SLOT_COUNT);
   const plants = [];
   if (!waiting) {
-    for (let i = 0; i < shown; i++) plants.push(plant("p-flower", SLOTS[i], i >= newFrom ? "pj-plant pj-bloom" : "pj-plant"));
+    for (let i = 0; i < shown; i++) plants.push(plant(kinds.length ? kinds[i % kinds.length] : "p-flower", SLOTS[i], i >= newFrom ? "pj-plant pj-bloom" : "pj-plant"));
     if (flowers < SLOT_COUNT) {
       plants.push(plant(growingSymbol(towardNext, perFlower), SLOTS[flowers], grew ? "pj-plant pj-nudge" : "pj-plant"));
     }

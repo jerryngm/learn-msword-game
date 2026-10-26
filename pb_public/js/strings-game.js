@@ -104,6 +104,7 @@ export const GAME_STRINGS = {
   // Garden
   plantsN: { en: "{n} plants", vi: "{n} cây" },
   plantsOne: { en: "1 plant", vi: "1 cây" },
+  youGrow: { en: "You grow: {plant}", vi: "Bạn trồng: {plant}" },
   needWater: { en: "💧 {n} need water", vi: "{n} cây cần tưới" },
   needWaterOne: { en: "💧 1 needs water", vi: "1 cây cần tưới" },
   tapPlant: { en: "👆 Tap a plant", vi: "Bấm vào một cây" },

@@ -1,4 +1,4 @@
-// My Garden (#s7): a plant per skill (labels on hover only), the plant card with
+// My Garden (#s7): a plant per skill in the learner's own plant kind (labels on hover only), the plant card with
 // "💧 Water it / Practise again", the Kitchen shelf, the "I can…" badge wall and teacher ⭐ messages (live).
 
 import { TOPICS, SKILLS, skillsOfTopic } from "../content/skills.js";
@@ -8,7 +8,8 @@ import { pickNextMission } from "../revision.js";
 import { mountAsk } from "../ask.js";
 import { learnerAttempts, learnerEncouragements, loadAllContent, playContext, setPracticeSkill } from "../game-data.js";
 import { gbi, glabel, gt } from "../strings-game.js";
-import { icanOf, plantSymbol } from "./success.js";
+import { icanOf } from "./success.js";
+import { plantKindOf, plantSymbol } from "../plants.js";
 
 const stageKey = (state) => (state.wilted ? "wilted" : state.stage);
 
@@ -26,13 +27,13 @@ const DISH_SVG = {
     <rect x="6" y="34" width="52" height="5" rx="2.5" fill="#D9CBB5"/></svg>`,
 };
 
-function plantButton(skill, state, i) {
+function plantButton(skill, state, i, kind) {
   const key = stageKey(state);
   const tip = gt("plantLabel", { stage: gt(`stage_${key}`), ican: icanOf(skill.id) });
   return `<button type="button" class="wg-pbtn${state.wilted ? " is-wilt" : ""}" data-skill="${esc(skill.id)}" style="--d:${(i % 5) * -1.1}s"
       aria-label="${esc(labelPair(tip))}">
       ${state.wilted ? `<span class="wg-drop" aria-hidden="true">💧</span>` : ""}
-      <svg class="wg-plant" viewBox="0 0 100 110" aria-hidden="true"><use href="#${plantSymbol(state)}"/></svg>
+      <svg class="wg-plant" viewBox="0 0 100 110" aria-hidden="true"><use href="#${plantSymbol(state, kind)}"/></svg>
       <span class="wg-tip" aria-hidden="true">${biPair(tip)}</span>
     </button>`;
 }
@@ -40,6 +41,7 @@ function plantButton(skill, state, i) {
 export async function render(root, { learner }) {
   root.innerHTML = `<main class="screen center-screen"><p class="lead">${gbi("loading")}</p></main>`;
   const [play, attempts, content] = await Promise.all([playContext(), learnerAttempts(learner.id), loadAllContent()]);
+  const kind = plantKindOf(learner);
   const today = new Date();
   const todayKey = dayKey(today);
   const garden = gardenState(attempts, SKILLS.map((s) => s.id), today);
@@ -56,7 +58,7 @@ export async function render(root, { learner }) {
   const bedHtml = (n) => {
     const tp = TOPICS.find((x) => x.n === n);
     const dish = play.dishNames[n] ?? play.dishNames[String(n)];
-    const plants = skillsOfTopic(n).map((s, i) => plantButton(s, garden.get(s.id), i)).join("");
+    const plants = skillsOfTopic(n).map((s, i) => plantButton(s, garden.get(s.id), i, kind)).join("");
     return `<section class="wg-bed">
         <h2 class="wg-bed-h"><span class="wg-bed-n" aria-hidden="true">${n}</span><span>${biPair(tp.title)}</span>${dish ? `<span class="wg-bed-dish">${esc(dish)}</span>` : ""}</h2>
         <div class="wg-soil">${plants}</div>
@@ -87,6 +89,7 @@ export async function render(root, { learner }) {
       <header class="wg-g-head">
         <h1>🌱 ${gbi("myGarden")}</h1>
         <div class="wg-g-sum">
+          <span class="chip wg-chip2 wg-kind"><svg viewBox="0 0 100 110" aria-hidden="true"><use href="#${kind.symbol}"/></svg><span>${gbi("youGrow", { plant: kind })}</span></span>
           <span class="chip wg-chip2">${gbi(tried.length === 1 ? "plantsOne" : "plantsN", { n: tried.length })}</span>
           ${thirsty ? `<span class="chip soft wg-chip2">${gbi(thirsty === 1 ? "needWaterOne" : "needWater", { n: thirsty })}</span>` : ""}
         </div>
@@ -97,7 +100,7 @@ export async function render(root, { learner }) {
           <div class="wg-beds cols-${cols}">${beds.map(bedHtml).join("")}</div>
           <div class="wg-legend">
             ${["seed", "sprout", "leafy", "flowering", "wilted"]
-              .map((k) => `<span><svg viewBox="0 0 100 110" aria-hidden="true"><use href="#${k === "wilted" ? "p-wilt" : plantSymbol({ stage: k })}"/></svg>${biPair(gt(`stage_${k}`))}</span>`)
+              .map((k) => `<span><svg viewBox="0 0 100 110" aria-hidden="true"><use href="#${k === "wilted" ? "p-wilt" : plantSymbol({ stage: k }, kind)}"/></svg>${biPair(gt(`stage_${k}`))}</span>`)
               .join("")}
             <span class="wg-legend-tap">${biPair(gt("tapPlant"))}</span>
           </div>
@@ -185,7 +188,7 @@ export async function render(root, { learner }) {
     back.className = "wg-pcard-back";
     back.innerHTML = `<div class="card wg-pcard" role="dialog" aria-modal="true" aria-labelledby="pcName">
         <button type="button" class="wg-pclose" aria-label="${esc(glabel("close"))}">✕</button>
-        <svg class="wg-pcard-plant${state.wilted ? " is-wilt" : ""}" viewBox="0 0 100 110" aria-hidden="true"><use href="#${plantSymbol(state)}"/></svg>
+        <svg class="wg-pcard-plant${state.wilted ? " is-wilt" : ""}" viewBox="0 0 100 110" aria-hidden="true"><use href="#${plantSymbol(state, kind)}"/></svg>
         <h2 id="pcName">${biPair(gt("canDo", { ican: icanOf(skillId) }))}</h2>
         <span class="chip${state.wilted ? " soft" : ""}">${biPair(gt(`chip_${key}`))}</span>
         ${target ? `<button type="button" class="btn btn-primary wg-pgo">${gbi(btnKey)}</button>` : `<p class="wg-k-note">${gbi("noPractice")}</p>`}

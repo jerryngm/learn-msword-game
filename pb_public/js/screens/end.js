@@ -5,7 +5,8 @@ import { dayKey, gardenState, toMillis } from "../rules.js";
 import { mountAsk } from "../ask.js";
 import { getRun, learnerAttempts, setRun } from "../game-data.js";
 import { gbi, gt } from "../strings-game.js";
-import { icanOf, plantSymbol, starsHtml } from "./success.js";
+import { icanOf, starsHtml } from "./success.js";
+import { plantKindOf, plantSymbol } from "../plants.js";
 
 const MAX_PLANTS = 4;
 
@@ -39,13 +40,14 @@ export async function render(root, { learner }) {
   const garden = gardenState(attempts, skills, today);
   const better = bestImprovement(attempts, skills, todayKey);
   const plants = skills.slice(-MAX_PLANTS);
+  const kind = plantKindOf(learner);
 
   const wateredHtml = plants.length
     ? `<section class="card wg-watered${better ? "" : " is-wide"}">
         <h2>${gbi("watered")}</h2>
         <div class="wg-wrow">${plants
           .map((s, i) => `<div class="wg-w"><span class="wg-drip" style="animation-delay:${i * 0.6}s" aria-hidden="true">• • •</span>
-            <svg class="wg-plant" style="animation-delay:${i * -1.5}s" viewBox="0 0 100 110" aria-hidden="true"><use href="#${plantSymbol(garden.get(s))}"/></svg>
+            <svg class="wg-plant" style="animation-delay:${i * -1.5}s" viewBox="0 0 100 110" aria-hidden="true"><use href="#${plantSymbol(garden.get(s), kind)}"/></svg>
             <span class="wg-w-t">${biPair(icanOf(s))}</span></div>`)
           .join("")}</div>
       </section>`

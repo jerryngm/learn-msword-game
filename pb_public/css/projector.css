@@ -57,7 +57,9 @@ body.pj-body { background: #1E1E22; }
 }
 .pj-av.is-done { background: var(--cream); }
 .pj-av.is-done::after { content: "✓"; background: var(--leaf); color: #fff; font-weight: 900; }
-.pj-av.is-growing::after { content: "🌱"; background: #fff; }
+/* the learner's plant kind, bottom-left (the finished ✓ sits bottom-right) */
+.pj-kind { position: absolute; left: -8px; bottom: -8px; width: 56%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(23, 50, 77, .18); }
+.pj-kind svg { width: 88%; height: 88%; }
 .pj-n { display: none; font-size: 24px; font-weight: 700; color: var(--ink-2); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pj-avs.is-many .pj-n, .pj-avs.is-crowd .pj-n { font-size: 19px; }
 .pj-stage.show-names .pj-n { display: block; }

@@ -2,6 +2,7 @@
 import { currentLearner, saveHideVi } from "./pb.js";
 import { VI_CHANGE_EVENT, bi, label, setViHidden, t, viHidden } from "./i18n.js";
 import { mountVersionBadge } from "./version-badge.js";
+import { mountPlantSymbols } from "./plants.js";
 
 // Routes whose screens are not built yet fall back to a calm placeholder.
 const ROUTES = [
@@ -14,6 +15,7 @@ const ROUTES = [
   { name: "end", pattern: /^#\/end$/, load: () => import("./screens/end.js") },
 ];
 
+mountPlantSymbols();
 const app = document.getElementById("app");
 let cleanup = null;
 let navToken = 0;
