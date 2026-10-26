@@ -1203,6 +1203,7 @@ export function mountWord(el, opts = {}) {
   // Aborting the player removes all of its overlays, including the markers that stay after a
   // reduced-motion demo.
   function clearDemo() {
+    if (demoState) popups.closeDialog();
     demoState?.ctrl.abort();
     root.querySelectorAll(".is-demo-press").forEach((x) => x.classList.remove("is-demo-press"));
     demoState = null;
@@ -1358,7 +1359,7 @@ export function mountWord(el, opts = {}) {
       const at=demoPicture>=0?{p:demoPicture,offset:0}:selRange(sel).from;
       const result=getCommand(id).run(source,{from:at,to:at},{arg,ui});
       demoDoc=result.doc??result; demoPicture=result.sel?.focus.p??demoPicture;
-      renderer.render(demoDoc);observer.takeRecords();popups.closeAll();updateUI();return;
+      renderer.render(demoDoc);observer.takeRecords();popups.closeAll();popups.closeDialog();updateUI();return;
     }
     const pos = parseDocTarget(target);
     if (pos && kind === "right") {
@@ -1439,6 +1440,7 @@ export function mountWord(el, opts = {}) {
     } finally {
       if (token === demoToken) {
         popups.closeAll();
+        popups.closeDialog();
         demoPicture=-1;
         if (demoDoc) { demoDoc=null; render(); writeSel(); }
         updateUI();

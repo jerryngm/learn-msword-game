@@ -6,6 +6,8 @@
 // Script steps (one kind per step):
 //   {target, click?: 'single'|'double'|'right'}  ghost cursor moves to resolve(target) and clicks
 //                                                 (legacy `dbl: true` means a double click)
+//   {target, drag: {dx, dy}}                     ghost drag in screen pixels; optional opts.drag
+//                                                 updates only the host's temporary demo view
 //   {select: {from:{p,offset}, to:{p,offset}}}    ghost selection highlight (needs opts.selectRects)
 //   {type: "About me", at?: target}               ghost text types letter by letter (~240 ms each),
 //                                                 lighting Shift for capitals, the full stop, Space
