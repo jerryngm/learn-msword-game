@@ -1,0 +1,14 @@
+.git
+.claude
+.DS_Store
+pb_data
+pocketbase
+.env*
+plans
+mockups
+MSWORD Screenshot
+Topic *
+*.docx
+*.pptx
+template-big-slide.html
+tests
