@@ -336,10 +336,24 @@ function mountContext(hostEl, item, learner) {
 /* ---------- item runners: (host, item, api) → {reveal(), hint?(), destroy()} ---------- */
 // api: {wrong(), solved(), feedback(html), setCheck(fn | null), learner}
 
+/**
+ * Optional picture for a pick item: item.figure = {table: [[cell text…]…], mark?: {row}|{col}|{cell:[row, col]}}.
+ * A small Word-style table; the marked cells are shaded so the question can say "the coloured cells".
+ */
+function figureHtml(fig) {
+  if (!fig || !Array.isArray(fig.table) || !fig.table.length) return "";
+  const m = fig.mark ?? {};
+  const marked = (r, c) => m.row === r || m.col === c || (Array.isArray(m.cell) && m.cell[0] === r && m.cell[1] === c);
+  const rows = fig.table
+    .map((row, r) => `<tr>${(Array.isArray(row) ? row : []).map((t, c) => `<td${marked(r, c) ? ' class="is-mark"' : ""}>${esc(String(t ?? ""))}</td>`).join("")}</tr>`)
+    .join("");
+  return `<figure class="wg-q-figure"><table class="wg-q-ftable">${rows}</table></figure>`;
+}
+
 function runPick(host, item, api) {
   const opts = Array.isArray(item.options) ? item.options : [];
   const cols = opts.length <= 2 ? "two" : opts.length === 3 ? "three" : opts.length <= 4 ? "four" : "three";
-  host.innerHTML = `<div class="wg-choices ${cols}">${opts
+  host.innerHTML = `${figureHtml(item.figure)}<div class="wg-choices ${cols}">${opts
     .map((o) => `<button type="button" class="wg-choice" data-id="${esc(o.id)}">${imgHtml(o.img)}<span class="wg-choice-t">${o.label ? bp(pair(o.label)) : ""}</span></button>`)
     .join("")}</div>`;
   const onClick = (e) => {

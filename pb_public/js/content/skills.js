@@ -7,6 +7,8 @@
 // { id: 't1-keys-pick-1', skill: 't1-keys', type, prompt: {en, vi}, hint: {en, vi}, ...payload }
 //   type 'pick'     → options: [{id, label?: {en, vi}, img?: string}], answer: optionId
 //                     (`img` is an emoji or a path under pb_public/, e.g. 'img/t1/double-click.svg')
+//                     figure?: {table: [[text…]…], mark?: {row}|{col}|{cell: [row, col]}} shows a small table
+//                     above the choices, with the marked cells shaded (say "the coloured cells" in the prompt)
 //   type 'click-ui' → mock: 'word-static' | 'start-menu' | 'explorer', answer: regionId
 //                     (region ids are defined by the mini mock, e.g. 'ribbon', 'qat', 'document')
 //   type 'order'    → steps: [{id, label: {en, vi}}] in the CORRECT order (the runner shuffles them)
@@ -97,10 +99,10 @@ export const SKILLS = [
   { id: "t5-margins", topic: 5, ican: { en: "change the margins", vi: "đổi lề trang" } },
   // Topic 6
   { id: "t6-insert-picture", topic: 6, ican: { en: "insert a picture", vi: "chèn hình ảnh" } },
-  { id: "t6-resize", topic: 6, ican: { en: "resize a picture from a corner so it doesn't stretch", vi: "kéo góc hình để đổi cỡ mà hình không bị méo" } },
-  { id: "t6-move-wrap", topic: 6, ican: { en: "move a picture beside the text with Wrap Text", vi: "dùng Wrap Text để đặt hình bên cạnh chữ" } },
+  { id: "t6-resize", topic: 6, ican: { en: "make a picture bigger or smaller with a corner dot, so it doesn't stretch", vi: "kéo chấm tròn ở góc để làm hình to hơn hay nhỏ hơn mà hình không bị méo" } },
+  { id: "t6-move-wrap", topic: 6, ican: { en: "move a picture anywhere with Wrap Text › In Front of Text", vi: "dùng Wrap Text › In Front of Text để kéo hình đi chỗ nào cũng được" } },
   { id: "t6-delete-picture", topic: 6, mission: false, ican: { en: "delete a picture", vi: "xoá hình" } },
-  { id: "t6-unikey", topic: 6, mission: false, ican: { en: "type Vietnamese with Telex", vi: "gõ tiếng Việt kiểu Telex" } },
+  { id: "t6-unikey", topic: 6, mission: false, ican: { en: "type Vietnamese with the VNI number keys", vi: "gõ tiếng Việt kiểu VNI bằng phím số" } },
   // Topic 7
   { id: "t7-template", topic: 7, ican: { en: "find and open a template", vi: "tìm và mở một mẫu có sẵn" } },
   { id: "t7-placeholder", topic: 7, ican: { en: "replace the sample text in a template", vi: "thay chữ mẫu bằng thông tin của mình" } },
