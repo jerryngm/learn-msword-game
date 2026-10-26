@@ -6,8 +6,10 @@ import { avatarEmoji, esc } from "../i18n.js";
 import { TOPICS, loadTopic, skillById } from "../content/skills.js";
 import { classStats } from "./class-stats.js";
 import { SLOT_COUNT, gardenSvg } from "./garden-scene.js";
+import { mountVersionBadge } from "../version-badge.js";
 
 const stage = document.getElementById("stage");
+mountVersionBadge();
 const STAGE_W = 1920;
 const STAGE_H = 1080;
 

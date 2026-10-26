@@ -7,6 +7,13 @@ pb_data/
 .DS_Store
 .claude/settings.local.json
 
+# Planning notes, design decisions, reports and prototypes (kept on disk, not part of the app)
+plans/
+mockups/
+
+# Screenshots (kept on disk, not part of the app; the app's own art is pb_public/img)
+MSWORD Screenshot/
+
 # Course materials (kept on disk, not part of the app)
 Topic */
 *.docx

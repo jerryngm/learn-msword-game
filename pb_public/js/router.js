@@ -1,6 +1,7 @@
 // Hash router. A screen module exports render(rootEl, params) and may return a cleanup function.
 import { currentLearner, saveHideVi } from "./pb.js";
 import { VI_CHANGE_EVENT, bi, label, setViHidden, t, viHidden } from "./i18n.js";
+import { mountVersionBadge } from "./version-badge.js";
 
 // Routes whose screens are not built yet fall back to a calm placeholder.
 const ROUTES = [
@@ -132,6 +133,7 @@ async function navigate() {
   app.replaceChildren();
   document.title = `${t("brand").en}`;
   const { route, params } = found;
+  document.body.dataset.route = route.name; // lets CSS hide the version badge over the Word mock
   if (!route.load) {
     renderComingSoon(app);
     return;
@@ -196,5 +198,6 @@ function mountLanguageSwitch() {
 }
 
 mountLanguageSwitch();
+mountVersionBadge();
 window.addEventListener("hashchange", navigate);
 navigate();

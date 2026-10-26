@@ -79,3 +79,11 @@ html.hide-vi .vi { display: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* Build version label: quiet, bottom-centre, never clickable. Hidden over the Word mock, which fills the screen. */
+.app-version {
+  position: fixed; left: 50%; bottom: 4px; transform: translateX(-50%); z-index: 30;
+  font-size: 12px; line-height: 1; color: var(--ink-3); opacity: .8; pointer-events: none; user-select: none;
+}
+body[data-route="mission"] .app-version, body[data-route="free"] .app-version { display: none; }
+body.pj-body .app-version { color: #9A9AA3; }

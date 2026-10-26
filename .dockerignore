@@ -12,3 +12,5 @@ Topic *
 *.pptx
 template-big-slide.html
 tests
+scripts
+deploy

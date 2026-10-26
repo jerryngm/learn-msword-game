@@ -3,8 +3,10 @@
 import { pb } from "../live.js";
 import { createStore } from "./store.js";
 import { errText, esc } from "./util.js";
+import { mountVersionBadge } from "../version-badge.js";
 
 const app = document.getElementById("app");
+mountVersionBadge();
 let store = null;
 let cleanup = null;
 

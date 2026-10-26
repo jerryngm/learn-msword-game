@@ -55,6 +55,75 @@ Verify that a learner can join and answer an item, the projector updates live,
 and `docker compose restart word-garden` preserves the learner and progress.
 Repeat the live-update check from a classroom laptop through the domain.
 
+## Versions, GitHub and updating the server
+
+The app version is `APP_VERSION` in `pb_public/js/version.js`, shown as a small
+`vX.Y.Z` label at the bottom centre of the learner, trainer and projector pages
+(hidden over the Word mock). Only `scripts/release.sh` changes it.
+
+### One-time: create the GitHub remote (laptop)
+1. On github.com choose **New repository**. Private or public both work: the
+   repo holds only the platform (no screenshots, course documents or planning
+   notes, which `.gitignore` keeps out). Leave README, .gitignore and
+   licence unticked so the repo is empty.
+2. In the repository root:
+   ```sh
+   git remote add origin git@github.com:<your-user>/<repo>.git
+   git remote -v
+   ```
+   Use the HTTPS URL instead if you have not set up an SSH key with GitHub.
+3. Commit your current work (`git status` must be clean), then run `scripts/release.sh`.
+   The first run pushes `main` and sets it as the upstream.
+
+### One-time: prepare the VPS
+1. Install Docker (with the compose plugin) and git.
+2. If the repo is **private**, give the VPS read-only access with a deploy key
+   (a public repo clones over HTTPS with no key, so skip this step):
+   ```sh
+   ssh-keygen -t ed25519 -f ~/.ssh/word-garden-deploy -N "" -C "word-garden-vps"
+   cat ~/.ssh/word-garden-deploy.pub
+   ```
+   Paste the public key at GitHub, repo **Settings → Deploy keys → Add deploy key**
+   (leave "Allow write access" off). Then add to `~/.ssh/config`:
+   ```
+   Host github-word-garden
+     HostName github.com
+     User git
+     IdentityFile ~/.ssh/word-garden-deploy
+     IdentitiesOnly yes
+   ```
+3. Clone and start:
+   ```sh
+   git clone git@github-word-garden:<your-user>/<repo>.git word-garden
+   cd word-garden
+   docker compose up -d --build
+   ```
+   Then follow "Docker deployment" above for the reverse proxy and accounts.
+   `pb_data/` is created on the VPS and is never in git.
+
+### Every release
+On the laptop (commit your work first):
+```sh
+scripts/release.sh          # patch: 0.1.0 -> 0.1.1
+scripts/release.sh minor    # 0.1.1 -> 0.2.0
+scripts/release.sh major    # 0.2.0 -> 1.0.0
+scripts/release.sh 1.4.2    # exact version
+```
+It refuses to run unless you are on `main` with a clean tree, runs `node --test tests/`,
+writes the new version, commits `chore(release): vX.Y.Z`, tags `vX.Y.Z` and pushes both.
+
+On the VPS, from the checkout:
+```sh
+scripts/update-server.sh
+```
+It fetches and fast-forwards, builds the new image while the old one still runs,
+stops the service only to back up `pb_data/` (to `../word-garden-backups`, newest 14 kept),
+starts it, then waits for `/api/health` and confirms the served version matches the
+pulled one. If the build fails, nothing was stopped and it prints the exact rollback command.
+It refuses to run if the VPS checkout has local changes: never edit files on the server.
+
+Never copy a development `pb_data/` to the VPS, and never commit it.
+
 ## Backups, updates and rollback
 
 Use PocketBase's admin backup scheduler nightly and keep 14 days. For a manual
