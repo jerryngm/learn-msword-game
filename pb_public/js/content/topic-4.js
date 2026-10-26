@@ -56,7 +56,7 @@ export const items = [
     ], replay: sortReplay,
   },
   doItem('t4-bullets-do', 't4-bullets',
-    T('Make this shopping list easy to scan. Select Bread and Milk, then click Bullets.', 'Làm danh sách mua hàng dễ nhìn. Bôi đen cả Bread và Milk rồi bấm Bullets.'),
+    T('Make this shopping list easy to scan. Select Bread and Milk, then click Bullets.', 'Làm danh sách đi chợ dễ nhìn. Bôi đen cả Bread và Milk rồi bấm Bullets.'),
     T('Drag across both lines. Click the dots button, Bullets, in the Paragraph group.', 'Kéo chuột bôi đen cả hai dòng. Bấm nút có các dấu chấm, Bullets, trong nhóm Paragraph.'),
     'Bread\nMilk', (doc) => sameLines(doc, ['Bread', 'Milk']) && listed(doc, 0, 1, 'bullet'),
     [select(0, 1, 4), go('home.paragraph.bullets')]),
@@ -79,13 +79,13 @@ export const items = [
     [select(0, 1, 10), go('home.paragraph.numbering')]),
   {
     id: 't4-end-list-pick', skill: 't4-end-list', type: 'pick',
-    prompt: T('You finished the last item in your shopping list. Which key sequence ends the list so you can write a normal sentence?', 'Bạn đã gõ xong món cuối cùng trong danh sách mua hàng. Nhấn phím nào để kết thúc danh sách và viết câu bình thường?'),
+    prompt: T('You finished the last item in your shopping list. Which key sequence ends the list so you can write a normal sentence?', 'Bạn đã gõ xong món cuối cùng trong danh sách đi chợ. Nhấn phím nào để kết thúc danh sách và viết câu bình thường?'),
     hint: T('The first Enter makes an empty list item. The second Enter removes its dot or number.', 'Enter lần đầu tạo một mục trống. Enter lần thứ hai bỏ dấu chấm hoặc số của mục đó.'),
-    options: [option('twice', 'Press Enter twice', 'Nhấn Enter hai lần'), option('once', 'Press Enter once', 'Nhấn Enter một lần'), option('space', 'Press Space twice', 'Nhấn Space hai lần')],
+    options: [option('twice', 'Press Enter twice', 'Nhấn Enter hai lần'), option('once', 'Press Enter once', 'Nhấn Enter một lần'), option('space', 'Press Space twice', 'Nhấn phím cách hai lần')],
     answer: 'twice', replay: replay(endDoc, endScript),
   },
   doItem('t4-end-list-do', 't4-end-list',
-    T('Finish this shopping list. Click after Bread, press Enter twice, then type Done. without a bullet.', 'Kết thúc danh sách mua hàng. Bấm sau Bread, nhấn Enter hai lần rồi gõ Done. ở dòng không có dấu chấm đầu dòng.'),
+    T('Finish this shopping list. Click after Bread, press Enter twice, then type Done. without a bullet.', 'Kết thúc danh sách đi chợ. Bấm sau Bread, nhấn Enter hai lần rồi gõ Done. ở dòng không có dấu chấm đầu dòng.'),
     T('Press Enter once for an empty bullet. Press Enter again to end the list. Then type Done.', 'Nhấn Enter một lần để tạo mục trống. Nhấn thêm lần nữa để kết thúc danh sách. Sau đó gõ Done.'),
     endDoc, endCheck, endScript),
   {
@@ -103,7 +103,7 @@ export const items = [
     replay: replay('', [go('doc:0,0'), type('Dear Nam,'), key('Enter'), type('Please call.'), key('Enter'), type('From Lan')]),
   },
   doItem('t4-heading-do', 't4-heading-sign',
-    T('Help people notice your lost cat sign. Make only Lost cat size 20, bold and centred.', 'Giúp mọi người dễ thấy bảng tìm mèo lạc. Chỉ đổi Lost cat thành cỡ 20, in đậm và canh giữa.'),
+    T('Help people notice your lost cat sign. Make only Lost cat size 20, bold and centred.', 'Giúp mọi người dễ thấy thông báo tìm mèo lạc. Chỉ đổi Lost cat thành cỡ 20, in đậm và canh giữa.'),
     T('Select Lost cat. Set Font Size to 20. Click Bold, then Center.', 'Bôi đen Lost cat. Đặt Font Size là 20. Bấm Bold rồi bấm Center.'),
     headingText.join('\n'), headingCheck, headingScript, 'home.font'),
 ];
@@ -111,7 +111,7 @@ export const items = [
 const phoLines = ['Shopping for pho', 'Rice noodles', 'Beef', 'Onion', 'Thank you.'];
 const phoCheck = (doc) => sameLines(doc, phoLines) && listed(doc, 1, 3, 'bullet') && !doc.p[0].list && plainLine(doc, 4, 'Thank you.');
 const phoSteps = [
-  step(T('Select the three food lines. Click Bullets.', 'Bôi đen ba dòng thực phẩm. Bấm Bullets.'),
+  step(T('Select the three food lines. Click Bullets.', 'Bôi đen ba dòng nguyên liệu. Bấm Bullets.'),
     T('Select Rice noodles, Beef and Onion. Leave the title out of the selection.', 'Bôi đen Rice noodles, Beef và Onion. Không bôi đen tiêu đề.'),
     (doc) => listed(doc, 1, 3, 'bullet') && !doc.p[0].list,
     [select(1, 3, 5), go('home.paragraph.bullets')]),
@@ -163,13 +163,13 @@ const noticeSteps = [
 
 export const missions = [
   mission('t4-m-pho-list', 't4-bullets', T('Shopping for pho', 'Danh sách mua đồ nấu phở'),
-    T('Make a shopping list for pho. Give each food a bullet. Finish with Thank you. on a line without a bullet.', 'Làm danh sách mua đồ nấu phở. Thêm dấu chấm đầu dòng cho từng thực phẩm. Cuối cùng gõ Thank you. ở dòng không có dấu chấm đầu dòng.'),
+    T('Make a shopping list for pho. Give each food a bullet. Finish with Thank you. on a line without a bullet.', 'Làm danh sách mua đồ nấu phở. Thêm dấu chấm đầu dòng cho từng món. Cuối cùng gõ Thank you. ở dòng không có dấu chấm đầu dòng.'),
     phoLines.slice(0, 4).join('\n'), listDoc(phoLines, 1, 3, 'bullet'), phoSteps, phoCheck),
   mission('t4-m-rice-steps', 't4-numbering', T('Steps to cook rice', 'Các bước nấu cơm'),
     T('Help someone follow your rice instructions. Number the three steps. Keep the title without a number.', 'Giúp người khác làm theo hướng dẫn nấu cơm. Đánh số ba bước. Không đánh số tiêu đề.'),
     riceLines.join('\n'), listDoc(riceLines, 1, 3, 'number'), riceSteps, riceCheck),
   mission('t4-m-finish-list', 't4-end-list', T('Finish your packing list', 'Kết thúc danh sách đồ mang theo'),
-    T('Your bag is packed. End the bullet list after Hat. Type Ready. on a new line without a bullet.', 'Bạn đã soạn xong đồ. Kết thúc danh sách sau Hat. Gõ Ready. ở dòng mới không có dấu chấm đầu dòng.'),
+    T('Your bag is packed. End the bullet list after Hat. Type Ready. on a new line without a bullet.', 'Bạn đã xếp xong đồ vào túi. Kết thúc danh sách sau Hat. Gõ Ready. ở dòng mới không có dấu chấm đầu dòng.'),
     packDoc, listDoc(['Things to pack', 'Water', 'Hat', 'Ready.'], 1, 2, 'bullet'), packSteps, packCheck),
   mission('t4-m-neighbour-note', 't4-note', T('A note to your neighbour', 'Lời nhắn cho hàng xóm'),
     T('Ask Mai to water your plants while you are away. Write four lines: a greeting, two sentences and your name. Use the words shown in each step.', 'Nhờ Mai tưới cây khi bạn đi vắng. Viết bốn dòng: lời chào, hai câu nhắn và tên người gửi. Dùng nội dung cho sẵn ở từng bước.'),

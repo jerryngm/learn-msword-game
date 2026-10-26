@@ -282,7 +282,7 @@ const ITEMS = [
     check: (doc) => /^i like tea\.$/i.test(textOf(doc).trim().replace(/\s+/g, " ")),
     demo: [
       go("doc:0,0"),
-      say("Space bar between words. Full stop at the end.", "Cách nhau bằng phím cách. Cuối câu có dấu chấm."),
+      say("Space bar between words. Full stop at the end.", "Các chữ cách nhau bằng phím cách. Cuối câu có dấu chấm."),
       typ("I like tea."),
     ],
   },
@@ -391,7 +391,7 @@ const ITEMS = [
       "You wrote a letter to your bank in May and want to find it again later. Which file name is best?",
       "Bạn viết một lá thư gửi ngân hàng vào tháng Năm và muốn dễ tìm lại sau này. Tên tệp nào tốt nhất?",
     ),
-    hint: T("A good name says what it is and when. You can join the words with a space or _ .", "Tên tốt cho biết đó là tệp gì và làm lúc nào. Giữa các chữ có thể dùng dấu cách hoặc dấu _ ."),
+    hint: T("A good name says what it is and when. You can join the words with a space or _ .", "Tên tốt cho biết đó là tệp gì và làm lúc nào. Giữa các chữ có thể dùng dấu cách hoặc dấu gạch dưới (_)."),
     options: [
       { id: "doc1", label: T("doc1", "doc1") },
       { id: "letter", label: T("letter", "letter") },
@@ -506,7 +506,7 @@ const REPLAYS = {
   "t1-keys-do-fullstop": {
     mock: "word",
     doc: "",
-    script: [go("doc:0,0"), say("Space bar between words. Full stop at the end.", "Cách nhau bằng phím cách. Cuối câu có dấu chấm."), typ("I like tea.")],
+    script: [go("doc:0,0"), say("Space bar between words. Full stop at the end.", "Các chữ cách nhau bằng phím cách. Cuối câu có dấu chấm."), typ("I like tea.")],
   },
   "t1-sentence-fix-name": {
     mock: "word",
@@ -524,7 +524,7 @@ const REPLAYS = {
   },
   "t1-save-order-window": {
     mock: "word-static",
-    script: [go("sa.name"), typ("About_Me", "sa.name"), go("sa.save"), say("Your file is saved in Documents.", "Tệp của bạn đã được lưu trong Documents.")],
+    script: [go("sa.name"), typ("About_Me", "sa.name"), go("sa.save"), say("Your file is saved in Documents.", "Bạn đã lưu tệp vào Documents rồi.")],
   },
   "t1-file-names-about": {
     mock: "word-static",
@@ -536,7 +536,7 @@ const REPLAYS = {
   },
   "t1-file-names-letter": {
     mock: "word-static",
-    script: [typ("Bank_Letter_May2025", "sa.name"), say("It says what the file is, and when. Words join with _.", "Tên cho biết tệp là gì và khi nào. Các chữ nối bằng dấu _.")],
+    script: [typ("Bank_Letter_May2025", "sa.name"), say("It says what the file is, and when. Words join with _.", "Tên cho biết tệp là gì và khi nào. Các chữ nối với nhau bằng dấu gạch dưới (_).")],
   },
   "t1-find-file-order": {
     mock: "explorer",
@@ -649,12 +649,12 @@ const saveSteps = [
       "File name: type About Me and your name. For example: About_Me_Lan or About Me Lan.",
       "Tên tệp: gõ About Me và tên của bạn. Ví dụ: About_Me_Lan hoặc About Me Lan.",
     ),
-    hint: T("Click in the File name box. Type About Me and then your name. Spaces or _ are both fine.", "Bấm vào ô File name. Gõ About Me rồi đến tên bạn. Dùng dấu cách hay dấu _ đều được."),
+    hint: T("Click in the File name box. Type About Me and then your name. Spaces or _ are both fine.", "Bấm vào ô File name. Gõ About Me rồi đến tên bạn. Dùng dấu cách hay dấu gạch dưới (_) đều được."),
     done: withWho((doc, ctx) => (saveStage() === "dialog-documents" && isAboutMeName(typedFileName())) || savedOk(ctx)),
     get demo() {
       return [
         go("sa.name"),
-        say("Type About Me and your name. A space or _ between words is fine.", "Gõ About Me và tên bạn. Giữa các chữ dùng dấu cách hay dấu _ đều được."),
+        say("Type About Me and your name. A space or _ between words is fine.", "Gõ About Me và tên bạn. Giữa các chữ dùng dấu cách hay dấu gạch dưới (_) đều được."),
         typ(`About_Me_${demoWho}`, "sa.name"),
       ];
     },
@@ -719,7 +719,7 @@ export const missions = [
   {
     id: "t1-m-about-me",
     skill: "t1-sentence",
-    title: T("About me", "Giới thiệu về tôi"),
+    title: T("About me", "Giới thiệu bản thân"),
     scenario: T(
       "You want to introduce yourself to your class. Write a title and two sentences about you.",
       "Bạn muốn giới thiệu về mình với cả lớp. Hãy viết một tiêu đề và hai câu về bạn.",

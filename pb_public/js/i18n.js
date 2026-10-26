@@ -17,7 +17,7 @@ const STR = {
   // Join
   joinTitle: { en: "What is your name?", vi: "Bạn tên là gì?" },
   joinPlaceholder: { en: "Type your name", vi: "Gõ tên của bạn" },
-  joinPick: { en: "Pick a picture for you", vi: "Chọn một hình cho bạn" },
+  joinPick: { en: "Pick a picture for you", vi: "Chọn hình đại diện của bạn" },
   joinStart: { en: "Start ▶", vi: "Bắt đầu" },
   joinSaving: { en: "One moment…", vi: "Chờ một chút…" },
   joinFail: {
@@ -55,7 +55,7 @@ const STR = {
     vi: "{n} câu hỏi nhanh. Tưới nước cho cây nhé.",
   },
   missionsTitle: { en: "Missions", vi: "Nhiệm vụ" },
-  missionsBody: { en: "Do real jobs in Word.", vi: "Làm việc thực tế trong Word." },
+  missionsBody: { en: "Do real jobs in Word.", vi: "Làm những việc thật trong Word." },
   go: { en: "Go ▶", vi: "Bắt đầu" },
   waitingTitle: { en: "Waiting for your teacher", vi: "Đang chờ giáo viên" },
   waitingBody: {
@@ -87,17 +87,17 @@ const STR = {
   soonTitle: { en: "Coming soon", vi: "Sắp có" },
   soonBody: {
     en: "This part of the game is being built.",
-    vi: "Phần này của trò chơi đang được hoàn thiện.",
+    vi: "Phần này đang được chuẩn bị.",
   },
-  backHome: { en: "Back to home", vi: "Về trang chính" },
+  backHome: { en: "Back to home", vi: "Về trang chủ" },
 
   // Revision replay: a short demo of the real actions after each answer
   replayTitle: { en: "▶ Watch how it is done", vi: "Xem lại cách làm nhé" },
   replaySkip: { en: "Skip", vi: "Bỏ qua" },
   replayClose: { en: "Close", vi: "Đóng" },
-  replayLabel: { en: "A short demo of the steps", vi: "Đoạn xem lại ngắn các bước làm" },
+  replayLabel: { en: "A short demo of the steps", vi: "Xem nhanh các bước làm" },
   contextHere: { en: "You are here", vi: "Bạn đang ở đây" },
-  contextLabel: { en: "A picture of where you are now", vi: "Hình ảnh màn hình bạn đang ở" },
+  contextLabel: { en: "A picture of where you are now", vi: "Hình cho thấy bạn đang ở đâu" },
 };
 
 // Avatars: a stable key is stored in `learners.avatar`; the emoji is only for display.

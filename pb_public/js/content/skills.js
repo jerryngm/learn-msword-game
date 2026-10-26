@@ -49,7 +49,7 @@ export const TOPICS = [
   { n: 5, title: { en: "Tables and page layout", vi: "Bảng và bố cục trang" } },
   { n: 6, title: { en: "Pictures", vi: "Hình ảnh" } },
   { n: 7, title: { en: "Templates and saving safely", vi: "Mẫu có sẵn và lưu tệp an toàn" } },
-  { n: 8, title: { en: "A real-life document", vi: "Làm một văn bản thực tế" } },
+  { n: 8, title: { en: "A real-life document", vi: "Làm một văn bản dùng trong đời sống" } },
   { n: 9, title: { en: "Review", vi: "Ôn tập" } },
 ];
 
@@ -111,7 +111,7 @@ export const SKILLS = [
   { id: "t7-print", topic: 7, extra: true, ican: { en: "print a document", vi: "in văn bản" } },
   // Topic 8
   { id: "t8-plan-doc", topic: 8, mission: false, ican: { en: "plan a document: what it is, who it's for, and its heading", vi: "lên ý cho văn bản: loại gì, viết cho ai, tiêu đề là gì" } },
-  { id: "t8-capstone", topic: 8, ican: { en: "make a real-life document from start to finish", vi: "tự làm một văn bản thực tế từ đầu đến cuối" } },
+  { id: "t8-capstone", topic: 8, ican: { en: "make a real-life document from start to finish", vi: "tự làm một văn bản dùng trong đời sống từ đầu đến cuối" } },
   // Topic 9 has no new skills. It's the "Revise everything" preset.
 ];
 

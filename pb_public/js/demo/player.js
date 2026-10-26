@@ -42,8 +42,8 @@ import { createKeyboard, keysForChar, parseCombo } from "./keyboard.js";
 const LETTER_MS = 240;
 const CLICKS = new Set(["single", "double", "right"]);
 const CLICK_TAG = {
-  double: { en: "Double-click", vi: "Nhấp đúp chuột" },
-  right: { en: "Right-click", vi: "Nhấp chuột phải" },
+  double: { en: "Double-click", vi: "Bấm đúp chuột" },
+  right: { en: "Right-click", vi: "Bấm chuột phải" },
 };
 
 const cssReady = (() => {

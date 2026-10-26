@@ -2,7 +2,7 @@
 import { mountWord } from "../word/index.js";
 import { bi, biPair, label, labelPair } from "../i18n.js";
 
-const TIP = { en: "Try any button. Undo is always here ↶", vi: "Cứ thử bấm bất kỳ nút nào. Nút Undo luôn ở đây ↶" };
+const TIP = { en: "Try any button. Undo is always here ↶", vi: "Cứ thử bấm nút nào cũng được. Nút Undo luôn ở đây ↶" };
 const UNDO = { en: "↶ Undo", vi: "Hoàn tác" };
 
 function initialsOf(name) {
