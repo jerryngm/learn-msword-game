@@ -990,6 +990,7 @@ export function mountWord(el, opts = {}) {
       if (changed) emit("change", { doc, prevDoc: doc, lastCommand: "picture.select" });
       const handle=e.target.closest("[data-handle]")?.dataset.handle;
       if (handle) startPictureResize(e,picture,handle);
+      else if (["front","behind"].includes(doc.p[p].picture.wrap)) startPictureMove(e,picture);
       return;
     }
     selectedPicture=-1; updateUI();
@@ -1018,14 +1019,42 @@ export function mountWord(el, opts = {}) {
       updateUI();
     }
   }
+  function pictureMove(picture,element,dx,dy) {
+    const scale=zoom/100, frame=element.getBoundingClientRect(), bounds=page.getBoundingClientRect();
+    const anchorX=(frame.left-bounds.left)/scale-parseFloat(element.style.left||0);
+    const anchorY=(frame.top-bounds.top)/scale-parseFloat(element.style.top||0);
+    return {x:Math.round(Math.max(-anchorX,Math.min(bounds.width/scale-anchorX-picture.width,picture.x+dx))),
+      y:Math.round(Math.max(-anchorY,Math.min(bounds.height/scale-anchorY-picture.height,picture.y+dy)))};
+  }
+  function pictureResize(picture,handle,dx,dy) {
+    const size=pictureSize(picture,handle,dx,dy);
+    if (["front","behind"].includes(picture.wrap)) {
+      size.x=picture.x+(handle.includes("w")?picture.width-size.width:0);
+      size.y=picture.y+(handle.includes("n")?picture.height-size.height:0);
+    }
+    return size;
+  }
+  function startPictureMove(e,element) {
+    cancelResize?.();
+    const p=selectedPicture, original=doc.p[p].picture, x=e.clientX, y=e.clientY;
+    let patch={x:original.x,y:original.y};
+    const move=ev=>{
+      patch=pictureMove(original,element,(ev.clientX-x)/(zoom/100),(ev.clientY-y)/(zoom/100));
+      element.style.left=`${patch.x}px`; element.style.top=`${patch.y}px`;
+    };
+    const cleanup=()=>{document.removeEventListener("mousemove",move);document.removeEventListener("mouseup",up);cancelResize=null;};
+    const up=()=>{cleanup();if(patch.x!==original.x||patch.y!==original.y) commit(updatePicture(doc,{p},patch),{id:"picture.move",label:"Move Picture"});};
+    cancelResize=()=>{cleanup();element.style.left=`${original.x}px`;element.style.top=`${original.y}px`;};
+    document.addEventListener("mousemove",move);document.addEventListener("mouseup",up,{once:true});
+  }
   function startPictureResize(e,element,handle) {
     cancelResize?.();
     const p=selectedPicture, original=doc.p[p].picture, x=e.clientX,y=e.clientY;
     let size={width:original.width,height:original.height};
-    const move=ev=>{size=pictureSize(original,handle,(ev.clientX-x)/(zoom/100),(ev.clientY-y)/(zoom/100)); element.style.width=`${size.width}px`; element.style.height=`${size.height}px`;};
+    const move=ev=>{size=pictureResize(original,handle,(ev.clientX-x)/(zoom/100),(ev.clientY-y)/(zoom/100)); element.style.width=`${size.width}px`; element.style.height=`${size.height}px`; if(size.x!==undefined){element.style.left=`${size.x}px`;element.style.top=`${size.y}px`;} };
     const cleanup=()=>{document.removeEventListener("mousemove",move);document.removeEventListener("mouseup",up);cancelResize=null;};
     const up=()=>{cleanup(); if (size.width!==original.width || size.height!==original.height) commit(updatePicture(doc,{p},size),{id:"picture.resize",label:"Resize Picture"});};
-    cancelResize=()=>{cleanup();element.style.width=`${original.width}px`;element.style.height=`${original.height}px`;};
+    cancelResize=()=>{cleanup();element.style.width=`${original.width}px`;element.style.height=`${original.height}px`;if(["front","behind"].includes(original.wrap)){element.style.left=`${original.x}px`;element.style.top=`${original.y}px`;} };
     document.addEventListener("mousemove",move);document.addEventListener("mouseup",up,{once:true});
   }
   /**
@@ -1551,8 +1580,11 @@ export function mountWord(el, opts = {}) {
           const el=demoResolve(target), handle=el?.dataset.handle;
           const p=Number(el?.closest(".wd-p")?.dataset.p);
           const source=demoDoc??doc, picture=source.p[p]?.picture;
-          if(!handle||!picture) return;
-          demoDoc=updatePicture(source,{p},pictureSize(picture,handle,delta.dx/(zoom/100),delta.dy/(zoom/100)));
+          if(!picture) return;
+          const dx=delta.dx/(zoom/100),dy=delta.dy/(zoom/100);
+          const patch=handle?pictureResize(picture,handle,dx,dy):["front","behind"].includes(picture.wrap)?pictureMove(picture,el,dx,dy):null;
+          if(!patch) return;
+          demoDoc=updatePicture(source,{p},patch);
           demoPicture=p;renderer.render(demoDoc);observer.takeRecords();updateUI();
         },
         key: (combo)=>{ if(combo==="Delete"||combo==="Backspace") demoDeletePicture(); },

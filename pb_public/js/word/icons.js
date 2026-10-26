@@ -15,6 +15,9 @@ export function ico(name, cls = "") {
 }
 
 const CUSTOM = {
+  pictures: `<svg viewBox="0 0 32 32"><rect x="3" y="5" width="26" height="22" fill="#e6f2fa" stroke="#46769b"/><circle cx="22" cy="11" r="3" fill="#70b5e1"/><path d="m4 25 8-11 7 8 4-5 5 8" fill="#387bb6"/></svg>`,
+  orientation: `<svg viewBox="0 0 32 32" fill="white" stroke="#536675" stroke-width="1.2"><path d="M4 2h16v25H4z"/><path d="M11 13h19v16H11z"/><path d="M7 6h10M7 9h10M14 18h13M14 22h13M14 25h13" stroke="#468ac1"/></svg>`,
+  margins: `<svg viewBox="0 0 32 32" fill="none" stroke="#536675" stroke-width="1.2"><path fill="white" d="M6 2h20v28H6z"/><path fill="#dcebf8" stroke="#468ac1" stroke-dasharray="2 1" d="M10 7h12v18H10z"/><path d="M12 11h8M12 15h8M12 19h8" stroke="#468ac1"/></svg>`,
   // Word app mark: a blue tile with a white W (neutral drawing, not Microsoft's logo art).
   wordlogo: `<svg viewBox="0 0 20 20"><rect x="1" y="2" width="18" height="16" rx="3" fill="#185ABD"/><path d="M4.6 6.4h1.6l1.1 5 1.3-5h1.4l1.3 5 1.1-5h1.6l-2 7.2H10.6L9.3 8.9 8 13.6H6.6z" fill="#fff"/></svg>`,
   // Copilot placeholder: a soft multicolour knot of two rounded shapes.

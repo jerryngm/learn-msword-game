@@ -130,7 +130,7 @@ export class Para {
     const spacing = props.spacing ?? {};
     const indent = props.indent ?? {};
     const picture = PICTURES.find(p=>p.id===props.picture?.id);
-    if (picture) this.picture=Object.freeze({id:picture.id,width:num(props.picture.width,240,24,600),height:num(props.picture.height,240*picture.height/picture.width,24,600),wrap:props.picture.wrap==="square"?"square":"inline"});
+    if (picture) this.picture=Object.freeze({id:picture.id,width:num(props.picture.width,240,24,600),height:num(props.picture.height,240*picture.height/picture.width,24,600),wrap:["square","front","behind"].includes(props.picture.wrap)?props.picture.wrap:"inline",x:num(props.picture.x,0,-1200,1200),y:num(props.picture.y,0,-1600,1600)});
     if (props.cell) this.cell = Object.freeze({ table: props.cell.table | 0, row: props.cell.row | 0, col: props.cell.col | 0 });
     this.style = typeof props.style === "string" ? props.style : DEFAULT_PARA.style;
     this.align = oneOf(props.align, ALIGNS, DEFAULT_PARA.align);

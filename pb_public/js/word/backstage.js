@@ -70,7 +70,7 @@ const lastSave = new WeakMap();
 export function openBackstage(root, page, hooks) {
   const el = document.createElement("div");
   el.className = "bs";
-  el.innerHTML = `<nav class="bs-nav">
+  el.innerHTML = `<div class="bs-title">${ico("wordlogo")}<span>${esc(hooks.title())} - Word</span><span class="bs-caption">${ico("capmin")}${ico("caprestore")}${ico("capclose")}</span></div><nav class="bs-nav">
       <button type="button" class="bs-back" data-bs="back" aria-label="Back">${ico("arrow_left_20")}</button>
       ${NAV.map((n) => (n.sep ? `<hr>` : n.spacer ? `<div class="bs-spacer"></div><hr>` : `<button type="button" class="bs-item" data-bs="${n.id}">${n.icon ? ico(n.icon) : '<span class="bs-noic"></span>'}${esc(n.label)}</button>`)).join("")}
     </nav><main class="bs-main"></main>`;

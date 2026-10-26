@@ -103,6 +103,7 @@ function buildPara(para, marker, spellings) {
   if (para.picture) {
     const picture=para.picture, asset=PICTURES.find(p=>p.id===picture.id);
     const frame=document.createElement("span"); frame.className=`wd-picture is-${picture.wrap}`; frame.contentEditable="false";
+    if (["front","behind"].includes(picture.wrap)) { frame.style.left=`${picture.x}px`; frame.style.top=`${picture.y}px`; }
     frame.style.width=`${picture.width}px`; frame.style.height=`${picture.height}px`; frame.setAttribute("role","img"); frame.setAttribute("aria-label",asset.name);
     const img=document.createElement("img"); img.src=asset.src; img.alt=asset.name; img.draggable=false; frame.append(img);
     for (const handle of ["n","ne","e","se","s","sw","w","nw"]) {
@@ -145,6 +146,7 @@ export function createRenderer(pageEl) {
 
   return {
     render(doc) {
+      pageEl.classList.toggle("has-floating",doc.p.some(p=>["front","behind"].includes(p.picture?.wrap)));
       const markers = listMarkers(doc);
       const next = new Map();
       const els = doc.p.map((para, i) => {

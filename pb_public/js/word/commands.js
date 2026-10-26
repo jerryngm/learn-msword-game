@@ -843,6 +843,6 @@ for (const [name,values] of [["orientation",[["portrait","Portrait"],["landscape
 registerCommand({id:"insert.pictures",label:"Pictures",level:"b",menu:()=>[{cmd:"insert.pictures.device",label:"This Device…"}]});
 registerCommand({id:"insert.pictures.device",label:"This Device",level:"b",popup:ctx=>ctx.ui.picturePicker()});
 registerCommand({id:"insert.pictures.choose",label:"Insert Picture",level:"a",run:(doc,sel,ctx)=>insertPicture(doc,sel.from,ctx.arg)});
-registerCommand({id:"picture.wrap",tab:"insert",label:"Wrap Text",level:"b",menu:()=>[{cmd:"picture.wrap.set",arg:"inline",label:"In Line with Text"},{cmd:"picture.wrap.set",arg:"square",label:"Square"}]});
+registerCommand({id:"picture.wrap",tab:"insert",label:"Wrap Text",level:"b",menu:()=>[{cmd:"picture.wrap.set",arg:"inline",label:"In Line with Text"},{cmd:"picture.wrap.set",arg:"square",label:"Square"},{cmd:"picture.wrap.set",arg:"front",label:"In Front of Text"},{cmd:"picture.wrap.set",arg:"behind",label:"Behind Text"}]});
 registerCommand({id:"picture.wrap.set",tab:"insert",label:"Wrap Text",level:"a",run:(doc,sel,ctx)=>updatePicture(doc,sel.from,{wrap:ctx.arg})});
 registerCommand({id:"picture.delete",tab:"insert",label:"Delete Picture",level:"a",run:(doc,sel)=>updatePicture(doc,sel.from,null)});
