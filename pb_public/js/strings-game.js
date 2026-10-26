@@ -9,6 +9,7 @@ export const GAME_STRINGS = {
   finish: { en: "Finish for today", vi: "Hôm nay học đến đây" },
   next: { en: "Next ▶", vi: "Tiếp theo" },
   check: { en: "Check ✓", vi: "Kiểm tra" },
+  skipOptional: { en: "Skip, this one is optional", vi: "Bỏ qua, câu này không bắt buộc" },
   backHome: { en: "Back to home", vi: "Về trang chính" },
   myGarden: { en: "My garden", vi: "Khu vườn của tôi" },
   loading: { en: "Getting things ready…", vi: "Đang chuẩn bị…" },

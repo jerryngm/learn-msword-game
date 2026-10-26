@@ -54,6 +54,7 @@ export const TOPICS = [
 ];
 
 // `extra: true` marks skills beyond the module spine. `mission: false` means the skill has revision items only.
+// `optional: true` lets a learner skip its items in a round without an attempt (not every learner needs it).
 export const SKILLS = [
   // Topic 1
   { id: "t1-screen-parts", topic: 1, mission: false, ican: { en: "name the Ribbon, Quick Access Toolbar and document area", vi: "gọi đúng tên Ribbon, Quick Access Toolbar và vùng gõ chữ" } },
@@ -102,7 +103,7 @@ export const SKILLS = [
   { id: "t6-resize", topic: 6, ican: { en: "make a picture bigger or smaller with a corner dot, so it doesn't stretch", vi: "kéo chấm tròn ở góc để làm hình to hơn hay nhỏ hơn mà hình không bị méo" } },
   { id: "t6-move-wrap", topic: 6, ican: { en: "move a picture anywhere with Wrap Text › In Front of Text", vi: "dùng Wrap Text › In Front of Text để kéo hình đi chỗ nào cũng được" } },
   { id: "t6-delete-picture", topic: 6, mission: false, ican: { en: "delete a picture", vi: "xoá hình" } },
-  { id: "t6-unikey", topic: 6, mission: false, ican: { en: "type Vietnamese with the VNI number keys", vi: "gõ tiếng Việt kiểu VNI bằng phím số" } },
+  { id: "t6-unikey", topic: 6, mission: false, optional: true, ican: { en: "type Vietnamese with the VNI number keys", vi: "gõ tiếng Việt kiểu VNI bằng phím số" } },
   // Topic 7
   { id: "t7-template", topic: 7, ican: { en: "find and open a template", vi: "tìm và mở một mẫu có sẵn" } },
   { id: "t7-placeholder", topic: 7, ican: { en: "replace the sample text in a template", vi: "thay chữ mẫu bằng thông tin của mình" } },

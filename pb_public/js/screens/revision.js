@@ -783,6 +783,7 @@ export async function render(root, { learner }) {
     const item = round[i];
     currentSkill = item.skill;
     const isDo = item.type === "do";
+    const optional = Boolean(skillById(item.skill)?.optional);
     const heading = `<h1 class="wg-q-h">${biPair(pair(item.prompt))}</h1>`;
     const hasContext = !isDo && item.context && typeof item.context.mock === "string";
     body.innerHTML = `
@@ -799,6 +800,7 @@ export async function render(root, { learner }) {
         <div class="wg-q-foot">
           <div class="wg-q-fbcol"><div class="wg-q-feedback" aria-live="polite"></div><p class="wg-proof" hidden></p></div>
           <div class="wg-q-btns">
+            ${optional ? `<button type="button" class="btn btn-ghost wg-q-skip">${gbi("skipOptional")}</button>` : ""}
             <button type="button" class="btn btn-primary wg-q-check" hidden>${gbi("check")}</button>
             <button type="button" class="btn btn-primary wg-q-next" hidden>${gbi(i === round.length - 1 ? "finishBtn" : "next")}</button>
           </div>
@@ -809,6 +811,7 @@ export async function render(root, { learner }) {
     const fb = card.querySelector(".wg-q-feedback");
     const checkBtn = card.querySelector(".wg-q-check");
     const nextBtn = card.querySelector(".wg-q-next");
+    const skipBtn = card.querySelector(".wg-q-skip");
     const state = { wrongs: 0, help: 0, solved: false, nextAt: 0 };
     const lastWrong = new Map(); // wrong target → time of the last counted wrong
     let proofShown = false;
@@ -830,6 +833,7 @@ export async function render(root, { learner }) {
 
     const showSolved = ({ stars, help_level, tries }) => {
       checkBtn.hidden = true;
+      if (skipBtn) skipBtn.hidden = true;
       fb.className = "wg-q-feedback is-ok";
       const key = tries === 1 && help_level === 0 ? "rightFirst" : help_level > 0 ? "didIt" : "rightNow";
       fb.innerHTML = `<p class="wg-q-ok"><span class="wg-q-stars" role="img" aria-label="${esc(glabel("starsLabel", { n: stars }))}">${starsHtml(stars, { pop: true })}</span><span>${biPair(gt(key))}</span></p>`;
@@ -908,6 +912,10 @@ export async function render(root, { learner }) {
 
     nextBtn.addEventListener("click", () => {
       if (now() >= state.nextAt) advance();
+    });
+    // An optional item (e.g. Vietnamese typing) can be left out: no attempt is written, so no stars and no wilting.
+    skipBtn?.addEventListener("click", () => {
+      if (!state.solved) advance();
     });
     // A held Enter would otherwise "press" Next again and again.
     nextBtn.addEventListener("keydown", (e) => e.repeat && e.preventDefault());

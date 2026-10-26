@@ -1,4 +1,4 @@
-// Topic 6: pictures (insert, resize from a corner, Wrap Text › Square, delete) and Telex typing with Unikey.
+// Topic 6: pictures (insert, resize from a corner, Wrap Text › Square, delete) and VNI typing with Unikey (optional).
 import { createDoc, textOf } from '../word/model.js';
 import { PICTURES } from '../word/pictures.js';
 
@@ -86,8 +86,8 @@ const bigFlower = flyer('Garden club', pic('flower', 480), gardenLines);
 const mouseFlyer = flyer('Garden club', pic('mouse', 120), gardenLines);
 const wrapLines = ['Grow your own herbs at home.', 'We share seeds and tips.', 'Come and meet us on Saturday.'];
 const wrapStart = flyer('Garden club', pic('flower', 200), wrapLines);
-// Telex in the replay: the keys go in first, then the caption says what Unikey turns them into.
-const telex = (keys, en, vi) => replay(null, [type(keys), say(en, vi)], 'keyboard');
+// VNI in the replay: the keys go in first, then the caption says what Unikey turns them into.
+const vni = (keys, en, vi) => replay(null, [type(keys), say(en, vi)], 'keyboard');
 
 export const items = [
   {
@@ -157,21 +157,21 @@ export const items = [
       option('select-all', 'Press Ctrl+A', 'Nhấn Ctrl+A'),
     ], 'click',
     replay(mouseFlyer, [go('picture:0'), say('The small squares show: the picture is selected.', 'Các ô vuông nhỏ đã hiện: hình đang được chọn.'), key('Delete')])),
-  pick('t6-telex-circumflex-pick', 't6-unikey',
-    T('Unikey is the program that types Vietnamese letters. It is on, and set to Telex. You are writing a shopping note and want the word "cân". Which keys make â?', 'Unikey là chương trình giúp gõ chữ tiếng Việt. Unikey đang bật, kiểu gõ Telex. Bạn đang viết danh sách đi chợ và muốn gõ chữ "cân". Nhấn những phím nào để ra chữ â?'),
-    T('In Telex, press a letter twice to add the little hat: aa makes â, ee makes ê, oo makes ô.', 'Với Telex, nhấn một phím chữ hai lần để thêm dấu mũ: aa ra â, ee ra ê, oo ra ô.'),
-    [option('aa', 'a a', 'a a'), option('aw', 'a w', 'a w'), option('as', 'a s', 'a s')], 'aa',
-    telex('caan', 'c a a n: Unikey writes "cân".', 'c a a n: Unikey hiện ra chữ "cân".')),
-  pick('t6-telex-d-pick', 't6-unikey',
-    T('Unikey is the program that types Vietnamese letters. It is on, and set to Telex. You want to write "đi chợ" in a message. Which keys make đ?', 'Unikey là chương trình giúp gõ chữ tiếng Việt. Unikey đang bật, kiểu gõ Telex. Bạn muốn gõ "đi chợ" trong tin nhắn. Nhấn những phím nào để ra chữ đ?'),
-    T('In Telex, press d twice to get đ.', 'Với Telex, nhấn phím d hai lần sẽ ra chữ đ.'),
-    [option('dd', 'd d', 'd d'), option('d9', 'd 9', 'd 9'), option('ds', 'd s', 'd s')], 'dd',
-    telex('ddi', 'd d i: Unikey writes "đi".', 'd d i: Unikey hiện ra chữ "đi".')),
-  pick('t6-telex-tone-pick', 't6-unikey',
-    T('Unikey is the program that types Vietnamese letters. It is on, and set to Telex. You want to greet your class with "Xin chào". After typing chao, which key turns a into à?', 'Unikey là chương trình giúp gõ chữ tiếng Việt. Unikey đang bật, kiểu gõ Telex. Bạn muốn chào cả lớp bằng câu "Xin chào". Gõ xong chao, bạn nhấn phím nào để có dấu huyền (à)?'),
-    T('Telex tone keys come after the word: s makes á, f makes à, r makes ả, x makes ã, j makes ạ.', 'Với Telex, phím bỏ dấu gõ sau chữ: s là dấu sắc (á), f là dấu huyền (à), r là dấu hỏi (ả), x là dấu ngã (ã), j là dấu nặng (ạ).'),
-    [option('f', 'f', 'f'), option('s', 's', 's'), option('j', 'j', 'j'), option('r', 'r', 'r')], 'f',
-    telex('Xin chaof', 'c h a o f: Unikey writes "chào".', 'c h a o f: Unikey hiện ra chữ "chào".')),
+  pick('t6-vni-circumflex-pick', 't6-unikey',
+    T('Unikey is the program that types Vietnamese letters. It is on, and set to VNI. You are writing a shopping note and want the word "cân". Which keys make â?', 'Unikey là chương trình giúp gõ chữ tiếng Việt. Unikey đang bật, kiểu gõ VNI. Bạn đang viết danh sách đi chợ và muốn gõ chữ "cân". Nhấn những phím nào để ra chữ â?'),
+    T('In VNI, the number 6 adds the little hat: a6 makes â, e6 makes ê, o6 makes ô.', 'Với VNI, phím số 6 thêm dấu mũ: a6 ra â, e6 ra ê, o6 ra ô.'),
+    [option('a6', 'a 6', 'a 6'), option('a8', 'a 8', 'a 8'), option('a1', 'a 1', 'a 1')], 'a6',
+    vni('ca6n', 'c a 6 n: Unikey writes "cân".', 'c a 6 n: Unikey hiện ra chữ "cân".')),
+  pick('t6-vni-d-pick', 't6-unikey',
+    T('Unikey is the program that types Vietnamese letters. It is on, and set to VNI. You want to write "đi chợ" in a message. Which keys make đ?', 'Unikey là chương trình giúp gõ chữ tiếng Việt. Unikey đang bật, kiểu gõ VNI. Bạn muốn gõ "đi chợ" trong tin nhắn. Nhấn những phím nào để ra chữ đ?'),
+    T('In VNI, press d and then the number 9 to get đ.', 'Với VNI, nhấn phím d rồi phím số 9 sẽ ra chữ đ.'),
+    [option('d9', 'd 9', 'd 9'), option('d6', 'd 6', 'd 6'), option('dd', 'd d', 'd d')], 'd9',
+    vni('d9i', 'd 9 i: Unikey writes "đi".', 'd 9 i: Unikey hiện ra chữ "đi".')),
+  pick('t6-vni-tone-pick', 't6-unikey',
+    T('Unikey is the program that types Vietnamese letters. It is on, and set to VNI. You want to greet your class with "Xin chào". After typing chao, which key turns a into à?', 'Unikey là chương trình giúp gõ chữ tiếng Việt. Unikey đang bật, kiểu gõ VNI. Bạn muốn chào cả lớp bằng câu "Xin chào". Gõ xong chao, bạn nhấn phím nào để có dấu huyền (à)?'),
+    T('VNI tone keys are numbers, typed after the word: 1 makes á, 2 makes à, 3 makes ả, 4 makes ã, 5 makes ạ.', 'Với VNI, phím bỏ dấu là phím số, gõ sau chữ: 1 là dấu sắc (á), 2 là dấu huyền (à), 3 là dấu hỏi (ả), 4 là dấu ngã (ã), 5 là dấu nặng (ạ).'),
+    [option('2', '2', '2'), option('1', '1', '1'), option('5', '5', '5'), option('3', '3', '3')], '2',
+    vni('Xin chao2', 'c h a o 2: Unikey writes "chào".', 'c h a o 2: Unikey hiện ra chữ "chào".')),
 ];
 
 /* ---------- missions ---------- */
