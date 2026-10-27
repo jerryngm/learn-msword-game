@@ -9,7 +9,8 @@ import { PICTURES, pictureSize } from "./pictures.js";
 
 import { getCommand, ensureCommand, SHORTCUTS, EFFECT_NAMES, WRAP_MENU } from "./commands.js";
 import { openDialog } from "./dialogs.js";
-import { openBackstage } from "./backstage.js";
+import { templateDoc } from "./templates.js";
+import { openBackstage, clearSavedDocument } from "./backstage.js";
 import { ico } from "./icons.js";
 import {
   updatePicture, editTable, FONTS, RUN_KEYS, applyFormat, clampPos, cmpPos, createDoc, deleteRange, docEnd, fragment, insertText, isCollapsed,
@@ -172,7 +173,18 @@ export function mountWord(el, opts = {}) {
   let selectedPicture = -1;
   let cancelResize = null;
   let demoPicture = -1;
+  let demoAt = null;
+  let demoPlaceholder = null;
+  let demoReplacement = null;
   const listeners = new Map();
+
+  function resetDemoTracking() {
+    demoPicture = -1;
+    demoAt = null;
+    demoPlaceholder = null;
+    demoReplacement = null;
+    root.querySelectorAll(".is-demo-placeholder").forEach((el) => el.classList.remove("is-demo-placeholder"));
+  }
 
   /* ---------- DOM ---------- */
   const root = document.createElement("div");
@@ -489,6 +501,7 @@ export function mountWord(el, opts = {}) {
       menu.classList.add("wm-undolist");
     },
     backstage: (pageId) => openFile(pageId),
+    newDocument: () => newDocument(null),
     openMenuFor: (id) => openMenuFor(id, root.querySelector(`[data-menu="${id}"]`)),
   };
   const dialogEnv = {
@@ -670,13 +683,37 @@ export function mountWord(el, opts = {}) {
     popups.closeAll();
     renderRibbon();
   }
+  function newDocument(template) {
+    if (locked || destroyed) return;
+    const prev = doc;
+    doc = template ? templateDoc(template) : createDoc("");
+    sel = collapsedSel({ p: 0, offset: 0 });
+    history.clear(); pending = null; selectedPicture = -1;
+    clearSavedDocument(root);
+    title = "Document1";
+    root.querySelector(".wd-name").innerHTML = `${esc(title)}&nbsp; - &nbsp;Word`;
+    backstage?.close();
+    render(); focusPage(); updateUI();
+    const id = template ? `file.new.template.${template}` : "file.new.blank";
+    emit("command", { id, level: "a", effectName: {en:"open a new document",vi:"mở văn bản mới"} });
+    emit("change", {doc, prevDoc: prev, lastCommand:id});
+    evaluateGoal(prev, doc);
+  }
   function openFile(pageId) {
     if (backstage) return backstage.show(pageId);
     popups.closeAll();
     emit("command", { id: "file.open", level: "b", effectName: getCommand("file.open")?.effectName });
     backstage = openBackstage(root, pageId, {
       title: () => title,
-      doc: () => doc,
+      doc: () => demoDoc ?? doc,
+      newDocument,
+      printed(copies) {
+        if (locked || destroyed) return;
+        emit("command", {id:`file.print.copies.${copies}`, level:"a", effectName:{en:"print copies",vi:"in số bản"}});
+        backstage?.close();
+        popups.toast({en:`Practice complete: ${copies} ${copies === 1 ? 'copy' : 'copies'} sent to the classroom printer. No paper is printed.`,vi:`Đã thực hành in ${copies} bản trên máy in của lớp. Không in ra giấy.`});
+        emit("change", {doc, prevDoc:doc, lastCommand:"file.print.submit"});
+      },
       // The Save As page reports a finished save: the title bar takes the new name, then `saved` fires.
       saved({ folder, name }) {
         title = name;
@@ -933,6 +970,15 @@ export function mountWord(el, opts = {}) {
   function onPageMouseDown(e) {
     if (locked) {
       e.preventDefault();
+      return;
+    }
+    const placeholder=e.target.closest(".wd-placeholder");
+    if (placeholder && e.button === 0) {
+      e.preventDefault(); popups.closeAll();
+      const p=Number(placeholder.dataset.p);
+      sel={anchor:{p,offset:0},focus:{p,offset:doc.p[p].length}};
+      pending=null; history.seal(); focusPage(); updateUI();
+      emit("change", {doc,prevDoc:doc,lastCommand:"placeholder.select"});
       return;
     }
     const picture=e.target.closest(".wd-picture");
@@ -1345,7 +1391,7 @@ export function mountWord(el, opts = {}) {
     demoState?.ctrl.abort();
     root.querySelectorAll(".is-demo-press").forEach((x) => x.classList.remove("is-demo-press"));
     demoState = null;
-    demoPicture=-1;
+    resetDemoTracking();
     if (demoDoc) { demoDoc=null; render(); writeSel(); }
   }
   function cancelDemo() {
@@ -1401,6 +1447,8 @@ export function mountWord(el, opts = {}) {
       const item=root.querySelector(`.wm-menu [data-cmd="${id}"],.wd-dlg [data-cmd="${id}"],.wd-dlg [data-spot="${id}"]`); if(item) return item;
     }
     // "file" is the File tab; "bs.<page>" is a Backstage list item (e.g. "bs.saveas"); "sa.browse|documents|name|save" are Save As controls.
+    const localTarget = id.startsWith("new.template:") ? `.bs [data-template="${id.slice(13)}"]` : id.startsWith("placeholder:") ? `.wd-p[data-p="${Number(id.slice(12))}"]` : ({"new.search":'.bs [data-new="search"]',"new.search-go":'.bs [data-new="search-go"]',"new.create":'.bs [data-new="create"]',"new.cancel":'.bs [data-new="cancel"]',"print.copies":'.bs [data-print="copies"]',"print.submit":'.bs [data-print="submit"]'})[id];
+    if (localTarget) return root.querySelector(localTarget);
     const BS_TARGETS = { file: '.wt-tab[data-tab="file"]', "sa.browse": ".bs .sa-browse", "sa.documents": '.bs .sa-n[data-folder="documents"]', "sa.name": ".bs .sa-name", "sa.save": ".bs .sa-save" };
     const bsSel = BS_TARGETS[id] ?? (id.startsWith("bs.") ? `.bs .bs-item[data-bs="${id.slice(3)}"]` : null);
     const find = () => root.querySelector(bsSel ?? `.wr-card [data-cmd="${id}"],.wr-card [data-menu="${id}"],.wd-title [data-cmd="${id}"],.wd-title [data-menu="${id}"],.wd-status [data-cmd="${id}"]`);
@@ -1458,6 +1506,12 @@ export function mountWord(el, opts = {}) {
   }
   /** Where ghost typing starts: a `doc:` target, or the caret (start of the selection) for null. */
   function demoCaret(target) {
+    if (demoPlaceholder) {
+      const range=demoPlaceholder;
+      demoDoc=deleteRange(demoDoc??doc,range.from,range.to);
+      demoReplacement=range.from; demoPlaceholder=null;
+      renderer.render(demoDoc); observer.takeRecords();
+    }
     let pos;
     let past = 0;
     if (target == null) {
@@ -1489,6 +1543,7 @@ export function mountWord(el, opts = {}) {
   }
   function demoSelectRects(range) {
     const r = orderRange(clampPos(demoDoc??doc, range.from), clampPos(demoDoc??doc, range.to));
+    demoAt = r.from;
     const first = rangeRects(r)[0];
     if (first) ensureVisible(first);
     return rangeRects(r);
@@ -1506,7 +1561,7 @@ export function mountWord(el, opts = {}) {
   function demoInsertPicture(id) {
     if (!id) return;
     const source=demoDoc??doc;
-    const at=selRange(sel).from;
+    const at=clampPos(source,demoAt??selRange(sel).from);
     const result=getCommand("insert.pictures.choose").run(source,{from:at,to:at},{arg:id,ui});
     demoDoc=result.doc??result; demoPicture=result.sel?.focus.p??demoPicture;
     renderer.render(demoDoc);observer.takeRecords();popups.closeAll();popups.closeDialog();
@@ -1517,6 +1572,25 @@ export function mountWord(el, opts = {}) {
   // opens, so the next target is on screen. The file name box and Save are never pressed: a demo
   // must not save.
   function demoAct(target, kind) {
+    if (target.startsWith("placeholder:")) {
+      const p=Number(target.slice(12));
+      const para=(demoDoc??doc).p[p];
+      if (para) {
+        demoPlaceholder={from:{p,offset:0},to:{p,offset:para.length}};
+        commandEl(target)?.classList.add("is-demo-placeholder");
+      }
+      return;
+    }
+    if (target === "new.create") {
+      const id=commandEl(target)?.dataset.id;
+      if (id) {demoDoc=templateDoc(id); renderer.render(demoDoc); observer.takeRecords(); backstage?.close();}
+      return;
+    }
+    if (target === "print.submit") {
+      popups.toast({en:"Practice print complete. No paper is printed.",vi:"Đã thực hành in. Không in ra giấy."});
+      return;
+    }
+    if (target.startsWith("new.")) {if (target !== "new.search") commandEl(target)?.click(); return;}
     if(target.startsWith("picture:")) {
       // Like a real click: the picture is selected and Picture Format shows, but the tab stays.
       const el=demoResolve(target); demoPicture=Number(el?.closest(".wd-p")?.dataset.p??-1); updateUI(); return;
@@ -1544,6 +1618,7 @@ export function mountWord(el, opts = {}) {
       renderer.render(demoDoc);observer.takeRecords();popups.closeAll();popups.closeDialog();updateUI();return;
     }
     const pos = parseDocTarget(target);
+    if (pos) demoAt=pos;
     if (pos && kind === "right") {
       const rect = demoCaretRect(pos, 0);
       openContextMenu(rect.left, rect.bottom, pos);
@@ -1579,15 +1654,19 @@ export function mountWord(el, opts = {}) {
   }
   // What the demo opened is closed again, so the learner starts from where they were.
   function backstageSnapshot() {
-    return { open: Boolean(backstage), page: backstage?.page ?? null, dialog: Boolean(root.querySelector(".bs .sa-scrim")), stage: root.querySelector(".bs")?.dataset.stage ?? "" };
+    return { inputs: [...root.querySelectorAll(".bs input")].map(el=>({selector:el.className ? `input.${el.className.split(" ")[0]}` : el.dataset.new ? `[data-new="${el.dataset.new}"]` : `[data-print="${el.dataset.print}"]`,value:el.value})), preview: root.querySelector(".bn-preview [data-new=create]")?.dataset.id, open: Boolean(backstage), page: backstage?.page ?? null, dialog: Boolean(root.querySelector(".bs .sa-scrim")), stage: root.querySelector(".bs")?.dataset.stage ?? "" };
   }
   function restoreBackstage(was) {
+    if (!backstage && was.open) openFile(was.page);
     if (!backstage) return;
     if (!was.open) return backstage.close();
     const now = backstageSnapshot();
     if (now.dialog && (!was.dialog || now.stage !== was.stage)) root.querySelector('.bs .sa-scrim [data-act="cancel"]')?.click();
-    if (now.page !== was.page) backstage.show(was.page);
+    if (now.page !== was.page || was.page === "new" || was.page === "print") backstage.show(was.page);
     if (was.dialog && !root.querySelector(".bs .sa-scrim")) root.querySelector(".bs .sa-browse")?.click();
+    if (was.stage === "dialog-documents") root.querySelector('.bs [data-folder="documents"]')?.click();
+    for (const saved of was.inputs ?? []) { const input=root.querySelector(`.bs ${saved.selector}`); if(input) {input.value=saved.value; input.dispatchEvent(new Event("input"));} }
+    if (was.preview) root.querySelector(`.bs [data-template="${was.preview}"]`)?.click();
   }
 
   async function demo(script) {
@@ -1596,7 +1675,7 @@ export function mountWord(el, opts = {}) {
     const token = ++demoToken;
     const ctrl = new AbortController();
     const wasBackstage = backstageSnapshot();
-    demoState = { ctrl, was: wasBackstage };
+    demoState = { ctrl, was: wasBackstage, tracksInsertion: script.some(s => s.target === PICTURE_INSERT || s.target?.startsWith("choice:insert.pictures.choose:")) };
     const before = JSON.stringify(doc);
     const beforeSel = JSON.stringify(sel);
     locked = true;
@@ -1620,7 +1699,30 @@ export function mountWord(el, opts = {}) {
           demoDoc=updatePicture(source,{p},patch);
           demoPicture=p;renderer.render(demoDoc);observer.takeRecords();updateUI();
         },
-        key: (combo)=>{ if(combo==="Delete"||combo==="Backspace") demoDeletePicture(); },
+        typed: (text, target) => {
+          if (demoReplacement) {
+            demoDoc=insertText(demoDoc??doc,demoReplacement,text);
+            demoReplacement=null; renderer.render(demoDoc); observer.takeRecords(); return true;
+          }
+          if (target === "new.search") {
+            const input=commandEl(target); if(input) {input.value=text;input.dispatchEvent(new Event("input"));} return true;
+          }
+          return false;
+        },
+        key: (combo)=>{
+          if (combo === "Enter" && demoAt && demoState?.tracksInsertion) {
+            demoDoc=splitParagraph(demoDoc??doc,demoAt);
+            demoAt={p:demoAt.p+1,offset:0};
+            renderer.render(demoDoc); observer.takeRecords();
+          }
+          if (combo === "ArrowUp") { const copies=commandEl("print.copies"); if(copies) copies.stepUp(); }
+          if(combo==="Delete"||combo==="Backspace") {
+            if(demoPlaceholder) {
+              demoDoc=deleteRange(demoDoc??doc,demoPlaceholder.from,demoPlaceholder.to);
+              demoPlaceholder=null; renderer.render(demoDoc); observer.takeRecords();
+            } else demoDeletePicture();
+          }
+        },
         reducedMotion: reducedMotion(),
         signal: ctrl.signal,
       });
@@ -1628,7 +1730,7 @@ export function mountWord(el, opts = {}) {
       if (token === demoToken) {
         popups.closeAll();
         popups.closeDialog();
-        demoPicture=-1;
+        resetDemoTracking();
         locked = false;
         if (demoDoc) { demoDoc=null; render(); writeSel(); }
         updateUI(); // a contextual tab the demo opened goes away with the demo view
@@ -1750,6 +1852,7 @@ export function mountWord(el, opts = {}) {
     },
     getDoc: () => doc,
     setDoc(next) {
+      clearSavedDocument(root);
       selectedPicture=-1;
       doc = createDoc(next);
       sel = collapsedSel({ p: 0, offset: 0 });

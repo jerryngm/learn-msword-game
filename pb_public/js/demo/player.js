@@ -610,7 +610,14 @@ export async function playDemo(host, script, opts = {}) {
       if (aborted()) break;
       if ("target" in step) await doTarget(step);
       else if ("select" in step) await doSelect(step);
-      else if ("type" in step) await doType(step);
+      else if ("type" in step) {
+        await doType(step);
+        // Hosts can persist typed text in their isolated demo view after its key animation.
+        if (!aborted() && opts.typed?.(step.type, step.at ?? lastTarget)) {
+          layer.querySelectorAll(".dm-type").forEach(el => el.remove());
+          typing = null;
+        }
+      }
       else if ("key" in step) await doKey(step);
       else if ("say" in step) await doSay(step);
       else if ("wait" in step) await sleep(Math.min(10000, step.wait));

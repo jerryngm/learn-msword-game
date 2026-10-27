@@ -80,7 +80,7 @@ function cardsHtml(session, offline) {
       bigButton({
         href: "#/revision",
         icon: "🔁",
-        titleKey: "revisionTitle",
+        titleKey: session.preset === "revise_everything" ? "reviewEverythingTitle" : "revisionTitle",
         bodyHtml: bi("revisionBody", { n: Number.isInteger(session.length) && session.length > 0 ? session.length : 6 }) /* same default as playContext */,
         recommended: both,
       }),

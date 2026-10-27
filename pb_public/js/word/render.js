@@ -81,6 +81,10 @@ export function runStyle(run, el) {
 function buildPara(para, marker, spellings) {
   const el = document.createElement("p");
   el.className = "wd-p";
+  if (para.placeholder && para.text === para.placeholder) {
+    el.classList.add("wd-placeholder");
+    el.dataset.placeholder = para.placeholder;
+  }
   const s = el.style;
   s.textAlign = para.align;
   s.margin = `${para.spacing.before}pt ${para.indent.right}in ${para.spacing.after}pt 0`;

@@ -78,6 +78,14 @@ export async function render(root, { learner }) {
         .map((s) => `<span class="wg-ican${garden.get(s.id).lastSuccess === todayKey ? " is-fresh" : ""}">✅ ${biPair(gt("canDo", { ican: s.ican }))}</span>`)
         .join("")}</div>`
     : `<p class="wg-k-note">${gbi("noBadges")}</p>`;
+  const checklist = SKILLS.filter((s) => play.taught.includes(s.topic));
+  const checklistHtml = `<h2>${gbi("icanChecklist")}</h2><div class="wg-checklist">${checklist.map((s) => {
+    const state = garden.get(s.id);
+    return `<button type="button" class="wg-check-skill" data-skill="${esc(s.id)}">
+      <span>${state.mastered ? "✅" : "🌱"} ${biPair(s.ican)}</span>
+      <small>${gbi(state.mastered ? "checklistMastered" : "checklistLearning")} · ${gbi(`stage_${stageKey(state)}`)}</small>
+      <span>${gbi("practiseAgain")}</span></button>`;
+  }).join("")}</div>`;
   const helpers = Number(learner.helper_badges) || 0;
   const helperHtml = helpers > 0
     ? `<div class="wg-subh">${gbi("helperBadges")}</div>
@@ -120,7 +128,7 @@ export async function render(root, { learner }) {
             <p class="wg-howto-note is-stars">${biPair(gt("grow_stars"))}</p>
             </div>
             <div class="wg-tpanel" id="tpK" role="tabpanel" aria-labelledby="tabK" hidden><div class="wg-shelf">${shelf}</div><p class="wg-k-note">${gbi("kitchenNote")}</p></div>
-            <div class="wg-tpanel" id="tpB" role="tabpanel" aria-labelledby="tabB" hidden>${badgesHtml}${helperHtml}</div>
+            <div class="wg-tpanel" id="tpB" role="tabpanel" aria-labelledby="tabB" hidden>${checklistHtml}${badgesHtml}${helperHtml}</div>
           </div>
         </aside>
       </div>
@@ -215,8 +223,8 @@ export async function render(root, { learner }) {
     (back.querySelector(".wg-pgo") ?? back.querySelector(".wg-pclose")).focus();
   }
 
-  root.querySelector(".wg-beds").addEventListener("click", (e) => {
-    const b = e.target.closest(".wg-pbtn");
+  root.addEventListener("click", (e) => {
+    const b = e.target.closest(".wg-pbtn, .wg-check-skill");
     if (b) openCard(b.dataset.skill, b);
   });
 

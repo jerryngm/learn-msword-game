@@ -5,6 +5,9 @@
 import { biPair, labelPair } from "./i18n.js";
 
 export const GAME_STRINGS = {
+  icanChecklist: { en: "I can…", vi: "Tôi có thể…" },
+  checklistMastered: { en: "I can do this", vi: "Tôi đã làm được" },
+  checklistLearning: { en: "Still learning", vi: "Tôi đang luyện tập" },
   // Shared
   finish: { en: "Finish for today", vi: "Hôm nay học đến đây" },
   next: { en: "Next ▶", vi: "Tiếp theo" },
@@ -139,7 +142,7 @@ export const GAME_STRINGS = {
   badges: { en: "🏅 Badges", vi: "Huy hiệu" },
   dishTopic: { en: "Topic {n}", vi: "Chủ đề {n}" },
   dishCooked: { en: "Topic {n} ✓", vi: "Chủ đề {n} ✓" },
-  kitchenNote: { en: "Finish a topic to cook its dish.", vi: "Học xong mỗi chủ đề sẽ nấu được một món." },
+  kitchenNote: { en: "Finish a topic to cook its dish. For the feast, answer every question in a full Revise everything round.", vi: "Học xong mỗi chủ đề, bạn sẽ nấu được một món. Để có nồi lẩu, hãy trả lời hết các câu trong một lượt Ôn lại tất cả (Revise everything)." },
   noBadges: {
     en: "A plant that flowers gives you an “I can…” badge.",
     vi: "Mỗi cây ra hoa sẽ cho bạn một huy hiệu “Tôi biết…”.",

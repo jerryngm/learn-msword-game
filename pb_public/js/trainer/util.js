@@ -5,6 +5,7 @@ import { TOPICS } from "../content/skills.js";
 export { esc, avatarEmoji };
 
 export const PRESETS = [
+  { key: "revise_everything", label: "Revise everything" },
   { key: "all_covered", label: "All covered so far" },
   { key: "last_week", label: "Only last week" },
   { key: "most_faded", label: "Most faded" },

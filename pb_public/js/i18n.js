@@ -49,6 +49,7 @@ const STR = {
   streakWeeks: { en: "🔥 {n} weeks in a row", vi: "{n} tuần liên tiếp" },
   streakOne: { en: "🔥 This week is going well", vi: "Tuần này bạn làm rất tốt" },
   startHere: { en: "★ Start here", vi: "Bắt đầu ở đây" },
+  reviewEverythingTitle: { en: "Revise everything", vi: "Ôn lại tất cả" },
   revisionTitle: { en: "Weekly Revision", vi: "Ôn tập hằng tuần" },
   revisionBody: {
     en: "{n} quick questions. Water your plants.",

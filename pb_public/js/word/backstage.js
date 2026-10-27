@@ -1,6 +1,8 @@
 // Backstage (File) shell: the frame, the Home page and the Save As flow (Save As > Browse > the Save As
 // dialog). Other pages are stubs that later work replaces with registerBackstagePage().
 
+import { TEMPLATES, templateDoc } from "./templates.js";
+import { createRenderer } from "./render.js";
 import { ico } from "./icons.js";
 import { biPair, esc, labelPair, ws } from "./strings.js";
 
@@ -39,12 +41,16 @@ const PAGES = new Map([
         <div class="bs-row">${ico("document_20", "wi-blue")}<span>${esc(ctx.title)}</span><span>Just now</span></div></div>`,
   ],
   // Save and Save As open the same page: a document that has never been saved always goes to Save As.
+  ["new", newPage],
+  ["print", printPage],
   ["saveas", saveAsPage],
   ["save", saveAsPage],
 ]);
 
 /** Optional `mount(main, ctx)` runs after a page's HTML is in place (wire events there). */
 const MOUNTS = new Map([
+  ["new", mountNew],
+  ["print", mountPrint],
   ["saveas", mountSaveAs],
   ["save", mountSaveAs],
 ]);
@@ -62,6 +68,7 @@ export function registerBackstagePage(id, render, mount) {
 // The last save per Word window. "save" (Ctrl+S, the QAT button) on an already-saved document saves again
 // under the same name with no Save As page, as in real Word. Otherwise "save" shows Save As, and F12 always does.
 const lastSave = new WeakMap();
+export const clearSavedDocument = (root) => lastSave.delete(root);
 
 /**
  * Open the Backstage over the Word window. hooks: {title(), doc(), onCommand(id, level), onClose()}.
@@ -92,7 +99,7 @@ export function openBackstage(root, page, hooks) {
     el.querySelectorAll(".bs-item").forEach((b) => b.classList.toggle("is-on", b.dataset.bs === id));
     const render = PAGES.get(id);
     if (render) {
-      const ctx = { title: hooks.title(), doc: hooks.doc(), close, el, setStage, saved: (p) => {
+      const ctx = { title: hooks.title(), doc: hooks.doc(), close, el, setStage, newDocument: hooks.newDocument, printed: hooks.printed, onCommand: hooks.onCommand, saved: (p) => {
         lastSave.set(root, { folder: [...p.folder], name: p.name });
         hooks.saved?.(p);
       } };
@@ -323,6 +330,7 @@ function openDialog(el, ctx) {
 
   function save() {
     const raw = nameInput.value.trim();
+    if (ctx.el.closest(".is-demo")) return;
     if (!raw) return say("emptyName");
     if (/[\\/:*?"<>|]/.test(raw)) return say("badChars");
     const name = raw.replace(/\.docx$/i, "").trim();
@@ -405,4 +413,56 @@ function openDialog(el, ctx) {
   go("desktop");
   nameInput.focus();
   nameInput.select();
+}
+
+
+/* New: local template search, preview, and Create. */
+function newPage() {
+  return `<h1 class="bs-h1">New</h1><div class="bn-search"><input type="search" data-new="search" aria-label="Search for online templates" placeholder="Search for online templates"><button type="button" data-new="search-go" aria-label="Search">${ico("search_20")}</button></div>
+    <div class="bn-results"></div><div class="bn-preview"></div>`;
+}
+function mountNew(main, ctx) {
+  ctx.setStage("new");
+  const input = main.querySelector('[data-new="search"]');
+  const results = main.querySelector('.bn-results');
+  const preview = main.querySelector('.bn-preview');
+  function draw() {
+    const q = input.value.trim().toLowerCase();
+    const found = TEMPLATES.filter(t => `${t.name} ${t.search}`.toLowerCase().includes(q));
+    results.innerHTML = `${!q ? '<button type="button" class="bs-tile" data-new="blank"><span class="bs-thumb"></span>Blank document</button>' : ''}${found.map(t => `<button type="button" class="bs-tile" data-template="${t.id}"><span class="bs-thumb bn-thumb">${esc(t.lines.join('\n'))}</span>${esc(t.name)}</button>`).join('')}${!found.length ? `<p>${biPair({en:'No templates found. Try resume, list or flyer.', vi:'Không tìm thấy mẫu. Thử gõ resume, list hoặc flyer.'})}</p>` : ''}`;
+  }
+  input.addEventListener('input', () => { draw(); document.dispatchEvent(new Event('selectionchange')); });
+  main.addEventListener('click', e => {
+    const id = e.target.closest('[data-template]')?.dataset.template;
+    if (id) {
+      const t = TEMPLATES.find(t => t.id === id);
+      preview.innerHTML = `<section class="bn-preview-card" role="dialog" aria-label="${esc(t.name)}"><button type="button" data-new="cancel" class="bn-close" aria-label="Close">×</button><div class="bn-sample"></div><div><h2>${esc(t.name)}</h2><p>${biPair({en:'Replace the text in brackets with your own words.',vi:'Thay phần chữ trong dấu ngoặc vuông bằng nội dung của bạn.'})}</p><button type="button" class="sa-btn sa-save" data-new="create" data-id="${id}">Create</button></div></section>`;
+      createRenderer(preview.querySelector('.bn-sample')).render(templateDoc(id));
+      document.dispatchEvent(new Event('selectionchange'));
+    }
+    const action = e.target.closest('[data-new]');
+    if (!action) return;
+    if (action.dataset.new === 'search-go') draw();
+    if (action.dataset.new === 'cancel') preview.replaceChildren();
+    if (action.dataset.new === 'blank') ctx.newDocument?.(null);
+    if (action.dataset.new === 'create') ctx.newDocument?.(action.dataset.id);
+  });
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); draw(); } });
+  draw();
+}
+
+/* Print is a classroom simulation: show the document and copies, never invoke window.print(). */
+function printPage() {
+  return `<h1 class="bs-h1">Print</h1><div class="bp-layout"><section><div class="bp-actions"><button type="button" class="bp-print" data-print="submit">${ico("document_20")}Print</button><label>Copies: <input type="number" min="1" max="99" value="1" data-print="copies" aria-label="Copies"></label></div><h2>Printer</h2><p>Classroom printer</p><p>${biPair({en:'Practice only. No paper is printed.',vi:'Chỉ thực hành. Không in ra giấy.'})}</p><h2>Settings</h2><p>Print All Pages</p><p>Print One Sided</p></section><div class="bp-paper"></div></div>`;
+}
+function mountPrint(main, ctx) {
+  ctx.setStage("print");
+  createRenderer(main.querySelector('.bp-paper')).render(ctx.doc);
+  const input = main.querySelector('[data-print="copies"]');
+  input.addEventListener('input', () => document.dispatchEvent(new Event('selectionchange')));
+  main.querySelector('[data-print="submit"]').addEventListener('click', () => {
+    const copies = Number(input.value);
+    if (!Number.isInteger(copies) || copies < 1 || copies > 99) { input.reportValidity(); return; }
+    ctx.printed?.(copies);
+  });
 }

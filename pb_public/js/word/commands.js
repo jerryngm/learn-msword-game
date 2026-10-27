@@ -761,8 +761,8 @@ c("title.share", "Share", { tab: "title" });
 c("title.editingMode", "Editing", { tab: "title", menuOnly: true });
 c("title.ribbonOptions", "Ribbon Display Options", { tab: "title" });
 c("file.open", "File", { tab: "file" });
-c("file.new.blank", "Blank document", { tab: "file" });
-c("file.print", "Print", { tab: "file" });
+registerCommand({ id: "file.new.blank", label: "Blank document", level: "b", tab: "file", popup: (ctx) => ctx.ui.newDocument() });
+registerCommand({ id: "file.print", label: "Print", level: "b", tab: "file", popup: (ctx) => ctx.ui.backstage("print") });
 c("file.openDocument", "Open", { tab: "file" });
 c("file.close", "Close", { tab: "file" });
 // Ctrl+K target. A placeholder, so a later phase can register the real Link command over it.

@@ -13,7 +13,7 @@ It was built for adult learners aged roughly 40 to 70 who are new to computers a
 - **Class garden** (`/projector.html`): a read-only, full-screen view for the classroom projector, where everyone's plants grow together.
 - **Mock Word engine** (`pb_public/js/word/`): a small copy of Word with a ribbon, document model, selection, undo, dialogs and picture handling. Missions are plain data checked against the document, so adding one doesn't need new engine code.
 
-Topics (1–6 are playable now; 7–9 are still being written):
+Topics (1–8 provide lessons and missions; Topic 9 reviews the taught skills):
 
 1. Getting started
 2. Typing and editing
@@ -24,6 +24,12 @@ Topics (1–6 are playable now; 7–9 are still being written):
 7. Templates and saving safely
 8. A real-life document
 9. Review
+
+Topic 7 includes bundled resume, list and flyer templates, editable placeholders, Save As versions and simulated printing. Topic 8 combines the taught skills in a festival flyer, café menu and class invitation. Printing is practice only and does not send paper to a real printer.
+
+For Topic 9, the trainer selects **Revise everything** and a round length. The mixed round uses taught Topics 1–8. Answering every question in a full round unlocks the feast; skipping an item or finishing early does not. My Garden’s **I can** checklist shows each taught skill’s actual progress and a route back to practice.
+
+The review preset and completion field require `pb_migrations/0006_review_completion.js`. Back up the database before the normal PocketBase restart that applies migrations. Completion evidence stays with the final answer, including when it is queued offline.
 
 ## How it's built
 

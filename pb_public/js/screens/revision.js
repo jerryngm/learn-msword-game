@@ -9,7 +9,7 @@ import { mountWord, getInternals } from "../word/index.js";
 import { createHints } from "../word/hints.js";
 import { playDemo, validateScript } from "../demo/player.js";
 import { buildRound } from "../revision.js";
-import { skillState, starsFor } from "../rules.js";
+import { reviewComplete, skillState, starsFor } from "../rules.js";
 import { mountAsk } from "../ask.js";
 import {
   getRun, hintCount, learnerAttempts, loadContent, playContext, recordAttempt, setRun, takePracticeSkill, tapGuard,
@@ -689,6 +689,7 @@ export async function render(root, { learner }) {
     !practiceSkill &&
     run?.kind === "revision" &&
     run.sessionId === sessionId &&
+    run.preset === play.preset &&
     Array.isArray(run.round) &&
     run.index < run.round.length &&
     run.round.every((id) => byId.has(id));
@@ -703,7 +704,7 @@ export async function render(root, { learner }) {
       taughtTopics: play.taught,
       today: new Date(),
     });
-    run = { kind: practiceSkill ? "practice" : "revision", sessionId, started: Date.now(), round: round.map((i) => i.id), index: 0, results: [] };
+    run = { kind: practiceSkill ? "practice" : "revision", sessionId, preset: practiceSkill ? "custom" : play.preset, target: practiceSkill ? PRACTICE_LENGTH : play.length, started: Date.now(), round: round.map((i) => i.id), index: 0, results: [] };
     setRun(run);
   }
 
@@ -947,7 +948,7 @@ export async function render(root, { learner }) {
     run.solved = { index: run.index, stars, help_level, tries };
     setRun(run);
     try {
-      const { queued, refused } = await recordAttempt({ learner: learner.id, session: sessionId, skill: item.skill, item: item.id, kind: "revision", stars, help_level, tries });
+      const { queued, refused } = await recordAttempt({ learner: learner.id, session: sessionId, skill: item.skill, item: item.id, kind: "revision", stars, help_level, tries, review_complete: reviewComplete(run) });
       if (closed) return;
       if (refused) toast(biPair(gt("saveRefused")));
       else if (queued && !savedNoteShown) {

@@ -7,7 +7,7 @@ const KINDS = new Set(["revision", "mission", "free"]);
 const ASK_TYPES = new Set(["stuck", "learn_more", "classmate"]);
 const ID_RE = /^[a-z0-9]{15}$/; // PocketBase record ids
 const PENDING_KEY = "wg_pending_attempts";
-const ATTEMPT_FIELDS = "id,learner,session,skill,item,kind,stars,help_level,tries,created,client_at";
+const ATTEMPT_FIELDS = "id,learner,session,skill,item,kind,stars,help_level,tries,created,client_at,review_complete";
 
 function intIn(value, min, max, name) {
   const n = Number(value);
@@ -46,7 +46,7 @@ export function tapGuard(ms) {
 
 /* ---------- attempts ---------- */
 
-function attemptBody({ learner, session, skill, item, kind, stars, help_level = 0, tries = 1 }) {
+function attemptBody({ learner, session, skill, item, kind, stars, help_level = 0, tries = 1, review_complete = false }) {
   if (!KINDS.has(kind)) throw new RangeError(`kind must be revision, mission or free, got ${kind}`);
   return {
     learner: requiredId(learner, "learner"),
@@ -57,6 +57,7 @@ function attemptBody({ learner, session, skill, item, kind, stars, help_level = 
     stars: intIn(stars, 1, 3, "stars"),
     help_level: intIn(help_level, 0, 3, "help_level"),
     tries: intIn(Math.min(Number(tries), 99), 0, 99, "tries"),
+    ...(review_complete === true && kind === "revision" ? { review_complete: true } : {}),
   };
 }
 

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { CONFIG, attemptTime, dayKey, dishCooked, gardenState, skillState, starsFor, supportLevel, weeklyStreak } from "../pb_public/js/rules.js";
+import { CONFIG, reviewComplete, attemptTime, dayKey, dishCooked, gardenState, skillState, starsFor, supportLevel, weeklyStreak } from "../pb_public/js/rules.js";
 import { buildRound, pickNextMission, skillWeight } from "../pb_public/js/revision.js";
 
 // PocketBase-style attempt: `day` is a UTC date, created at 02:00 UTC (midday in Melbourne, so the same calendar day).
@@ -259,4 +259,32 @@ test("attempt time: the laptop time counts unless it is ahead of the server", ()
   const fastClock = attempt("t1-keys", 3, "2026-10-06", { client_at: "2026-10-07 02:00:00.000Z" });
   assert.equal(dayKey(attemptTime(fastClock)), "2026-10-06");
   assert.equal(attemptTime(attempt("t1-keys", 3, "2026-10-06", { client_at: "" })), attemptTime(attempt("t1-keys", 3, "2026-10-06")));
+});
+
+
+test("Revise everything selects taught skill-bearing topics and keeps the selected length", () => {
+  const items = [item("t1-keys"), item("t7-template"), item("t8-plan-doc"), item("t3-align")];
+  const round = buildRound({ items, topics: [3], taughtTopics: [1, 7, 8, 9], preset: "revise_everything", length: 3, today: "2026-10-26", rng: () => 0.2 });
+  assert.equal(round.length, 3);
+  assert.deepEqual(new Set(round.map((i) => i.skill)), new Set(["t1-keys", "t7-template", "t8-plan-doc"]));
+  assert.deepEqual(buildRound({ items, topics: [3], taughtTopics: [], preset: "revise_everything", length: 3 }), []);
+});
+
+test("review feast needs every answer in a full real review round", () => {
+  const run = { kind: "revision", preset: "revise_everything", target: 2, round: ["a", "b"], index: 1,
+    results: [{ item: "a", kind: "revision" }, { item: "b", kind: "revision" }] };
+  assert.equal(reviewComplete(run), true);
+  assert.equal(reviewComplete(JSON.parse(JSON.stringify(run))), true, "reload retains eligibility");
+  for (const patch of [
+    { kind: "practice" }, { preset: "custom" }, { target: 3 }, { index: 0 },
+    { results: [run.results[1]] }, { results: [run.results[0], run.results[0]] },
+    { round: [], results: [], target: 0, index: -1 },
+    { results: [{ item: "a", kind: "mission" }, run.results[1]] },
+    { round: ["a", "a"] },
+  ]) assert.equal(reviewComplete({ ...run, ...patch }), false, JSON.stringify(patch));
+  const final = attempt("t1-keys", 1, "2026-10-26", { review_complete: true });
+  assert.equal(dishCooked(9, new Map(), [final]), true);
+  assert.equal(dishCooked(9, new Map(), [{ ...final, kind: "mission" }]), false);
+  assert.equal(dishCooked(9, new Map(), [{ ...final, review_complete: false }]), false);
+  assert.equal(dishCooked(9, new Map(), []), false);
 });

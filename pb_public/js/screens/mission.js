@@ -233,6 +233,13 @@ export async function render(root, { id, learner }) {
       if (complete) return;
       help = Math.max(help, level);
       helpByStep[current] = Math.max(helpByStep[current] ?? 0, level);
+      // Word's Show me demonstrates every remaining step, so their skill awards
+      // must reflect that help too. Previously completed work keeps its score.
+      if (word && level >= 3) {
+        for (let i = current; i < steps.length; i += 1) {
+          if (!completedSteps[i]) helpByStep[i] = Math.max(helpByStep[i], level);
+        }
+      }
       lastLevel = Math.max(lastLevel, level);
       sinceHelp = 0;
       setHelpGlow(helpBtn, false);

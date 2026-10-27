@@ -149,6 +149,7 @@ export function supportLevel(cleanDays) {
  * one of its missions has been done (any star count).
  */
 export function dishCooked(topicN, gardenMap, attempts) {
+  if (topicN === 9) return (attempts ?? []).some((a) => a.kind === "revision" && a.review_complete === true);
   const skills = skillsOfTopic(topicN);
   if (skills.length === 0) return false;
   const grown = skills.filter((s) => (gardenMap?.get(s.id)?.stage ?? "seed") !== "seed").length;
@@ -178,4 +179,14 @@ export function weeklyStreak(attempts, today) {
     week -= 1;
   }
   return streak;
+}
+
+/** Only the final answer of a full review round can carry completion evidence. */
+export function reviewComplete(run) {
+  return run?.kind === "revision" && run.preset === "revise_everything" &&
+    Number.isInteger(run.target) && run.target > 0 &&
+    Array.isArray(run.round) && run.round.length === run.target &&
+    new Set(run.round).size === run.target && run.index === run.target - 1 &&
+    Array.isArray(run.results) && run.results.length === run.target &&
+    run.round.every((id, i) => run.results[i]?.item === id && run.results[i]?.kind === "revision");
 }

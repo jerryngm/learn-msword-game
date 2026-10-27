@@ -644,3 +644,11 @@ html.hide-vi .home-links { margin-top: 28px; }
 .wg-q-ftable { border-collapse: collapse; font: 20px/1.3 Calibri, "Segoe UI", Arial, sans-serif; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
 .wg-q-ftable td { border: 1px solid #000; padding: 8px 22px; min-width: 120px; color: #000; }
 .wg-q-ftable td.is-mark { background: #FFE8A3; outline: 3px solid var(--orange, #F29B38); outline-offset: -3px; }
+
+/* Taught skills keep their honest progress and a route back to practice. */
+.wg-checklist { display: grid; gap: 8px; margin: 12px 0 20px; }
+.wg-check-skill { display: grid; gap: 6px; width: 100%; text-align: left; padding: 12px; border: 1px solid #d9cbb5; border-radius: 10px; background: #fff; color: inherit; font: inherit; cursor: pointer; }
+.wg-check-skill small { color: #526451; }
+.wg-check-skill:focus-visible { outline: 3px solid #2f7370; outline-offset: 2px; }
+
+#tpB { max-height: calc(100vh - 250px); overflow-y: auto; }

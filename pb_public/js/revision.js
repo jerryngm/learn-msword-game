@@ -24,6 +24,7 @@ export function skillWeight(state, { taught = true } = {}) {
 
 function topicsForPreset(preset, topics, taught) {
   let chosen = topics;
+  if (preset === "revise_everything") return taught.filter((n) => n >= 1 && n <= 8);
   if (preset === "all_covered" || preset === "most_faded") chosen = taught;
   else if (preset === "last_week") chosen = taught.length ? [Math.max(...taught)] : [];
   return chosen.length ? chosen : topics;

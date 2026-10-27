@@ -17,6 +17,7 @@ export async function endSessions() {
 }
 
 function topicsForPreset(preset, taught) {
+  if (preset === "revise_everything") return taught.filter((n) => n >= 1 && n <= 8);
   if (preset === "last_week") return taught.length ? [Math.max(...taught)] : [];
   return [...taught];
 }
@@ -124,6 +125,7 @@ export function render(root, { store, logout }) {
     } else if (t.dataset.preset) {
       pick.preset = t.dataset.preset;
       pick.topics = null;
+      if (pick.preset === "revise_everything") pick.mode = "revision";
     } else if (t.dataset.mode) pick.mode = t.dataset.mode;
     else if (t.dataset.length) pick.length = Number(t.dataset.length);
     else if (t.id === "start") return start();

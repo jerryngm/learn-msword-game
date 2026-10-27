@@ -796,3 +796,27 @@
 .wm-menu:has(> [data-cmd="insert.pictures.device"]) .wm-head { background: none; padding: 8px 12px 6px; font-size: 13.5px; }
 .wm-menu:has(> [data-cmd="insert.pictures.device"]) .wm-item { min-height: 36px; font-size: 13.5px; }
 .wm-menu:has(> [data-cmd="insert.pictures.device"]) .wm-lead .wi { width: 20px; height: 20px; }
+
+/* Local practice templates and Print, following Word Backstage. */
+.bn-search { display:flex; max-width:540px; margin:16px 0 24px; border:1px solid #888; background:white; }
+.bn-search input { flex:1; min-width:0; border:0; padding:10px; font:inherit; }
+.bn-search button { border:0; background:white; padding:8px 12px; }
+.bn-results { display:flex; flex-wrap:wrap; gap:22px; }
+.bn-thumb { white-space:pre-line; font-size:11px; text-align:left; padding:15px; line-height:1.8; overflow:hidden; }
+.bn-preview:empty { display:none; }
+.bn-preview { position:absolute; inset:0; background:#0005; z-index:4; display:grid; place-items:center; padding:18px; }
+.bn-preview-card { position:relative; background:#fff; padding:28px; max-width:740px; display:grid; grid-template-columns:260px 1fr; gap:28px; box-shadow:0 8px 36px #0004; }
+.bn-close { position:absolute; right:8px; top:5px; background:none; border:0; font-size:24px; }
+.bn-sample { width:260px !important; min-height:280px !important; padding:20px !important; overflow:hidden; box-sizing:border-box; background:white; border:1px solid #ddd; }
+.bn-sample .wd-p { font-size:12px; }
+.bn-sample .wd-r { font-size:12px !important; }
+.wd-placeholder { cursor:text; }
+.wd-placeholder > .wd-r { background:#e7e7e7; outline:1px solid #bbb; }
+.bp-layout { display:grid; grid-template-columns:minmax(200px, 280px) minmax(240px, 1fr); gap:32px; align-items:start; }
+.bp-actions { display:flex; gap:16px; align-items:center; }
+.bp-print { display:grid; justify-items:center; gap:8px; padding:15px 25px; border:1px solid #aaa; background:#eee; font:inherit; }
+.bp-actions input { width:60px; padding:6px; }
+.bp-layout h2 { margin-top:24px; font-size:20px; font-weight:400; }
+.bp-paper { width:100% !important; min-height:400px !important; padding:32px !important; box-sizing:border-box; overflow:hidden; background:white; border:1px solid #ddd; box-shadow:0 2px 5px #0002; }
+.bp-paper .wd-r { font-size:12px !important; }
+.wd-placeholder.is-demo-placeholder > .wd-r { background:#c8c8c8; }
