@@ -412,7 +412,12 @@ export async function render(root, { id, learner }) {
         },
       });
       offs.push(word.on("command", (event) => {
-        if (!event.menu && !getInternals(word).demoRunning) ctx.commands.push(event.id);
+        if (!event.menu && !getInternals(word).demoRunning) {
+          ctx.commands.push(event.id);
+          // Copy changes the command history without changing the document or selection.
+          // Check after the command has run so its step can tick immediately.
+          queueMicrotask(evaluate);
+        }
       }));
       offs.push(word.on("change", evaluate));
       offs.push(word.on("goal", () => !complete && finish()));

@@ -176,9 +176,11 @@ export function mountWord(el, opts = {}) {
   let demoAt = null;
   let demoPlaceholder = null;
   let demoReplacement = null;
+  let demoPictureHistory = [];
   const listeners = new Map();
 
   function resetDemoTracking() {
+    demoPictureHistory = [];
     demoPicture = -1;
     demoAt = null;
     demoPlaceholder = null;
@@ -1486,8 +1488,14 @@ export function mountWord(el, opts = {}) {
     const picture=/^picture:(\d+)(?::(n|ne|e|se|s|sw|w|nw))?$/.exec(target);
     if(picture) {
       const el=page.querySelector(`.wd-picture[data-picture="${picture[1]}"]`);
-      if(el) {ensureVisible(el.getBoundingClientRect());el.classList.add("is-selected");}
-      return picture[2] ? el?.querySelector(`[data-handle="${picture[2]}"]`) : el;
+      const target = picture[2] ? el?.querySelector(`[data-handle="${picture[2]}"]`) : el;
+      if (el && target) {
+        el.classList.add("is-selected");
+        const rect = target.getBoundingClientRect();
+        // A large picture can extend beyond the canvas: show the dot or body centre being used.
+        ensureVisible(picture[2] ? rect : new DOMRect(rect.left + rect.width / 2, rect.top + rect.height / 2, 1, 1));
+      }
+      return target;
     }
     const pos = parseDocTarget(target);
     if (!pos) {
@@ -1696,6 +1704,7 @@ export function mountWord(el, opts = {}) {
           const dx=delta.dx/(zoom/100),dy=delta.dy/(zoom/100);
           const patch=handle?pictureResize(picture,handle,dx,dy):["front","behind"].includes(picture.wrap)?pictureMove(picture,el,dx,dy):null;
           if(!patch) return;
+          demoPictureHistory.push(source);
           demoDoc=updatePicture(source,{p},patch);
           demoPicture=p;renderer.render(demoDoc);observer.takeRecords();updateUI();
         },
@@ -1710,6 +1719,10 @@ export function mountWord(el, opts = {}) {
           return false;
         },
         key: (combo)=>{
+          if (combo === "Ctrl+Z" && demoPictureHistory.length) {
+            demoDoc = demoPictureHistory.pop();
+            renderer.render(demoDoc); observer.takeRecords(); updateUI();
+          }
           if (combo === "Enter" && demoAt && demoState?.tracksInsertion) {
             demoDoc=splitParagraph(demoDoc??doc,demoAt);
             demoAt={p:demoAt.p+1,offset:0};

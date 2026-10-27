@@ -160,7 +160,7 @@ export const items = [
       option('other-side', 'Drag the side dot on the other side', 'Kéo chấm tròn ở cạnh bên kia'),
       option('delete', 'Delete the picture and insert it again', 'Xoá hình rồi chèn lại từ đầu'),
     ], 'undo',
-    replay(bigFlower, [key('Ctrl+Z'), say('Ctrl+Z is Undo. It takes back your last change, the side drag.', 'Ctrl+Z là Undo. Nó huỷ thay đổi vừa làm, tức là lần kéo cạnh.'), go('picture:0'), drag('picture:0:se', -200, -140), say('Then drag a corner dot.', 'Sau đó kéo chấm tròn ở góc hình.')])),
+    replay(bigFlower, [go('picture:0'), drag('picture:0:e', -200, 0), key('Ctrl+Z'), say('Ctrl+Z is Undo. It takes back your last change, the side drag.', 'Ctrl+Z là Undo, giúp huỷ lần kéo cạnh vừa rồi.'), go('picture:0'), drag('picture:0:se', -200, -140), say('Then drag a corner dot.', 'Sau đó kéo chấm tròn ở góc hình.')])),
   pick('t6-wrap-pick', 't6-move-wrap',
     T('Your flyer has a picture and some lines of text. The text is under the picture, so the flyer is too long for one page. You want the text next to the picture. Which Wrap Text choice do you pick?', 'Tờ rơi của bạn có một tấm hình và vài dòng chữ. Chữ nằm dưới hình nên tờ rơi dài quá một trang. Bạn muốn chữ nằm cạnh hình. Bạn chọn mục nào trong Wrap Text?'),
     T('Square puts the text next to the picture. In Line with Text keeps the picture in the line, like a big letter, so the text stays above or below it.', 'Square đưa chữ lên nằm cạnh hình. In Line with Text để hình nằm trong dòng như một chữ lớn, nên chữ chỉ nằm ở phía trên hoặc phía dưới hình.'),

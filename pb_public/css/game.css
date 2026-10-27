@@ -601,6 +601,8 @@ html.hide-vi .home-links { margin-top: 28px; }
 }
 
 /* Order items: keep a 4-step list clear of the question footer when Vietnamese is shown. */
+/* An unanswered order has no footer controls; reserve room only when feedback/Next appears. */
+.wg-q-card.type-order .wg-q-foot { min-height: 0; }
 .wg-q-main { padding: 4px 0 2px; }
 .wg-order-col { gap: 4px; }
 .wg-order-pool, .wg-order-slots { gap: 6px; }
@@ -645,7 +647,7 @@ html.hide-vi .home-links { margin-top: 28px; }
 .wg-q-ctx-in { position: absolute; left: 0; top: 0; width: 760px; height: 380px; display: flex; transform: scale(.4); transform-origin: 0 0; }
 .wg-q-ctx-in > .mk-root { width: 760px; flex: 1 1 760px; }
 .wg-q-context figcaption { font-size: 14px; font-weight: 700; color: var(--ink-2); line-height: 1.2; }
-.wg-q-context figcaption .vi { display: inline; margin-left: 6px; font-size: 12px; }
+html:not(.hide-vi) .wg-q-context figcaption .vi { display: inline; margin-left: 6px; font-size: 12px; }
 
 /* Pick items with a picture of a table (item.figure): the table above the choices, marked cells shaded. */
 .wg-q-main:has(> .wg-q-figure) { flex-direction: column; gap: 18px; }
