@@ -366,7 +366,16 @@ html.hide-vi .home-links { margin-top: 28px; }
 .wg-m-scn .vi { font-size: 13px; }
 .wg-m-look { font-size: 16px; font-weight: 700; color: var(--ink-2); line-height: 1.25; }
 .wg-m-look .vi { font-size: 13px; }
-.wg-thumb { position: relative; height: 90px; margin-top: 6px; overflow: hidden; border-radius: 10px; background: #fff; border: 1px solid #DCD3C3; box-shadow: 0 3px 0 #EFE6D6; }
+.wg-thumb { display: block; width: 100%; padding: 0; cursor: zoom-in; position: relative; height: 90px; margin-top: 6px; overflow: hidden; border-radius: 10px; background: #fff; border: 1px solid #DCD3C3; box-shadow: 0 3px 0 #EFE6D6; }
+.wg-thumb:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
+.wg-goal-preview { width: min(940px, calc(100vw - 32px)); max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); padding: 16px; border: 1px solid #DCD3C3; border-radius: 18px; color: var(--ink); background: var(--cream); }
+.wg-goal-preview[open] { display: flex; flex-direction: column; gap: 12px; }
+.wg-goal-preview::backdrop { background: #0008; }
+.wg-goal-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex: none; }
+.wg-goal-head h2 { font-size: 24px; }
+.wg-goal-head .vi { font-size: 15px; }
+.wg-goal-scroll { min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.wg-goal-page { margin: 0 auto; background: #fff; color: #000; pointer-events: none; user-select: none; }
 .wg-thumb-page { position: absolute; left: 0; top: 0; width: 7in; padding: .25in; transform-origin: 0 0; background: #fff; color: #000; pointer-events: none; user-select: none; }
 .wg-thumb-ok { position: absolute; top: 4px; right: 8px; font-size: 20px; font-weight: 800; color: var(--leaf-d); opacity: 0; transition: opacity .4s; }
 .wg-thumb.is-met .wg-thumb-ok { opacity: 1; }

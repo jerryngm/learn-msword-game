@@ -9,7 +9,7 @@
 // `ctx` for predicates: {saved: {folder, name} | null, opened: string | null, learner: {name},
 // selection: {anchor:{p,offset}, focus:{p,offset}}} (selection is an addition, for "select the words" steps).
 
-import { biPair, esc, labelPair } from "../i18n.js";
+import { VI_CHANGE_EVENT, biPair, esc, labelPair } from "../i18n.js";
 import { skillById } from "../content/skills.js";
 import { getInternals, mountWord } from "../word/index.js";
 import { createHints, setHelpGlow } from "../word/hints.js";
@@ -50,7 +50,7 @@ function safeNum(fn) {
   }
 }
 
-/** Draws targetDoc with the engine's renderer, scaled to the column width. Returns cleanup. */
+/** Fits the entire goal page in the thumbnail and opens a readable native dialog. */
 function drawThumb(box, targetDoc) {
   const page = box.querySelector(".wg-thumb-page");
   try {
@@ -61,15 +61,45 @@ function drawThumb(box, targetDoc) {
     return () => {};
   }
   const fit = () => {
-    const scale = box.clientWidth / page.offsetWidth;
+    const scale = Math.min(box.clientWidth / page.offsetWidth, 150 / page.offsetHeight);
     if (!(scale > 0)) return;
     page.style.transform = `scale(${scale})`;
-    box.style.height = `${Math.min(150, Math.ceil(page.offsetHeight * scale))}px`;
+    page.style.left = `${Math.max(0, (box.clientWidth - page.offsetWidth * scale) / 2)}px`;
+    box.style.height = `${Math.ceil(page.offsetHeight * scale)}px`;
   };
   const ro = new ResizeObserver(fit);
   ro.observe(box);
   fit();
-  return () => ro.disconnect();
+  let dialog = null;
+  const open = () => {
+    if (dialog) return;
+    dialog = document.createElement("dialog");
+    dialog.className = "wg-goal-preview";
+    dialog.setAttribute("aria-labelledby", "wg-goal-title");
+    dialog.innerHTML = `<div class="wg-goal-head"><h2 id="wg-goal-title">${gbi("goalPicture")}</h2><button type="button" class="btn">${gbi("closeGoalPicture")}</button></div><div class="wg-goal-scroll" tabindex="0"><div class="wg-goal-page"></div></div>`;
+    createRenderer(dialog.querySelector(".wg-goal-page")).render(createDoc(targetDoc));
+    const preview = dialog;
+    const close = () => {
+      preview.remove();
+      if (dialog === preview) dialog = null;
+      if (box.isConnected) box.focus();
+    };
+    dialog.addEventListener("close", close, { once: true });
+    dialog.querySelector("button").addEventListener("click", () => dialog.close());
+    document.body.append(dialog);
+    dialog.showModal();
+    dialog.querySelector("button").focus();
+  };
+  const syncLabel = () => box.setAttribute("aria-label", glabel("enlargeGoalPicture"));
+  window.addEventListener(VI_CHANGE_EVENT, syncLabel);
+  box.addEventListener("click", open);
+  return () => {
+    ro.disconnect();
+    window.removeEventListener(VI_CHANGE_EVENT, syncLabel);
+    box.removeEventListener("click", open);
+    dialog?.remove();
+    dialog = null;
+  };
 }
 
 /* ---------- the screen ---------- */
@@ -153,7 +183,7 @@ export async function render(root, { id, learner }) {
           <h1 class="wg-m-goal">${biPair(pair(mission.title))}</h1>
           ${mission.scenario ? `<p class="wg-m-scn">${biPair(pair(mission.scenario))}</p>` : ""}
           ${mission.targetDoc != null ? `<div class="wg-m-look">${gbi("lookLike")}
-            <div class="wg-thumb" role="img" aria-label="${esc(glabel("goalPicture"))}"><div class="wg-thumb-page" aria-hidden="true"></div><span class="wg-thumb-ok" aria-hidden="true">✓</span></div></div>` : ""}
+            <button type="button" class="wg-thumb" aria-haspopup="dialog" aria-label="${esc(glabel("enlargeGoalPicture"))}"><span class="wg-thumb-page" aria-hidden="true"></span><span class="wg-thumb-ok" aria-hidden="true">✓</span></button></div>` : ""}
           ${steps.length ? `<ol class="wg-msteps">${steps
             .map((s, i) => `<li class="wg-mstep" data-step="${i}"><span class="wg-num" aria-hidden="true"><span>${i + 1}</span></span><span class="wg-mstep-t">${biPair(pair(s.text))}</span></li>`)
             .join("")}</ol>` : ""}

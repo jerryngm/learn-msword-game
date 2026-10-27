@@ -76,6 +76,8 @@ export const GAME_STRINGS = {
   missionOne: { en: "🧩 Mission", vi: "Nhiệm vụ" },
   lookLike: { en: "Make it look like this →", vi: "Làm cho giống hình này →" },
   goalPicture: { en: "Goal picture", vi: "Hình mẫu" },
+  enlargeGoalPicture: { en: "Enlarge goal picture", vi: "Bấm để xem hình mẫu lớn hơn" },
+  closeGoalPicture: { en: "Close picture", vi: "Đóng hình mẫu" },
   helpMe: { en: "Help me", vi: "Giúp tôi" },
   moreHelp: { en: "More help", vi: "Giúp thêm" },
   showMe: { en: "Show me", vi: "Chỉ cho tôi xem" },
