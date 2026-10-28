@@ -843,7 +843,7 @@ html:not(.hide-vi) .wg-q-context figcaption .vi { display: inline; margin-left: 
 /* Banner variant */
 .wg-helper-banner {
   position: fixed;
-  top: 8px;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 95;
@@ -855,11 +855,11 @@ html:not(.hide-vi) .wg-q-context figcaption .vi { display: inline; margin-left: 
   border: 2px solid var(--leaf);
   border-radius: 999px;
   box-shadow: 0 10px 32px rgba(23, 50, 77, .18);
-  animation: slideDown .3s var(--ease) both;
+  animation: slideUp .3s var(--ease) both;
   max-width: calc(100vw - 32px);
 }
-@keyframes slideDown {
-  from { transform: translate(-50%, -100%); opacity: 0; }
+@keyframes slideUp {
+  from { transform: translate(-50%, 100%); opacity: 0; }
   to { transform: translate(-50%, 0); opacity: 1; }
 }
 .wg-helper-banner .face { width: 36px; height: 36px; font-size: 20px; flex: none; }
