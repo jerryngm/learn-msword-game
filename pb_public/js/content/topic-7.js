@@ -58,7 +58,7 @@ export const items = [
     id:'t7-template-order',skill:'t7-template',type:'order',
     prompt:T('You need a resume for a job application. Put the steps in order to open a resume template.', 'Bạn cần làm sơ yếu lý lịch để xin việc. Hãy xếp các bước theo thứ tự để mở mẫu resume.'),
     hint:T('A template is a document with a layout ready for you. Find templates in File, New. Search for resume.', 'Mẫu là văn bản đã có sẵn bố cục. Tìm mẫu trong File, New. Gõ resume để tìm.'),
-    steps:[option('new','Click File, then New','Bấm File, rồi New'),option('search','Type resume in the template search box','Gõ resume vào ô tìm mẫu'),option('choose','Click Simple resume','Bấm Simple resume'),option('create','Click Create','Bấm Create')],
+    steps:[option('new','Click File, then New','Bấm File, rồi New'),option('search','Type "resume" in the "Search for online templates" box','Gõ “resume” vào ô tìm mẫu Search for online templates'),option('choose','Click Simple resume','Bấm Simple resume'),option('create','Click Create','Bấm Create')],
     replay:replay('',templateRoute),
   },
   {
@@ -102,15 +102,15 @@ export const items = [
 ];
 const templateSteps = [
   step(T('Click File, then New.', 'Bấm File, rồi New.'),T('File is at the top left. New is on the left of the File screen.', 'File nằm ở góc trên bên trái. New nằm bên trái màn hình File.'),(doc,ctx)=>inPage('new')||openedResume(doc,ctx),[go('file'),go('bs.new')]),
-  step(T('Search for resume.', 'Gõ resume để tìm mẫu.'),T('Click the template search box. Type resume. The Simple resume picture appears below.', 'Bấm ô tìm mẫu. Gõ resume. Hình Simple resume hiện ra bên dưới.'),(doc,ctx)=>searchedResume()||resumePreview()||openedResume(doc,ctx),[go('new.search'),type('resume','new.search')]),
+  step(T('Click the "Search for online templates" box and type "resume".', 'Bấm vào ô “Search for online templates” và gõ “resume”.'),T('Click the Search for online templates box. Type "resume". The Simple resume picture appears below.', 'Bấm ô tìm mẫu Search for online templates. Gõ “resume”. Hình Simple resume hiện ra bên dưới.'),(doc,ctx)=>searchedResume()||resumePreview()||openedResume(doc,ctx),[go('new.search'),type('resume','new.search')]),
   step(T('Click Simple resume.', 'Bấm Simple resume.'),T('Click the Simple resume picture to see a larger preview.', 'Bấm vào hình Simple resume để xem mẫu lớn hơn.'),(doc,ctx)=>resumePreview()||openedResume(doc,ctx),[go('new.template:resume')]),
   step(T('Click Create.', 'Bấm Create.'),T('Create opens a new document using this template.', 'Create mở một văn bản mới theo mẫu này.'),openedResume,[go('new.create')]),
 ];
 const fillSteps = [
-  step(T('Replace [Your name] with your name (or Lan Nguyen).', 'Thay [Your name] bằng tên của bạn (hoặc Lan Nguyen).'),replaceHint,(doc)=>validName(textOf(doc.p[0]??{})),replaceName),
-  step(T('Replace [Your skills] with Cooking and cleaning.', 'Thay [Your skills] bằng Cooking and cleaning.'),T('Click [Your skills] once. Type Cooking and cleaning.', 'Bấm một lần vào [Your skills]. Gõ Cooking and cleaning.'),(doc)=>doc.p.some(p=>practiceText(textOf(p)).toLowerCase()==='cooking and cleaning'),[go('placeholder:3'),type('Cooking and cleaning','doc:3,0')]),
+  step(T('Click [Your name] once and type your name (or Lan Nguyen).', 'Bấm một lần vào [Your name] và gõ tên của bạn (hoặc Lan Nguyen).'),replaceHint,(doc)=>validName(textOf(doc.p[0]??{})),replaceName),
+  step(T('Click [Your skills] once and type "Cooking and cleaning".', 'Bấm một lần vào [Your skills] và gõ “Cooking and cleaning”.'),T('Click [Your skills] once. Type "Cooking and cleaning".', 'Bấm một lần vào [Your skills]. Gõ “Cooking and cleaning”.'),(doc)=>doc.p.some(p=>practiceText(textOf(p)).toLowerCase()==='cooking and cleaning'),[go('placeholder:3'),type('Cooking and cleaning','doc:3,0')]),
   {
-    text:T('Delete [Optional interests].', 'Xoá [Optional interests].'),
+    text:T('Click [Optional interests] once and press Delete.', 'Bấm một lần vào [Optional interests] rồi nhấn phím Delete.'),
     hint:deleteHint,
     done:(doc)=>!doc.p.some(p=>textOf(p).includes('[Optional interests]')),
     get demo() {

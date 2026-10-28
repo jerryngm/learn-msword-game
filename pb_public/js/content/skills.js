@@ -48,7 +48,7 @@ export const TOPICS = [
   { n: 4, title: { en: "Lists and simple documents", vi: "Danh sách và văn bản đơn giản" } },
   { n: 5, title: { en: "Tables and page layout", vi: "Bảng và bố cục trang" } },
   { n: 6, title: { en: "Pictures", vi: "Hình ảnh" } },
-  { n: 7, title: { en: "Templates and saving safely", vi: "Mẫu có sẵn và lưu tệp an toàn" } },
+  { n: 7, title: { en: "Templates and saving safely", vi: "Mẫu có sẵn và lưu file an toàn" } },
   { n: 8, title: { en: "A real-life document", vi: "Làm một văn bản dùng trong đời sống" } },
   { n: 9, title: { en: "Review", vi: "Ôn tập" } },
 ];
@@ -63,8 +63,8 @@ export const SKILLS = [
   { id: "t1-keys", topic: 1, ican: { en: "use Space, Enter, Backspace, Shift and full stop", vi: "dùng phím cách, Enter, Backspace, Shift và dấu chấm" } },
   { id: "t1-sentence", topic: 1, ican: { en: "write a sentence with a capital letter and a full stop", vi: "viết một câu có chữ hoa ở đầu và dấu chấm ở cuối" } },
   { id: "t1-save", topic: 1, ican: { en: "save a new document in Documents", vi: "lưu văn bản mới vào thư mục Documents" } },
-  { id: "t1-file-names", topic: 1, mission: false, ican: { en: "choose a good file name", vi: "đặt tên tệp dễ nhớ, dễ tìm" } },
-  { id: "t1-find-file", topic: 1, ican: { en: "find my saved file again", vi: "tìm lại tệp mình đã lưu" } },
+  { id: "t1-file-names", topic: 1, mission: false, ican: { en: "choose a good file name", vi: "đặt tên file dễ nhớ, dễ tìm" } },
+  { id: "t1-find-file", topic: 1, ican: { en: "find my saved file again", vi: "tìm lại file đã lưu" } },
   { id: "t1-zoom", topic: 1, extra: true, ican: { en: "zoom in and out to see better", vi: "phóng to, thu nhỏ để nhìn rõ hơn" } },
   // Topic 2
   { id: "t2-backspace-delete", topic: 2, ican: { en: "use Backspace (left) and Delete (right)", vi: "dùng Backspace (xoá bên trái) và Delete (xoá bên phải)" } },
@@ -106,7 +106,7 @@ export const SKILLS = [
   { id: "t6-unikey", topic: 6, mission: false, optional: true, ican: { en: "type Vietnamese with the VNI number keys", vi: "gõ tiếng Việt kiểu VNI bằng phím số" } },
   // Topic 7
   { id: "t7-template", topic: 7, ican: { en: "find and open a template", vi: "tìm và mở một mẫu có sẵn" } },
-  { id: "t7-placeholder", topic: 7, ican: { en: "replace the sample text in a template", vi: "thay chữ mẫu bằng thông tin của mình" } },
+  { id: "t7-placeholder", topic: 7, ican: { en: "replace template text with my own words", vi: "thay chữ mẫu bằng thông tin cá nhân" } },
   { id: "t7-save-version", topic: 7, ican: { en: "save a new version with Save As", vi: "dùng Save As để lưu thành bản mới" } },
   { id: "t7-print", topic: 7, extra: true, ican: { en: "print a document", vi: "in văn bản" } },
   // Topic 8

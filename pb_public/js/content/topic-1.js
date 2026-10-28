@@ -35,10 +35,18 @@ const savedInDocuments = (ctx) => Boolean(ctx.saved && ctx.saved.folder.length =
 const savedOk = (ctx) => savedInDocuments(ctx) && isAboutMeName(ctx.saved.name);
 
 const cap = /^\p{Lu}/u;
+/** Protect common Australian/English abbreviations before splitting on full stops. */
+const sanitizeAbbreviations = (text) =>
+  String(text ?? "").replace(/\b(St|Mt|Mr|Mrs|Ms|Dr)\./gi, "$1_DOT_");
+
 /** Keep the two introduction prompts distinct even when the first full stop is missing. */
-const sentencesOf = (text) => (String(text).replace(/\s+(?=I live in\b)/g, "\n").match(/[^.!?\n]+[.!?]*/g) ?? []).map((s) => s.trim()).filter(Boolean);
-const nameSentence = /^My name is\s+\p{Lu}[\p{L}’' -]+[.!?]?$/u;
-const placeSentence = /^I live in\s+\p{L}[\p{L}’' -]+[.!?]?$/u;
+const sentencesOf = (text) => {
+  const sanitized = sanitizeAbbreviations(text).replace(/\s+(?=I live in\b)/g, "\n");
+  const rawPieces = sanitized.match(/[^.!?\n]+[.!?]*/g) ?? [];
+  return rawPieces.map((s) => s.replace(/_DOT_/g, ".").trim()).filter(Boolean);
+};
+const nameSentence = /^My name is\s+\p{Lu}[\p{L}’' .-]+[.!?]?$/u;
+const placeSentence = /^I live in\s+\p{L}[\p{L}’' .-]+[.!?]?$/u;
 
 /** fix check: same words as the model (any capitals), but the start is a capital and the end a full stop. */
 const sentenceFix = (model) => (text) => {
@@ -116,7 +124,7 @@ const ITEMS = [
     type: "pick",
     prompt: T(
       "You want to open a file on your computer. Which click opens it?",
-      "Bạn muốn mở một tệp trong máy tính. Bấm kiểu nào thì mở được tệp?",
+      "Bạn muốn mở một file trong máy tính. Bấm kiểu nào thì mở được file?",
     ),
     hint: T(
       "Click two times, fast. A double-click opens things. One click only chooses.",
@@ -134,13 +142,13 @@ const ITEMS = [
     type: "pick",
     prompt: T(
       "You are looking at your files. You click one time on a file. What happens?",
-      "Bạn đang xem các tệp của mình. Bạn bấm một lần vào một tệp. Điều gì sẽ xảy ra?",
+      "Bạn đang xem các file của mình. Bạn bấm một lần vào một file. Điều gì sẽ xảy ra?",
     ),
-    hint: T("One click only chooses the file. It turns blue.", "Bấm một lần chỉ là chọn tệp. Tệp sẽ đổi sang màu xanh dương."),
+    hint: T("One click only chooses the file. It turns blue.", "Bấm một lần chỉ chọn file. File sẽ đổi sang màu xanh dương."),
     options: [
-      { id: "opens", label: T("It opens", "Tệp mở ra"), img: "📂" },
-      { id: "chosen", label: T("It is chosen", "Tệp được chọn"), img: "✅" },
-      { id: "deleted", label: T("It is deleted", "Tệp bị xoá"), img: "🗑️" },
+      { id: "opens", label: T("It opens", "File mở ra"), img: "📂" },
+      { id: "chosen", label: T("It is selected (chosen)", "File được chọn"), img: "✅" },
+      { id: "deleted", label: T("It is deleted", "File bị xoá"), img: "🗑️" },
     ],
     answer: "chosen",
   },
@@ -218,8 +226,8 @@ const ITEMS = [
     skill: "t1-keys",
     type: "pick",
     prompt: T(
-      "You typed a wrong letter by mistake and want to rub it out. Which key do you press?",
-      "Bạn lỡ gõ sai một chữ và muốn xoá đi. Bạn nhấn phím nào?",
+      "You typed a wrong letter by mistake and want to delete it. Which key do you press?",
+      "Bạn lỡ gõ sai một chữ cái và muốn xoá đi. Bạn nhấn phím nào?",
     ),
     hint: T(
       "Backspace is at the top right of the letters. It has an arrow pointing left.",
@@ -324,8 +332,8 @@ const ITEMS = [
     skill: "t1-save",
     type: "order",
     prompt: T(
-      "You wrote a letter and want to keep it. Put the steps in order to save it in the Documents folder.",
-      "Bạn đã viết xong một lá thư và muốn giữ lại. Hãy sắp xếp các bước để lưu thư vào thư mục Documents.",
+      "You wrote a letter and want to keep it. Put these first steps in order to open the Documents folder.",
+      "Bạn đã viết xong một lá thư và muốn giữ lại. Hãy sắp xếp các bước đầu tiên để mở thư mục Documents.",
     ),
     hint: T("Start with File at the top left of Word. The last step is Documents.", "Bắt đầu từ File ở góc trên bên trái của Word. Bước cuối cùng là bấm Documents."),
     steps: [
@@ -341,7 +349,7 @@ const ITEMS = [
     type: "order",
     prompt: T(
       "The Save As window is open. You want to name your file About_Me. Put the steps in order.",
-      "Cửa sổ Save As đang mở. Bạn muốn đặt tên tệp là About_Me. Hãy sắp xếp các bước.",
+      "Cửa sổ Save As đang mở. Bạn muốn đặt tên file là About_Me. Hãy sắp xếp các bước.",
     ),
     hint: T("First click the File name box, so you can type there. Last, click Save.", "Trước tiên bấm vào ô File name để gõ chữ vào đó. Cuối cùng bấm Save."),
     // A small picture of where the learner is, shown above the steps: the mock is mounted without click handlers and
@@ -349,7 +357,7 @@ const ITEMS = [
     context: { mock: "word-static", at: "sa.name" },
     steps: [
       { id: "namebox", label: T("Click the File name box", "Bấm vào ô File name") },
-      { id: "name", label: T("Type the name: About_Me", "Gõ tên tệp: About_Me") },
+      { id: "name", label: T("Type the name: About_Me", "Gõ tên file: About_Me") },
       { id: "save", label: T("Click Save", "Bấm Save") },
     ],
   },
@@ -361,7 +369,7 @@ const ITEMS = [
     type: "pick",
     prompt: T(
       "You wrote a page about yourself and want to find it easily next week. Which file name is best?",
-      "Bạn đã viết một trang giới thiệu về mình và muốn tuần sau dễ tìm lại. Tên tệp nào tốt nhất?",
+      "Bạn đã viết một trang giới thiệu về mình và muốn tuần sau dễ tìm lại. Tên file nào tốt nhất?",
     ),
     hint: T("A good name tells you what is inside. You can find it again easily.", "Tên tốt là tên cho biết bên trong có gì. Nhờ vậy bạn dễ tìm lại."),
     options: [
@@ -376,9 +384,9 @@ const ITEMS = [
     type: "pick",
     prompt: T(
       "You wrote your shopping list. Which file name will help you find it next week?",
-      "Bạn đã viết xong danh sách đi chợ. Tên tệp nào giúp bạn dễ tìm lại vào tuần sau?",
+      "Bạn đã viết xong danh sách đi chợ. Tên file nào giúp bạn dễ tìm lại vào tuần sau?",
     ),
-    hint: T("Choose the name with real words that say what the file is.", "Hãy chọn tên có chữ rõ nghĩa, nói lên tệp đó là gì."),
+    hint: T("Choose the name with real words that say what the file is.", "Hãy chọn tên có chữ rõ nghĩa, nói lên file đó là gì."),
     options: [
       { id: "asdf", label: T("asdf", "asdf") },
       { id: "shopping", label: T("Shopping_List", "Shopping_List") },
@@ -392,9 +400,9 @@ const ITEMS = [
     type: "pick",
     prompt: T(
       "You wrote a letter to your bank in May and want to find it again later. Which file name is best?",
-      "Bạn viết một lá thư gửi ngân hàng vào tháng Năm và muốn dễ tìm lại sau này. Tên tệp nào tốt nhất?",
+      "Bạn viết một lá thư gửi ngân hàng vào tháng Năm và muốn dễ tìm lại sau này. Tên file nào tốt nhất?",
     ),
-    hint: T("A good name says what it is and when. You can join the words with a space or _ .", "Tên tốt cho biết đó là tệp gì và làm lúc nào. Giữa các chữ có thể dùng dấu cách hoặc dấu gạch dưới (_)."),
+    hint: T("A good name says what it is and when. You can join the words with a space or _ .", "Tên tốt cho biết đó là file gì và làm lúc nào. Giữa các chữ có thể dùng dấu cách hoặc dấu gạch dưới (_)."),
     options: [
       { id: "doc1", label: T("doc1", "doc1") },
       { id: "letter", label: T("letter", "letter") },
@@ -410,16 +418,16 @@ const ITEMS = [
     type: "order",
     prompt: T(
       "You closed Word. You want to read your saved file again. Put the steps in order to open it.",
-      "Bạn đã đóng Word và muốn đọc lại tệp đã lưu. Hãy sắp xếp các bước để mở tệp đó.",
+      "Bạn đã đóng Word và muốn đọc lại file đã lưu. Hãy sắp xếp các bước để mở file đó.",
     ),
     hint: T(
       "Start with the yellow folder on the taskbar at the bottom of the screen. The last step opens your file.",
-      "Bắt đầu bằng thư mục màu vàng trên thanh taskbar ở cuối màn hình. Bước cuối cùng là mở tệp của bạn.",
+      "Bắt đầu bằng thư mục màu vàng trên thanh taskbar ở cuối màn hình. Bước cuối cùng là mở file của bạn.",
     ),
     steps: [
       { id: "explorer", label: T("Open File Explorer (the yellow folder)", "Mở File Explorer (thư mục màu vàng)") },
       { id: "documents", label: T("Click Documents", "Bấm Documents") },
-      { id: "open", label: T("Double-click your file", "Bấm đúp vào tệp của bạn") },
+      { id: "open", label: T("Double-click your file", "Bấm đúp vào file của bạn") },
     ],
   },
   {
@@ -429,7 +437,7 @@ const ITEMS = [
     mock: "explorer",
     prompt: T(
       "You want to find your saved file. It is in the Documents folder. Click Documents in the list on the left.",
-      "Bạn muốn tìm tệp đã lưu. Tệp nằm trong thư mục Documents. Hãy bấm vào Documents trong danh sách bên trái.",
+      "Bạn muốn tìm file đã lưu. File nằm trong thư mục Documents. Hãy bấm vào Documents trong danh sách bên trái.",
     ),
     hint: T("Look on the left side. Find the word Documents.", "Nhìn sang bên trái. Tìm chữ Documents."),
     answer: "nav-documents",
@@ -471,11 +479,11 @@ const REPLAYS = {
   },
   "t1-mouse-clicks-open": {
     mock: "explorer",
-    script: [go("file-about-me", "double"), say("A double-click opens the file.", "Bấm đúp là mở được tệp.")],
+    script: [go("file-about-me", "double"), say("A double-click opens the file.", "Bấm đúp là mở được file.")],
   },
   "t1-mouse-clicks-single": {
     mock: "explorer",
-    script: [go("file-about-me"), say("One click only chooses the file. It turns blue.", "Bấm một lần chỉ là chọn tệp. Tệp đổi sang màu xanh.")],
+    script: [go("file-about-me"), say("One click only chooses the file. It turns blue.", "Bấm một lần chỉ chọn file. File đổi sang màu xanh.")],
   },
   "t1-open-word-order": {
     mock: "start-menu",
@@ -498,7 +506,7 @@ const REPLAYS = {
   "t1-keys-backspace": {
     mock: "word",
     doc: "",
-    script: [typ("I like teaa"), say("One letter too many? No problem.", "Thừa một chữ? Không sao."), key("Backspace"), say("Backspace rubs out the letter on the left.", "Backspace xoá chữ nằm bên trái con trỏ.")],
+    script: [typ("I like teaa"), say("One letter too many? No problem.", "Thừa một chữ cái? Không sao."), key("Backspace"), say("Backspace rubs out the letter on the left.", "Backspace xoá chữ cái nằm bên trái con trỏ.")],
   },
   "t1-keys-shift": {
     mock: "word",
@@ -527,7 +535,7 @@ const REPLAYS = {
   },
   "t1-save-order-window": {
     mock: "word-static",
-    script: [go("sa.name"), typ("About_Me", "sa.name"), go("sa.save"), say("Your file is saved in Documents.", "Bạn đã lưu tệp vào Documents rồi.")],
+    script: [go("sa.name"), typ("About_Me", "sa.name"), go("sa.save"), say("Your file is saved in Documents.", "Bạn đã lưu file vào Documents rồi.")],
   },
   "t1-file-names-about": {
     mock: "word-static",
@@ -535,15 +543,15 @@ const REPLAYS = {
   },
   "t1-file-names-shopping": {
     mock: "word-static",
-    script: [typ("Shopping_List", "sa.name"), say("Real words say what the file is. Easy to find next week.", "Chữ rõ nghĩa cho biết tệp là gì. Tuần sau dễ tìm lại.")],
+    script: [typ("Shopping_List", "sa.name"), say("Real words say what the file is. Easy to find next week.", "Chữ rõ nghĩa cho biết file là gì. Tuần sau dễ tìm lại.")],
   },
   "t1-file-names-letter": {
     mock: "word-static",
-    script: [typ("Bank_Letter_May2025", "sa.name"), say("It says what the file is, and when. Words join with _.", "Tên cho biết tệp là gì và khi nào. Các chữ nối với nhau bằng dấu gạch dưới (_).")],
+    script: [typ("Bank_Letter_May2025", "sa.name"), say("It says what the file is, and when. Words join with _.", "Tên cho biết file là gì và khi nào. Các chữ nối với nhau bằng dấu gạch dưới (_).")],
   },
   "t1-find-file-order": {
     mock: "explorer",
-    script: [go("taskbar-explorer"), go("nav-documents"), go("file-about-me", "double"), say("A double-click opens your file.", "Bấm đúp là mở tệp của bạn ra.")],
+    script: [go("taskbar-explorer"), go("nav-documents"), go("file-about-me", "double"), say("A double-click opens your file.", "Bấm đúp là mở file của bạn ra.")],
   },
   "t1-find-file-documents": {
     mock: "explorer",
@@ -570,7 +578,7 @@ const typeNameSteps = [
   {
     text: T("Press the Space bar. Type your name with a capital letter.", "Nhấn phím cách. Gõ tên của bạn, chữ cái đầu viết hoa."),
     hint: T("Press the Space bar once. Then hold Shift for the first letter of your name.", "Nhấn phím cách một lần. Rồi giữ Shift để gõ chữ cái đầu của tên bạn."),
-    done: withWho((doc) => /^My name is\s+\p{Lu}\p{L}*/u.test(textOf(doc).trim())),
+    done: withWho((doc) => /^My name is\s+\p{Lu}\p{L}+/u.test(textOf(doc).trim())),
     get demo() {
       return [key("Space"), say("Your name starts with a capital letter.", "Tên của bạn bắt đầu bằng chữ hoa."), typ(demoWho)];
     },
@@ -585,7 +593,7 @@ const typeNameSteps = [
 
 const aboutMeSteps = [
   {
-    text: T("Title: type About me. Then press Enter.", "Tiêu đề: gõ About me. Rồi nhấn Enter."),
+    text: T("Title: type \"About me\". Then press Enter.", "Tiêu đề: gõ “About me”. Rồi nhấn Enter."),
     hint: T("Type About me with a capital A. Then press the Enter key to go to a new line.", "Gõ About me, chữ A viết hoa. Rồi nhấn phím Enter để xuống dòng."),
     done: (doc) => doc.p.length >= 2 && /^about me[.!]?$/i.test(textOf(doc.p[0]).trim()),
     demo: [go("doc:0,0"), typ("About me"), key("Enter"), say("A new line for your sentences.", "Xuống dòng để viết các câu.")],
@@ -609,8 +617,8 @@ const aboutMeSteps = [
   },
   {
     text: T(
-      "Press the Space bar. Sentence 2: “I live in ___.” Capital letter at the start, full stop at the end.",
-      "Nhấn phím cách. Câu 2: “I live in ___.” Chữ hoa ở đầu, dấu chấm ở cuối câu.",
+      "Press the Space bar. Type your second sentence: \"I live in ___.\" Start with a capital letter and end with a full stop (.).",
+      "Nhấn phím cách. Gõ câu thứ hai: “I live in ___.” Bắt đầu bằng chữ hoa và kết thúc bằng dấu chấm (.).",
     ),
     hint: T(
       "Press the Space bar after the first full stop. Type “I live in” and your city. End with a full stop. For example: I live in Melbourne.",
@@ -650,7 +658,7 @@ const saveSteps = [
   {
     text: T(
       "File name: type About Me and your name. For example: About_Me_Lan or About Me Lan.",
-      "Tên tệp: gõ About Me và tên của bạn. Ví dụ: About_Me_Lan hoặc About Me Lan.",
+      "Tên file: gõ About Me và tên của bạn. Ví dụ: About_Me_Lan hoặc About Me Lan.",
     ),
     hint: T("Click in the File name box. Type About Me and then your name. Spaces or _ are both fine.", "Bấm vào ô File name. Gõ About Me rồi đến tên bạn. Dùng dấu cách hay dấu gạch dưới (_) đều được."),
     done: withWho((doc, ctx) => (saveStage() === "dialog-documents" && isAboutMeName(typedFileName())) || savedOk(ctx)),
@@ -679,11 +687,11 @@ const findFileSteps = [
     demo: [say("Click Documents on the left.", "Bấm Documents ở bên trái."), go("nav-documents")],
   },
   {
-    text: T("Double-click your file. Its name starts with About Me.", "Bấm đúp vào tệp của bạn. Tên tệp bắt đầu bằng About Me."),
-    hint: T("Click two times, fast, on your file. One click only chooses it.", "Bấm hai lần liên tiếp thật nhanh vào tệp của bạn. Bấm một lần chỉ là chọn."),
+    text: T("Double-click your file. Its name starts with About Me.", "Bấm đúp vào file của bạn. Tên file bắt đầu bằng About Me."),
+    hint: T("Click two times, fast, on your file. One click only chooses it.", "Bấm hai lần liên tiếp thật nhanh vào file của bạn. Bấm một lần chỉ là chọn."),
     done: (doc, ctx) => /\.docx$/i.test(ctx.opened ?? "") && plain(ctx.opened).startsWith("aboutme"),
     spotlight: "file-about-me",
-    demo: [say("Double-click your file.", "Bấm đúp vào tệp của bạn."), go("file-about-me", "double")],
+    demo: [say("Double-click your file.", "Bấm đúp vào file của bạn."), go("file-about-me", "double")],
   },
 ];
 
@@ -746,7 +754,7 @@ export const missions = [
       "Your page is finished and you want to keep it. Save it in the Documents folder. Name it About Me and your name, like About_Me_Lan or About Me Lan.",
       "Bạn đã viết xong trang này và muốn giữ lại. Hãy lưu vào thư mục Documents. Đặt tên là About Me và tên bạn, ví dụ About_Me_Lan hoặc About Me Lan.",
     ),
-    startDoc: "About me\nI am learning Word. I like to cook.",
+    startDoc: "About me\nMy name is Lan. I live in Melbourne.",
     tabs: ["home"],
     steps: saveSteps,
     goal: { check: (doc, ctx) => savedOk(ctx), progress: progressOf(saveSteps) },
@@ -755,10 +763,10 @@ export const missions = [
     id: "t1-m-find-file",
     skill: "t1-find-file",
     mock: "explorer",
-    title: T("Find your file again", "Tìm lại tệp của bạn"),
+    title: T("Find your file again", "Tìm lại file của bạn"),
     scenario: T(
       "You closed Word, but you want to read your page again. Use File Explorer to find your About_Me file and open it.",
-      "Bạn đã đóng Word nhưng muốn đọc lại trang của mình. Hãy dùng File Explorer để tìm tệp About_Me và mở ra.",
+      "Bạn đã đóng Word nhưng muốn đọc lại trang của mình. Hãy dùng File Explorer để tìm file About_Me và mở ra.",
     ),
     startDoc: "",
     steps: findFileSteps,

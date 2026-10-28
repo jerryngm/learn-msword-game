@@ -148,10 +148,10 @@ export function openBackstage(root, page, hooks) {
 /* Layout follows the classroom screenshots (Backstage Save As, Windows Save As dialog). */
 
 const SA = {
-  browseHint: { en: "Click Browse to choose where to save your file.", vi: "Bấm Browse để chọn nơi lưu tệp." },
+  browseHint: { en: "Click Browse to choose where to save your file.", vi: "Bấm Browse để chọn nơi lưu file." },
   otherPlace: { en: "In our class we use Browse. Click Browse on the left.", vi: "Ở lớp mình dùng Browse. Hãy bấm Browse ở bên trái." },
-  emptyName: { en: "Type a name for your file first.", vi: "Bạn hãy gõ tên cho tệp trước nhé." },
-  badChars: { en: "A file name cannot have these: \\ / : * ? \" < > |", vi: "Tên tệp không được có các ký tự này: \\ / : * ? \" < > |" },
+  emptyName: { en: "Type a name for your file first.", vi: "Bạn hãy gõ tên cho file trước nhé." },
+  badChars: { en: "A file name cannot have these: \\ / : * ? \" < > |", vi: "Tên file không được có các ký tự này: \\ / : * ? \" < > |" },
   pickFolder: { en: "Click a folder first, for example Documents.", vi: "Hãy bấm vào một thư mục trước, ví dụ Documents." },
   newFolder: { en: "In class we save straight into Documents, so you do not need a new folder.", vi: "Ở lớp mình lưu thẳng vào Documents, nên bạn không cần tạo thư mục mới." },
   empty: { en: "This folder is empty.", vi: "Thư mục này đang trống." },

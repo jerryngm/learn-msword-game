@@ -172,7 +172,7 @@ const E = {
   sort: { en: "change order (Sort)", vi: "đổi thứ tự (Sort)" },
   paste: { en: "appear (Paste)", vi: "xuất hiện (Paste)" },
   cut: { en: "disappear (Cut)", vi: "biến mất (Cut)" },
-  copy: { en: "copied (Copy)", vi: "được sao chép (Copy)" },
+  copy: { en: "be copied (Copy)", vi: "được sao chép (Copy)" },
   painter: { en: "copy another look (Format Painter)", vi: "mang kiểu của chữ khác (Format Painter)" },
   marks: { en: "show hidden marks (Show/Hide)", vi: "hiện các dấu ẩn (Show/Hide)" },
   selectAll: { en: "all selected (Select All)", vi: "được bôi đen hết (Select All)" },
@@ -180,6 +180,18 @@ const E = {
   undo: { en: "go back (Undo)", vi: "trở lại như trước (Undo)" },
   redo: { en: "come back (Redo)", vi: "hiện lại (Redo)" },
   zoom: { en: "look bigger or smaller (Zoom)", vi: "to hơn hoặc nhỏ hơn (Zoom)" },
+  insertTable: { en: "insert a table (Table)", vi: "chèn bảng (Table)" },
+  insertAbove: { en: "add a row above (Insert Above)", vi: "thêm một hàng ở trên (Insert Above)" },
+  insertBelow: { en: "add a row below (Insert Below)", vi: "thêm một hàng ở dưới (Insert Below)" },
+  insertLeft: { en: "add a column on the left (Insert Left)", vi: "thêm một cột bên trái (Insert Left)" },
+  insertRight: { en: "add a column on the right (Insert Right)", vi: "thêm một cột bên phải (Insert Right)" },
+  deleteRow: { en: "delete a row (Delete Rows)", vi: "xoá hàng (Delete Rows)" },
+  deleteColumn: { en: "delete a column (Delete Columns)", vi: "xoá cột (Delete Columns)" },
+  deleteTable: { en: "delete the table (Delete Table)", vi: "xoá bảng (Delete Table)" },
+  orientation: { en: "change page orientation (Orientation)", vi: "đổi hướng trang (Orientation)" },
+  margins: { en: "change page margins (Margins)", vi: "đổi lề trang (Margins)" },
+  insertPicture: { en: "insert a picture (Pictures)", vi: "chèn hình (Pictures)" },
+  wrapText: { en: "change picture wrap (Wrap Text)", vi: "đổi cách chữ bao quanh hình (Wrap Text)" },
 };
 export const EFFECT_NAMES = E;
 
@@ -830,18 +842,27 @@ export const SHORTCUTS = {
 
 
 registerCommand({id:"insert.table",label:"Table",level:"b",menu:()=>[{heading:"Insert Table"},{tableGrid:true}]});
-registerCommand({id:"insert.table.create",label:"Insert Table",level:"a",run:(doc,sel,ctx)=>{
+registerCommand({id:"insert.table.create",label:"Insert Table",level:"a",effectName:E.insertTable,run:(doc,sel,ctx)=>{
   const [columns,rows]=String(ctx.arg).split("x").map(Number); return insertTable(doc,sel.from,columns,rows);
 }});
+const TABLE_EFFECTS = {
+  insertAbove: E.insertAbove,
+  insertBelow: E.insertBelow,
+  insertLeft: E.insertLeft,
+  insertRight: E.insertRight,
+  deleteRow: E.deleteRow,
+  deleteColumn: E.deleteColumn,
+  deleteTable: E.deleteTable,
+};
 for (const [id,label] of [["insertAbove","Insert Above"],["insertBelow","Insert Below"],["insertLeft","Insert Left"],["insertRight","Insert Right"],["deleteRow","Delete Rows"],["deleteColumn","Delete Columns"],["deleteTable","Delete Table"]])
-  registerCommand({id:`table.${id}`,tab:"insert",label,level:"a",run:(doc,sel)=>editTable(doc,sel.from,id)});
+  registerCommand({id:`table.${id}`,tab:"insert",label,level:"a",effectName:TABLE_EFFECTS[id],run:(doc,sel)=>editTable(doc,sel.from,id)});
 // Word's Delete menu order: Cells…, Columns, Rows, Table.
 registerCommand({id:"table.delete",tab:"insert",label:"Delete",level:"b",menu:()=>[{cmd:"table.deleteCells",label:"Delete &Cells...",icon:"tbl_delcells"},
   ...[["deleteColumn","Delete &Columns","tbl_delcol"],["deleteRow","Delete &Rows","tbl_delrow"],["deleteTable","Delete &Table","tbl_deltable"]].map(([id,label,icon])=>({cmd:`table.${id}`,label,icon}))]});
 ensureCommand("table.deleteCells","Delete Cells");
 for (const [name,values] of [["orientation",[["portrait","Portrait"],["landscape","Landscape"]]],["margins",[["normal","Normal — 2.54 cm"],["narrow","Narrow — 1.27 cm"]]]]) {
   registerCommand({id:`layout.${name}`,label:name,level:"b",menu:()=>values.map(([arg,label])=>({cmd:`layout.${name}.set`,arg,label}))});
-  registerCommand({id:`layout.${name}.set`,label:name,level:"a",run:(doc,sel,ctx)=>values.some(([v])=>v===ctx.arg)?setPage(doc,{[name]:ctx.arg}):doc});
+  registerCommand({id:`layout.${name}.set`,label:name,level:"a",effectName:E[name],run:(doc,sel,ctx)=>values.some(([v])=>v===ctx.arg)?setPage(doc,{[name]:ctx.arg}):doc});
 }
 
 // Insert › Pictures as in Word 365: "Insert Picture From" and four sources. This Device, Stock Images and
@@ -853,7 +874,7 @@ ensureCommand("insert.pictures.generate","Generate an Image");
 registerCommand({id:"insert.pictures.device",label:"This Device",level:"b",popup:ctx=>ctx.ui.pictureDialog("device")});
 registerCommand({id:"insert.pictures.stock",label:"Stock Images",level:"b",popup:ctx=>ctx.ui.pictureDialog("stock")});
 registerCommand({id:"insert.pictures.online",label:"Online Pictures",level:"b",popup:ctx=>ctx.ui.pictureDialog("online")});
-registerCommand({id:"insert.pictures.choose",label:"Insert Picture",level:"a",run:(doc,sel,ctx)=>insertPicture(doc,sel.from,ctx.arg)});
+registerCommand({id:"insert.pictures.choose",label:"Insert Picture",level:"a",effectName:E.insertPicture,run:(doc,sel,ctx)=>insertPicture(doc,sel.from,ctx.arg)});
 // Wrap Text as in Word 365. In Line, Square, Behind and In Front are built; the rest are visible but inert.
 export const WRAP_MENU = () => [
   {cmd:"picture.wrap.set",arg:"inline",label:"&In Line with Text",icon:"wrap_inline"},{sep:true},
@@ -867,5 +888,5 @@ export const WRAP_MENU = () => [
 registerCommand({id:"picture.wrap",tab:"insert",label:"Wrap Text",level:"b",menu:WRAP_MENU});
 for (const [id,label] of [["tight","Tight"],["through","Through"],["topBottom","Top and Bottom"],["editPoints","Edit Wrap Points"],["moveWithText","Move with Text"],["fixPosition","Fix Position on Page"],["more","More Layout Options"],["default","Set as Default Layout"]])
   ensureCommand(`picture.wrap.${id}`,label);
-registerCommand({id:"picture.wrap.set",tab:"insert",label:"Wrap Text",level:"a",run:(doc,sel,ctx)=>updatePicture(doc,sel.from,{wrap:ctx.arg})});
+registerCommand({id:"picture.wrap.set",tab:"insert",label:"Wrap Text",level:"a",effectName:E.wrapText,run:(doc,sel,ctx)=>updatePicture(doc,sel.from,{wrap:ctx.arg})});
 registerCommand({id:"picture.delete",tab:"insert",label:"Delete Picture",level:"a",run:(doc,sel)=>updatePicture(doc,sel.from,null)});

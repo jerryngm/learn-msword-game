@@ -63,7 +63,7 @@ export const items = [
     [select(0, 1, 4), go('home.paragraph.bullets')]),
   {
     id: 't4-numbering-sort', skill: 't4-numbering', type: 'sort',
-    prompt: T('Help a friend choose a list style. Sort these jobs into Bullets or Numbering.', 'Giúp một người bạn chọn kiểu danh sách. Xếp các việc vào Bullets hoặc Numbering.'),
+    prompt: T('Help a friend choose a list style. Sort these jobs into Bullets or Numbering.', 'Giúp một người bạn chọn kiểu danh sách phù hợp. Hãy xếp từng việc vào nhóm Bullets hoặc Numbering.'),
     hint: T('Numbers show what to do first, next and last. Dots list things without an order.', 'Số cho biết việc nào làm trước, làm sau. Dấu chấm dùng để liệt kê các thứ không cần theo thứ tự.'),
     bins: sortBins,
     cards: [
@@ -86,20 +86,20 @@ export const items = [
     answer: 'twice', replay: replay(endDoc, endScript),
   },
   { ...doItem('t4-end-list-do', 't4-end-list',
-    T('Add a reminder under this shopping list. Click after Milk, press Enter twice, then type Bring a bag. without a bullet.', 'Thêm câu nhắc bên dưới danh sách đi chợ. Bấm sau Milk, nhấn Enter hai lần rồi gõ Bring a bag. ở dòng không có dấu chấm đầu dòng.'),
-    T('Press Enter once for an empty bullet. Press Enter again to end the list. Then type Bring a bag.', 'Nhấn Enter một lần để ra mục trống. Nhấn thêm lần nữa để kết thúc danh sách. Sau đó gõ Bring a bag.'),
+    T('Add a reminder under this shopping list. Click after Milk, press Enter twice, then type "Bring a bag." without a bullet.', 'Thêm câu nhắc bên dưới danh sách đi chợ. Bấm sau chữ Milk, nhấn Enter hai lần rồi gõ “Bring a bag.” ở dòng không có dấu chấm đầu dòng.'),
+    T('Press Enter once for an empty bullet. Press Enter again to end the list. Then type "Bring a bag."', 'Nhấn Enter một lần để ra mục trống. Nhấn thêm lần nữa để kết thúc danh sách. Sau đó gõ “Bring a bag.”'),
     endDoc, endCheck, endScript), expectedText: 'Bread\nMilk\nBring a bag.' },
   {
     id: 't4-note-tea-order', skill: 't4-note', type: 'order',
     prompt: T('You want Mai to bring tea. Put the steps in order to write her a short note.', 'Bạn muốn nhờ Mai mang trà đến. Xếp các bước theo thứ tự để viết lời nhắn cho Mai.'),
-    hint: T('Begin with the greeting. Write the message next. Put your name at the end.', 'Viết lời chào trước, rồi đến nội dung. Cuối cùng ghi tên người gửi.'),
+    hint: T('Begin with the greeting. Write the message next. Put your signature line at the end.', 'Đầu tiên là lời chào kèm tên người nhận, tiếp theo là lời nhắn, cuối cùng là dòng ký tên ở cuối.'),
     steps: [option('greeting', 'Type the greeting: Dear Mai,', 'Gõ lời chào: Dear Mai,'), option('message', 'Press Enter. Type: Bring tea.', 'Nhấn Enter. Gõ: Bring tea.'), option('name', 'Press Enter. Type: Thanks, Lan', 'Nhấn Enter. Gõ: Thanks, Lan')],
     replay: replay('', [go('doc:0,0'), type('Dear Mai,'), key('Enter'), type('Bring tea.'), key('Enter'), type('Thanks, Lan')]),
   },
   {
     id: 't4-note-call-order', skill: 't4-note', type: 'order',
     prompt: T('You want Nam to call you. Put the steps in order to write him a short note.', 'Bạn muốn nhờ Nam gọi cho mình. Xếp các bước theo thứ tự để viết lời nhắn cho Nam.'),
-    hint: T('The reader sees their name first, your message next, then your name.', 'Người nhận đọc tên mình trước, tiếp theo là lời nhắn, cuối cùng là tên người gửi.'),
+    hint: T('The reader sees their name first, your message next, then your signature line.', 'Đầu tiên là lời chào kèm tên người nhận, tiếp theo là lời nhắn, cuối cùng là dòng ký tên ở cuối.'),
     steps: [option('greeting', 'Type the greeting: Dear Nam,', 'Gõ lời chào: Dear Nam,'), option('message', 'Press Enter. Type: Please call.', 'Nhấn Enter. Gõ: Please call.'), option('name', 'Press Enter. Type: From Lan', 'Nhấn Enter. Gõ: From Lan')],
     replay: replay('', [go('doc:0,0'), type('Dear Nam,'), key('Enter'), type('Please call.'), key('Enter'), type('From Lan')]),
   },
@@ -168,18 +168,18 @@ const noteReminder = (doc) => {
 };
 const noteSteps = [
   ...noteLines.slice(0, 3).map((text, p) => step(
-    T(`Line ${p + 1}: type ${text}`, `Dòng ${p + 1}: gõ ${text}`),
-    T(p === 0 ? 'Begin with Dear Mai, including the comma.' : 'Press Enter after the previous line. Type the words shown for this line.', p === 0 ? 'Bắt đầu bằng Dear Mai, có dấu phẩy.' : 'Nhấn Enter sau dòng trước. Gõ đúng nội dung dành cho dòng này.'),
-    withWho((doc) => clean(line(doc, p)) === clean(text)),
-    p === 0 ? [go('doc:0,0'), type(text)] : [go(`doc:${p - 1},${noteLines[p - 1].length}`), key('Enter'), type(text)],
+    T(`Line ${p + 1}: type "${text}", then press Enter.`, `Dòng ${p + 1}: gõ “${text}”, rồi nhấn phím Enter để xuống dòng.`),
+    T(p === 0 ? 'Begin with Dear Mai, including the comma. Then press Enter.' : 'Type the words shown for this line, then press Enter.', p === 0 ? 'Bắt đầu bằng Dear Mai, có dấu phẩy. Rồi nhấn Enter để xuống dòng.' : 'Gõ đúng chữ cho dòng này rồi nhấn Enter để xuống dòng.'),
+    withWho((doc) => clean(line(doc, p)) === clean(text) && doc.p.length >= p + 2),
+    [go(`doc:${p},0`), type(text), key('Enter')],
     'home.paragraph',
   )),
   {
-    text: T('Line 4: type Thank you, and your name (for example: Thank you, Lan).', 'Dòng 4: gõ Thank you, kèm tên của bạn (ví dụ: Thank you, Lan).'),
-    hint: T('Press Enter after the third line. Type Thank you, then a comma, a space and your name.', 'Nhấn Enter sau dòng thứ ba. Gõ Thank you, rồi dấu phẩy, dấu cách và tên của bạn.'),
+    text: T('Line 4: type "Thank you," and your name (for example: "Thank you, Lan").', 'Dòng 4: gõ “Thank you,” kèm tên của bạn (ví dụ: “Thank you, Lan”).'),
+    hint: T('Press Enter after the third line if needed. Type Thank you, then a comma, a space and your name.', 'Gõ Thank you, rồi dấu phẩy, dấu cách và tên của bạn.'),
     done: withWho((doc) => thankYouLine(line(doc, 3))),
     get demo() {
-      return [go(`doc:2,${noteLines[2].length}`), key('Enter'), type(`Thank you, ${demoWho}`)];
+      return [go(`doc:3,0`), type(`Thank you, ${demoWho}`)];
     },
     spotlight: 'home.paragraph',
   },

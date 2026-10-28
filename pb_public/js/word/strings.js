@@ -13,6 +13,10 @@ const S = {
     en: "That made the words {effect}. Not this one 🙂",
     vi: "Nút vừa bấm làm chữ {effect}. Chưa đúng nút rồi 🙂",
   },
+  wrongAction: {
+    en: "That button will {effect}. Not this one 🙂",
+    vi: "Nút vừa bấm dùng để {effect}. Chưa đúng nút rồi 🙂",
+  },
   nearlyWrong: {
     en: "Nearly! That made the word “{word}” {effect}. Not this one 🙂",
     vi: "Gần đúng rồi! Nút vừa bấm làm chữ “{word}” {effect}. Chưa đúng nút rồi 🙂",

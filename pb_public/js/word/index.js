@@ -357,8 +357,10 @@ export function mountWord(el, opts = {}) {
       emit("wrong", { lastCommand: cmd.id, effectName: fx, nearly: Boolean(word) });
       // A toggle that switched a format off (Bold on bold text) must not be described as switching it on.
       const name = cmd.label;
+      const isDocAction = cmd.id.startsWith("table.") || cmd.id.startsWith("layout.") || cmd.id.startsWith("insert.") || cmd.id.startsWith("picture.") || cmd.id.startsWith("qat.");
       let pair;
       if (meta.removed) pair = word ? ws("nearlyWrongOff", { word, name }) : ws("wrongOff", { name });
+      else if (isDocAction) pair = ws("wrongAction", { effect: fx.en }, { effect: fx.vi });
       else pair = word ? ws("nearlyWrong", { word, effect: fx.en }, { word, effect: fx.vi }) : ws("wrong", { effect: fx.en }, { effect: fx.vi });
       popups.toast(pair, { undo: () => undo() });
     } else if (word && after > before + 1e-9) {
@@ -371,7 +373,12 @@ export function mountWord(el, opts = {}) {
         popups.toast(ws("nearlyPart", { word }), { undo: () => undo() });
       } else if (typeof goal.stepAllowsCommand === "function" && !goal.stepAllowsCommand(cmd.id)) {
         emit("wrong", { lastCommand: cmd.id, effectName: fx, nearly: false });
-        const pair = meta.removed ? ws("wrongOff", { name: cmd.label }) : ws("wrong", { effect: fx.en }, { effect: fx.vi });
+        const isDocAction = cmd.id.startsWith("table.") || cmd.id.startsWith("layout.") || cmd.id.startsWith("insert.") || cmd.id.startsWith("picture.") || cmd.id.startsWith("qat.");
+        const pair = meta.removed
+          ? ws("wrongOff", { name: cmd.label })
+          : isDocAction
+            ? ws("wrongAction", { effect: fx.en }, { effect: fx.vi })
+            : ws("wrong", { effect: fx.en }, { effect: fx.vi });
         popups.toast(pair, { undo: () => undo() });
       }
     }
