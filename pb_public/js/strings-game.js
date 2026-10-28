@@ -5,7 +5,7 @@
 import { biPair, labelPair } from "./i18n.js";
 
 export const GAME_STRINGS = {
-  icanChecklist: { en: "I can…", vi: "Tôi có thể…" },
+  icanChecklist: { en: "I can…", vi: "Tôi biết…" },
   checklistMastered: { en: "I can do this", vi: "Tôi đã làm được" },
   checklistLearning: { en: "Still learning", vi: "Tôi đang luyện tập" },
   // Shared
@@ -65,7 +65,7 @@ export const GAME_STRINGS = {
   orderYours: { en: "Your order", vi: "Thứ tự của bạn" },
   orderTapBack: { en: "Tap a step to take it back.", vi: "Bấm vào một bước để bỏ ra." },
   sortWhere: { en: "Where does this go?", vi: "Mục này thuộc ô nào?" },
-  sortCount: { en: "{n} of {total}", vi: "{n}/{total}" },
+  sortCount: { en: "{n} of {total}", vi: "({n}/{total})" },
   fixLabel: { en: "Fix the words here", vi: "Sửa lại chữ ở đây" },
   mockSoon: { en: "Practice picture", vi: "Hình luyện tập" },
   regionN: { en: "Part {n}", vi: "Phần {n}" },
@@ -170,8 +170,8 @@ export const GAME_STRINGS = {
   plantLabel: { en: "{stage}: I can {ican}", vi: "{stage}: Tôi biết {ican}" },
 
   // End
-  endHero: { en: "⭐ Great session, {name}! 🌿", vi: "Buổi học thật tuyệt, {name}!" },
-  endHeroQuiet: { en: "Thank you for coming today, {name} 🌿", vi: "Cảm ơn bạn đã đến lớp hôm nay, {name}" },
+  endHero: { en: "⭐ Great session, {name}! 🌿", vi: "⭐ Hôm nay {name} học tốt lắm! 🌿" },
+  endHeroQuiet: { en: "Thank you for coming today, {name} 🌿", vi: "Cảm ơn {name} đã đến lớp hôm nay nhé! 🌿" },
   starsTodayN: { en: "{n} ⭐ from {k} finished", vi: "{n} sao từ {k} bài đã xong" },
   watered: { en: "Plants watered today 💧", vi: "Cây đã được tưới hôm nay" },
   better: { en: "You are getting better", vi: "Bạn đang tiến bộ" },
@@ -193,7 +193,7 @@ export const GAME_STRINGS = {
   askMate: { en: "Ask a classmate", vi: "Hỏi bạn cùng lớp" },
   askSent: { en: "Your teacher will come to you 🙂", vi: "Giáo viên sẽ đến giúp bạn." },
   askSentMore: { en: "Your teacher will come and show you more 🙂", vi: "Giáo viên sẽ đến chỉ thêm cho bạn." },
-  askMateFound: { en: "{name} knows this! You can ask them.", vi: "{name} biết làm việc này! Bạn có thể hỏi bạn ấy." },
+  askMateFound: { en: "{name} knows this! You can ask them.", vi: "{name} đã làm được phần này rồi! Bạn có thể nhờ {name} chỉ giúp nhé." },
   askMateNone: { en: "Your teacher will find someone to help you 🙂", vi: "Giáo viên sẽ tìm người giúp bạn." },
   askDone: { en: "✓ I'm OK now", vi: "Tôi làm được rồi" },
   askThanks: { en: "Great. Keep going! 🌱", vi: "Tốt quá. Làm tiếp nhé!" },
@@ -224,3 +224,10 @@ export function gbi(key, vars) {
 export function glabel(key, vars) {
   return labelPair(gt(key, vars));
 }
+
+export const STAR_PRESETS = {
+  "Great work today!": { en: "Great work today!", vi: "Hôm nay làm bài tốt lắm!" },
+  "You are getting better every week.": { en: "You are getting better every week.", vi: "Mỗi tuần bạn đều tiến bộ hơn." },
+  "Well done for not giving up.": { en: "Well done for not giving up.", vi: "Rất đáng khen vì bạn đã không bỏ cuộc." },
+  "Thank you for helping a classmate.": { en: "Thank you for helping a classmate.", vi: "Cảm ơn bạn đã giúp bạn cùng lớp." },
+};

@@ -7,13 +7,17 @@ const COALESCE_MS = 1500;
  * Entries are {doc, sel, label}. `record` stores the state *before* a change. Consecutive changes
  * with the same `group` key (typing) inside a short window collapse into one undo step, like Word.
  */
-export function createHistory(limit = HISTORY_LIMIT) {
-  let undoStack = [];
-  let redoStack = [];
+export function createHistory(limit = HISTORY_LIMIT, entries = {}) {
+  let undoStack = [...(entries.undo ?? [])];
+  let redoStack = [...(entries.redo ?? [])];
   let lastGroup = null;
   let lastAt = 0;
 
   return {
+    /** Independent history for a demonstration; immutable document snapshots can be shared. */
+    fork() {
+      return createHistory(limit, { undo: undoStack, redo: redoStack });
+    },
     record(before, label, group = null) {
       const now = Date.now();
       const merge = group && group === lastGroup && now - lastAt < COALESCE_MS && undoStack.length > 0;

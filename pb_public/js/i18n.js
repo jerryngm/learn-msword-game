@@ -29,7 +29,7 @@ const STR = {
   notYou: { en: "Not you?", vi: "Không phải bạn?" },
 
   // Home
-  hi: { en: "Hi {name}", vi: "Chào {name}" },
+  hi: { en: "Hi {name}", vi: "Xin chào {name}" },
   waterNeeded: {
     en: "{n} plants need water 💧",
     vi: "{n} cây đang cần tưới nước",

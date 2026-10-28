@@ -28,12 +28,12 @@ function useStyles(root) {
 }
 
 const NAMES = {
-  title: "Title bar",
-  qat: "Quick Access Toolbar",
-  tabs: "Tabs",
-  ribbon: "Ribbon",
-  document: "Document area",
-  status: "Status bar",
+  title: { en: "Title bar", vi: "Thanh tiêu đề" },
+  qat: { en: "Quick Access Toolbar", vi: "Thanh thao tác nhanh" },
+  tabs: { en: "Tabs", vi: "Các thẻ" },
+  ribbon: { en: "Ribbon", vi: "Thanh Ribbon" },
+  document: { en: "Document area", vi: "Vùng soạn thảo" },
+  status: { en: "Status bar", vi: "Thanh trạng thái" },
 };
 const ORDER = Object.keys(NAMES);
 
@@ -70,7 +70,8 @@ function html(initials) {
   const tabs = ["File", "Home", "Insert", "Design", "Layout", "References", "Mailings", "Review", "View", "Help"]
     .map((t) => `<span class="mkw-tab${t === "Home" ? " is-on" : ""}"${t === "File" ? ' data-t="file"' : ""}>${t}</span>`)
     .join("");
-  const region = (id, cls, inner) => `<div class="mk-r mkw-${cls}" data-region="${id}" role="button" tabindex="0"><span class="mk-tag">${NAMES[id]}</span>${inner}</div>`;
+  const tagLabel = (n) => (n && typeof n === "object" ? `${esc(n.en)}<span class="vi">· ${esc(n.vi)}</span>` : esc(n));
+  const region = (id, cls, inner) => `<div class="mk-r mkw-${cls}" data-region="${id}" role="button" tabindex="0"><span class="mk-tag">${tagLabel(NAMES[id])}</span>${inner}</div>`;
   return `<div class="mk-word" data-stage="window" aria-label="Word">
     <div class="mkw-top">
       ${region("qat", "qat", `<span class="mkw-logo">${ico("wordlogo")}</span><span class="mkw-auto">AutoSave<i>Off</i></span>${btn("save_20")}${btn("arrow_undo_20")}${btn("arrow_clockwise_20")}`)}

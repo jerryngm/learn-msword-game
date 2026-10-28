@@ -7,7 +7,7 @@ import { dayKey, dishCooked, gardenState } from "../rules.js";
 import { pickNextMission } from "../revision.js";
 import { mountAsk } from "../ask.js";
 import { learnerAttempts, learnerEncouragements, loadAllContent, playContext, setPracticeSkill } from "../game-data.js";
-import { gbi, glabel, gt } from "../strings-game.js";
+import { gbi, glabel, gt, STAR_PRESETS } from "../strings-game.js";
 import { icanOf } from "./success.js";
 import { plantKindOf, plantSymbol } from "../plants.js";
 
@@ -246,7 +246,12 @@ export async function render(root, { learner }) {
     const known = shownIds;
     shownIds = new Set(msgs.map((m) => m.id));
     tmsg.innerHTML = `<div class="wg-from">${gbi("fromTeacher")}</div>${msgs
-      .map((m) => `<p class="${known && !known.has(m.id) ? "is-new" : ""}">${m.kind === "helper" ? "🤝 " : ""}${esc(m.message)}</p>`)
+      .map((m) => {
+        const text = m.message.trim();
+        const p = STAR_PRESETS[text];
+        const body = p ? biPair(p) : esc(text);
+        return `<p class="${known && !known.has(m.id) ? "is-new" : ""}">${m.kind === "helper" ? "🤝 " : ""}${body}</p>`;
+      })
       .join("")}`;
   });
 

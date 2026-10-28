@@ -58,7 +58,7 @@ function renderForm(root) {
           <h1>${bi("joinTitle")}</h1>
           <div class="field">
             <input id="nameIn" type="text" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="words"
-              placeholder="${esc(t("joinPlaceholder").en)}" aria-label="${esc(label("joinTitle"))}">
+              placeholder="${esc(viHidden() ? t("joinPlaceholder").en : `${t("joinPlaceholder").en} · ${t("joinPlaceholder").vi}`)}" aria-label="${esc(label("joinTitle"))}">
           </div>
           <div class="join-foot">
             <button class="btn btn-primary" type="submit" id="startBtn" disabled>${bi("joinStart")}</button>

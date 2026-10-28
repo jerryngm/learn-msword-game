@@ -109,7 +109,7 @@ function html({ view, mine, interactive, withTaskbar }) {
       rows.length
         ? rows
             .map(
-              (f) => `<div class="mk-r mke-r" data-region="${f.region ?? "content"}" data-kind="${f.kind}" data-name="${esc(f.name)}" role="button" tabindex="0">${f.region === "file-about-me" ? '<span class="mk-tag">Your file</span>' : ""}
+              (f) => `<div class="mk-r mke-r" data-region="${f.region ?? "content"}" data-kind="${f.kind}" data-name="${esc(f.name)}" role="button" tabindex="0">${f.region === "file-about-me" ? '<span class="mk-tag">Your file<span class="vi">· File của bạn</span></span>' : ""}
                 <span class="mke-rn">${f.kind === "folder" ? FOLDER_SVG : f.pdf ? '<span class="mke-pdf">PDF</span>' : `<span class="mke-w">${ico("wordlogo")}</span>`}<span>${esc(f.name)}</span></span>
                 <span>${esc(f.date)}</span><span>${esc(f.type)}</span><span>${esc(f.size)}</span></div>`,
             )
@@ -120,19 +120,19 @@ function html({ view, mine, interactive, withTaskbar }) {
   const count = view === "home" ? FOLDERS.length : filesOf(view, mine).length;
   return `<div class="mk-ex${interactive ? " is-live" : withTaskbar ? " has-task" : ""}" aria-label="File Explorer">
     <div class="mke-title"><span class="mke-tab">${ico("folder_open_20")}<span>${view === "home" ? "Home" : LABEL[view]}</span><i>×</i></span><span class="mke-caps">${ico("capmin")}${ico("caprestore")}${ico("capclose")}</span></div>
-    <div class="mk-r mke-cmd" data-region="toolbar" role="button" tabindex="0"><span class="mk-tag">Toolbar</span>
+    <div class="mk-r mke-cmd" data-region="toolbar" role="button" tabindex="0"><span class="mk-tag">Toolbar<span class="vi">· Thanh công cụ</span></span>
       <span class="mke-cb">${ico("add_circle_20")}New <i>▾</i></span><span class="mke-sep"></span>
       <span class="mke-cb">${ico("cut_20")}</span><span class="mke-cb">${ico("copy_20")}</span><span class="mke-cb">${ico("clipboard_paste_20")}</span><span class="mke-cb">${ico("edit_20")}</span><span class="mke-cb">${ico("share_ios_20")}</span>
       <span class="mke-sep"></span><span class="mke-cb">${ico("arrow_sort_20")}Sort <i>▾</i></span><span class="mke-cb">${ico("text_align_left_20")}View <i>▾</i></span></div>
     <div class="mke-addr">
       <span class="mke-ab">${ico("arrow_left_20")}</span><span class="mke-ab">${ico("arrow_forward_20")}</span><span class="mke-ab mke-up">${ico("arrow_forward_20")}</span>
-      <div class="mk-r mke-path" data-region="address" role="button" tabindex="0"><span class="mk-tag">Address bar</span>${ico("document_text_20")}<i>›</i>${crumb}<i>›</i></div>
-      <div class="mk-r mke-search" data-region="search" role="button" tabindex="0"><span class="mk-tag">Search box</span>Search ${view === "home" ? "Home" : LABEL[view]}${ico("search_20")}</div>
+      <div class="mk-r mke-path" data-region="address" role="button" tabindex="0"><span class="mk-tag">Address bar<span class="vi">· Thanh địa chỉ</span></span>${ico("document_text_20")}<i>›</i>${crumb}<i>›</i></div>
+      <div class="mk-r mke-search" data-region="search" role="button" tabindex="0"><span class="mk-tag">Search box<span class="vi">· Ô tìm kiếm</span></span>Search ${view === "home" ? "Home" : LABEL[view]}${ico("search_20")}</div>
     </div>
     <div class="mke-body">
       <nav class="mke-nav" aria-label="Folders"><div class="mk-r mke-n${view === "home" ? " is-on" : ""}" data-region="nav-home" data-folder="home" role="button" tabindex="0"><span class="mk-tag">Home</span><span style="color:#0F6CBD">${ico("home_20")}</span><span class="mke-nl">Home</span></div>
         <hr>${nav}</nav>
-      <div class="mk-r mke-main" data-region="content" role="group"><span class="mk-tag">Files</span>${content}</div>
+      <div class="mk-r mke-main" data-region="content" role="group"><span class="mk-tag">Files<span class="vi">· Danh sách file</span></span>${content}</div>
     </div>
     <div class="mke-status"><span>${count} item${count === 1 ? "" : "s"}</span><span class="mke-sel"></span></div>
     ${withTaskbar ? taskbar() : ""}

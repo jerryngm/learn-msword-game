@@ -513,7 +513,7 @@ function runSort(host, item, api) {
     const card = cards[index];
     host.innerHTML = `<div class="wg-sort">
         <div class="wg-sort-now" aria-live="polite">
-          ${card ? `<p class="wg-sort-q">${gbi("sortWhere")} <span class="wg-sort-count">${esc(gt("sortCount", { n: index + 1, total: cards.length }).en)}</span></p>
+          ${card ? `<p class="wg-sort-q">${gbi("sortWhere")} <span class="wg-sort-count">${bp(gt("sortCount", { n: index + 1, total: cards.length }))}</span></p>
           <div class="wg-sort-card">${bp(card.label)}</div>` : ""}
         </div>
         <div class="wg-bins">${bins

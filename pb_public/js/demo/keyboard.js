@@ -6,7 +6,7 @@
 // Key names: letters and digits, ". , / ; ' [ ] \ - = `", Space, Enter, Backspace, Tab, CapsLock,
 // Shift, Ctrl, Alt, Win, Fn, Esc, Delete, Home, End, F1-F12, ArrowLeft/Right/Up/Down.
 
-import { esc, labelPair } from "../i18n.js";
+import { esc, labelPair, viHidden } from "../i18n.js";
 
 // Each key: [id, label, width in key units, shifted label?]. Every row adds up to 15 units.
 const ROWS = [
@@ -31,7 +31,8 @@ const ALIASES = {
 };
 
 // Words shown in the header for a combo ("Ctrl + S"); keys not listed show their own id.
-const SHOW = { ArrowLeft: "←", ArrowRight: "→", ArrowUp: "↑", ArrowDown: "↓", Space: "Space", ".": ". (full stop)", ",": ", (comma)" };
+const SHOW_EN = { ArrowLeft: "←", ArrowRight: "→", ArrowUp: "↑", ArrowDown: "↓", Space: "Space", ".": ". (full stop)", ",": ", (comma)" };
+const SHOW_VI = { ArrowLeft: "←", ArrowRight: "→", ArrowUp: "↑", ArrowDown: "↓", Space: "Space (phím cách)", ".": ". (dấu chấm)", ",": ", (dấu phẩy)" };
 
 const WIN_LOGO = `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M0 0h7.5v7.5H0zM8.5 0H16v7.5H8.5zM0 8.5h7.5V16H0zM8.5 8.5H16V16H8.5z"/></svg>`;
 
@@ -116,7 +117,8 @@ export function createKeyboard() {
     release();
     const ids = (Array.isArray(keys) ? keys : [keys]).map((k) => (keyEls.has(k) ? k : keyId(k))).filter(Boolean);
     for (const id of ids) keyEls.get(id)?.classList.add("is-lit");
-    const text = caption ?? ids.map((id) => SHOW[id] ?? (MIRROR[id] || id)).join(" + ");
+    const showMap = viHidden() ? SHOW_EN : SHOW_VI;
+    const text = caption ?? ids.map((id) => showMap[id] ?? (MIRROR[id] || id)).join(" + ");
     combo.textContent = text;
     combo.classList.toggle("is-on", Boolean(text));
   }

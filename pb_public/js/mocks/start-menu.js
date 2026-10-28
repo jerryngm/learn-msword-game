@@ -29,15 +29,16 @@ function useStyles(root) {
 }
 
 const NAMES = {
-  "word-app": "Word",
-  "search-box": "Search box",
-  filters: "Filters",
-  "web-result": "Web search",
-  detail: "App details",
-  "start-button": "Start button",
-  taskbar: "Taskbar",
+  "word-app": { en: "Word", vi: "Ứng dụng Word" },
+  "search-box": { en: "Search box", vi: "Ô tìm kiếm" },
+  filters: { en: "Filters", vi: "Bộ lọc" },
+  "web-result": { en: "Web search", vi: "Tìm trên mạng" },
+  detail: { en: "App details", vi: "Chi tiết ứng dụng" },
+  "start-button": { en: "Start button", vi: "Nút Start" },
+  taskbar: { en: "Taskbar", vi: "Thanh tác vụ" },
 };
-const r = (id, cls, inner, tag = true) => `<div class="mk-r ${cls}" data-region="${id}" role="button" tabindex="0">${tag ? `<span class="mk-tag">${NAMES[id]}</span>` : ""}${inner}</div>`;
+const tagLabel = (n) => (n && typeof n === "object" ? `${esc(n.en)}<span class="vi">· ${esc(n.vi)}</span>` : esc(n));
+const r = (id, cls, inner, tag = true) => `<div class="mk-r ${cls}" data-region="${id}" role="button" tabindex="0">${tag ? `<span class="mk-tag">${tagLabel(NAMES[id])}</span>` : ""}${inner}</div>`;
 
 const WIN_LOGO = `<svg viewBox="0 0 20 20" aria-hidden="true"><path fill="#0078D4" d="M2 3.4 9 2.4v7H2zM10 2.3l8-1.2v8.3h-8zM2 10.6h7v7l-7-1zM10 10.6h8v8.3l-8-1.2z"/></svg>`;
 
