@@ -1,0 +1,303 @@
+{
+  "schemaVersion": 1,
+  "status": "art-direction-reference",
+  "generator": "built-in image_gen",
+  "background": {
+    "path": "assets/garden-background.png",
+    "width": 1536,
+    "height": 1024,
+    "sharedSlots": [
+      [
+        565,
+        425
+      ],
+      [
+        680,
+        445
+      ],
+      [
+        800,
+        425
+      ],
+      [
+        920,
+        445
+      ],
+      [
+        1040,
+        425
+      ],
+      [
+        195,
+        625
+      ],
+      [
+        310,
+        650
+      ],
+      [
+        430,
+        625
+      ],
+      [
+        570,
+        650
+      ],
+      [
+        970,
+        625
+      ],
+      [
+        1085,
+        650
+      ],
+      [
+        1200,
+        625
+      ],
+      [
+        1330,
+        650
+      ]
+    ],
+    "mastery": {
+      "baseline": 895,
+      "centre": 650,
+      "maxGap": 54,
+      "capacity": 22
+    }
+  },
+  "stages": {
+    "path": "assets/growth-stages.png",
+    "width": 2172,
+    "height": 724,
+    "frameWidth": 724,
+    "frameHeight": 724,
+    "baseline": 670,
+    "frames": [
+      {
+        "stage": "seed",
+        "x": 0,
+        "y": 0,
+        "width": 724,
+        "height": 724
+      },
+      {
+        "stage": "sprout",
+        "x": 724,
+        "y": 0,
+        "width": 724,
+        "height": 724
+      },
+      {
+        "stage": "leafy",
+        "x": 1448,
+        "y": 0,
+        "width": 724,
+        "height": 724
+      }
+    ]
+  },
+  "speciesAtlases": {
+    "leafy": {
+      "path": "assets/leafy-plant-kinds.png",
+      "width": 1448,
+      "height": 1086,
+      "baselineFraction": 0.94
+    },
+    "mature": {
+      "path": "assets/mature-plant-kinds.png",
+      "width": 1448,
+      "height": 1086,
+      "baselineFraction": 0.96
+    },
+    "columns": 4,
+    "rows": 3,
+    "frames": [
+      {
+        "key": "sunflower",
+        "symbol": "p-flower",
+        "name": "Sunflower",
+        "x": 0,
+        "y": 0,
+        "width": 362,
+        "height": 362
+      },
+      {
+        "key": "tomato",
+        "symbol": "p-fruit",
+        "name": "Tomato",
+        "x": 362,
+        "y": 0,
+        "width": 362,
+        "height": 362
+      },
+      {
+        "key": "lotus",
+        "symbol": "p-lotus",
+        "name": "Lotus",
+        "x": 724,
+        "y": 0,
+        "width": 362,
+        "height": 362
+      },
+      {
+        "key": "apricot",
+        "symbol": "p-apricot",
+        "name": "Apricot blossom",
+        "x": 1086,
+        "y": 0,
+        "width": 362,
+        "height": 362
+      },
+      {
+        "key": "rose",
+        "symbol": "p-rose",
+        "name": "Rose",
+        "x": 0,
+        "y": 362,
+        "width": 362,
+        "height": 362
+      },
+      {
+        "key": "tulip",
+        "symbol": "p-tulip",
+        "name": "Tulip",
+        "x": 362,
+        "y": 362,
+        "width": 362,
+        "height": 362
+      },
+      {
+        "key": "chilli",
+        "symbol": "p-chilli",
+        "name": "Chilli",
+        "x": 724,
+        "y": 362,
+        "width": 362,
+        "height": 362
+      },
+      {
+        "key": "lavender",
+        "symbol": "p-lavender",
+        "name": "Lavender",
+        "x": 1086,
+        "y": 362,
+        "width": 362,
+        "height": 362
+      },
+      {
+        "key": "hibiscus",
+        "symbol": "p-hibiscus",
+        "name": "Hibiscus",
+        "x": 0,
+        "y": 724,
+        "width": 362,
+        "height": 362
+      },
+      {
+        "key": "orchid",
+        "symbol": "p-orchid",
+        "name": "Orchid",
+        "x": 362,
+        "y": 724,
+        "width": 362,
+        "height": 362
+      },
+      {
+        "key": "peach",
+        "symbol": "p-peach",
+        "name": "Peach blossom",
+        "x": 724,
+        "y": 724,
+        "width": 362,
+        "height": 362
+      },
+      {
+        "key": "marigold",
+        "symbol": "p-marigold",
+        "name": "Marigold",
+        "x": 1086,
+        "y": 724,
+        "width": 362,
+        "height": 362
+      }
+    ]
+  },
+  "integration": {
+    "renderer": "garden-renderer.js",
+    "theme": "projector-theme.css",
+    "preview": "preview.html",
+    "handoff": "../../docs/projector-garden-art-direction.md",
+    "productionModified": false
+  },
+  "limitations": [
+    "Species sheets have tight gutters: review alpha edges and per-frame bounds at final display size.",
+    "Ambient scenery is flattened; plant arrival is the only runtime animation supplied.",
+    "Bud and wilt sprites remain existing SVG art; not part of projector growth."
+  ],
+  "uiComponents": {
+    "module": "projector-components.js",
+    "stylesheet": "projector-components.css",
+    "preview": "component-preview.html",
+    "documentation": "../../docs/projector-garden-ui-components.md",
+    "exports": [
+      "goalStripHtml",
+      "sidebarHtml",
+      "accuracyRingHtml"
+    ],
+    "assets": {
+      "star": {
+        "path": "assets/shared-star.svg",
+        "viewBox": [
+          0,
+          0,
+          160,
+          160
+        ],
+        "type": "hand-authored-svg"
+      },
+      "check": {
+        "path": "assets/success-check.svg",
+        "viewBox": [
+          0,
+          0,
+          100,
+          100
+        ],
+        "type": "hand-authored-svg"
+      },
+      "practiceDocument": {
+        "path": "assets/practice-flower-document.png",
+        "width": 1145,
+        "height": 1374,
+        "alpha": true,
+        "generator": "built-in image_gen",
+        "selection": "Explicit practiceArtwork=flower-photo only for relevant content"
+      },
+      "sunflower": {
+        "path": "assets/mature-plant-kinds.png",
+        "frame": [
+          0,
+          0,
+          362,
+          362
+        ],
+        "cssBackgroundSize": "400% 300%",
+        "cssBackgroundPosition": "0 0"
+      }
+    },
+    "dataOwner": "pb_public/js/projector/class-stats.js",
+    "states": [
+      "live",
+      "loading",
+      "waiting",
+      "empty",
+      "full",
+      "reconnecting",
+      "clean",
+      "zero"
+    ],
+    "productionModified": false
+  }
+}

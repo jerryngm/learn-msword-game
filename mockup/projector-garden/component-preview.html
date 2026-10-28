@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projector garden · UI asset review</title>
+<link rel="icon" href="assets/shared-star.svg" type="image/svg+xml">
+<link rel="stylesheet" href="projector-components.css">
+<link rel="stylesheet" href="component-preview.css">
+<body>
+<main class="showcase">
+  <header><h1>Projector garden UI assets</h1><p>Design examples using editable text, live progress and separate artwork.</p></header>
+  <section id="goal" aria-label="Shared goal example"></section>
+  <div class="showcase-grid">
+    <section class="showcase-notes"><h2>Reusable components</h2>
+      <p>The star, sunflower and flower document are decorative assets. Every number and sentence remains live text.</p>
+      <label for="state">Review a display state</label>
+      <select id="state"><option value="live">Live class</option><option value="waiting">Waiting for class</option><option value="loading">Loading</option><option value="empty">No attempts yet</option><option value="full">Full garden</option><option value="reconnecting">Reconnecting</option><option value="clean">All answers right first time</option><option value="zero">Zero first-time success</option><option value="long">Long practice title</option></select>
+      <p>These examples are not connected to learner data.</p>
+      <p><a href="preview.html">View components in the garden</a></p>
+    </section>
+    <aside id="cards" aria-label="Sidebar example"></aside>
+  </div>
+</main>
+<script type="module" src="component-preview.js"></script>
+</body>
+</html>

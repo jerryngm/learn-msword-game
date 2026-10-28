@@ -1,0 +1,43 @@
+[
+  {
+    "viewport": "1920x1080",
+    "screenshot": "/Users/jerry/Documents/avwa-msworld/mockup/projector-garden/projector-ui-review/1920x1080.png",
+    "outline": [
+      "main \"Our Class Garden Learning together 113 s\" @ x0 y0 1920x1080",
+      "  header \"Our Class Garden Learning together\" @ x28 y28 1864x87",
+      "  div.layout \"113 stars together 4 flowers grown 7 sta\" @ x28 y137 1864x915",
+      "    section.garden-panel \"113 stars together 4 flowers grown 7 s @ x28 y137 1329x915",
+      "      div#scene @ x29 y138 1327x785",
+      "      div#goal-strip \"113 stars together 4 flowers grown 7 sta\" @ x29 y923 1327x128",
+      "    aside#sidebar \"Today's progress 1 of 8 finished Every b\" @ x1381 y137 511x915",
+      "      div.pg-sidebar \"Today's progress 1 of 8 finished Every b\" @ x1381 y137 511x915",
+      "section.controls \"Art-direction preview. Controls and side\" @ x260 y1100 1400x475"
+    ],
+    "findings": [],
+    "height": 1615
+  },
+  {
+    "viewport": "375x812",
+    "screenshot": "/Users/jerry/Documents/avwa-msworld/mockup/projector-garden/projector-ui-review/375x812.png",
+    "outline": [
+      "main \"Our Class Garden 113 stars together 4 fl\" @ x0 y0 375x1170",
+      "  header \"Our Class Garden\" @ x16 y16 343x37",
+      "  div.layout \"113 stars together 4 flowers grown 7 sta\" @ x16 y75 343x1079",
+      "    section.garden-panel \"113 stars together 4 flowers grown 7 s @ x16 y75 343x392",
+      "      div#scene @ x17 y76 341x227",
+      "      div#goal-strip \"113 stars together 4 flowers grown 7 sta\" @ x17 y303 341x163",
+      "    aside#sidebar \"Today's progress 1 of 8 finished Every b\" @ x16 y491 343x663",
+      "      div.pg-sidebar \"Today's progress 1 of 8 finished Every b\" @ x16 y491 343x663",
+      "section.controls \"Art-direction preview. Controls and side\" @ x16 y1186 343x755",
+      "  p \"Art-direction preview. Controls and side\" @ x42 y1230 291x84",
+      "  div.buttons \"Seed Sprout Leafy Bloom Later garden Ful\" @ x42 y1332 291x161",
+      "  label \"Total class stars 113\" @ x42 y1511 291x48",
+      "  label \"Mastered-skill flowers 0\" @ x42 y1577 291x48",
+      "  label \"Inspect next plant's leaves Follow class\" @ x42 y1643 291x84",
+      "  label \"Waiting for class (empty beds)\" @ x42 y1745 291x50",
+      "  p \"8 present learners · 24 stars per shared\" @ x42 y1813 291x84"
+    ],
+    "findings": [],
+    "height": 1957
+  }
+]

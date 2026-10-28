@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Class garden · art-direction preview</title>
+<link rel="icon" href="assets/shared-star.svg" type="image/svg+xml">
+<link rel="stylesheet" href="projector-theme.css">
+<link rel="stylesheet" href="projector-components.css">
+<body>
+<div id="symbols" hidden></div>
+<main>
+  <header><h1>Our Class Garden</h1><span>Learning together</span></header>
+  <div class="layout">
+    <section class="garden-panel" aria-label="Garden preview">
+      <div id="scene"></div>
+      <div id="goal-strip"></div>
+    </section>
+    <aside id="sidebar" style="display:block"></aside>
+  </div>
+</main>
+<section class="controls" aria-label="Art review controls">
+  <p><b>Art-direction preview.</b> Controls and sidebar values are design examples, not a live class connection.</p>
+  <div class="buttons"><button data-stars="28">Seed</button><button data-stars="32">Sprout</button><button data-stars="40">Leafy</button><button data-stars="48">Bloom</button><button data-stars="113">Later garden</button><button data-stars="312">Full garden</button></div>
+  <label>Total class stars <input id="stars" type="range" min="24" max="336" value="28"> <output id="star-value">28</output></label>
+  <label>Mastered-skill flowers <input id="mastery" type="range" min="0" max="24" value="0"> <output id="mastery-value">0</output></label>
+  <label>Inspect next plant's leaves <select id="kind"><option value="">Follow class plant rotation</option></select></label>
+  <label><input id="waiting" type="checkbox"> Waiting for class (empty beds)</label>
+  <p>8 present learners · 24 stars per shared flower · one active plant · 13 class slots · newest 22 mastery flowers</p>
+  <p id="error" role="alert"></p>
+</section>
+<script type="module" src="preview.js"></script>
+</body>
+</html>

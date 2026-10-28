@@ -1,0 +1,62 @@
+[
+  {
+    "viewport": "375x812",
+    "screenshot": "/Users/jerry/Documents/avwa-msworld/mockup/projector-garden/component-review/375x812.png",
+    "outline": [
+      "main.showcase \"Projector garden UI assets Design exampl\" @ x0 y0 375x1557",
+      "  header \"Projector garden UI assets Design exampl\" @ x16 y16 343x141",
+      "    h1 \"Projector garden UI assets\" @ x16 y16 343x69",
+      "    p \"Design examples using editable text, liv\" @ x16 y97 343x60",
+      "  section#goal \"113 stars together 4 flowers grown 7 sta\" @ x16 y189 343x163",
+      "    section.pg-goal \"113 stars together 4 flowers grown 7 sta\" @ x16 y189 343x163",
+      "      div.pg-goal-body \"113 stars together 4 flowers grown 7 sta\" @ x89 y206 253x129",
+      "  div.showcase-grid \"Reusable components The star, sunflower \" @ x16 y376 343x1166",
+      "    section.showcase-notes \"Reusable components The star, sunflo @ x16 y376 343x479",
+      "      h2 \"Reusable components\" @ x16 y401 343x45",
+      "      p \"The star, sunflower and flower document \" @ x16 y471 343x120",
+      "      select#state \"Live class Waiting for class Loading No \" @ x16 y657 276x48",
+      "      p \"These examples are not connected to lear\" @ x16 y725 343x60",
+      "    aside#cards \"Today's progress 1 of 8 finished Every b\" @ x16 y879 343x663",
+      "      div.pg-sidebar \"Today's progress 1 of 8 finished Every b\" @ x16 y879 343x663"
+    ],
+    "findings": [],
+    "height": 1557
+  },
+  {
+    "viewport": "768x1024",
+    "screenshot": "/Users/jerry/Documents/avwa-msworld/mockup/projector-garden/component-review/768x1024.png",
+    "outline": [
+      "main.showcase \"Projector garden UI assets Design exampl\" @ x0 y0 768x1907",
+      "  header \"Projector garden UI assets Design exampl\" @ x32 y32 704x77",
+      "  section#goal \"113 stars together 4 flowers grown 7 sta\" @ x32 y141 704x133",
+      "    section.pg-goal \"113 stars together 4 flowers grown 7 sta\" @ x32 y141 704x133",
+      "      div.pg-goal-body \"113 stars together 4 flowers grown 7 sta\" @ x113 y158 538x99",
+      "  div.showcase-grid \"Reusable components The star, sunflower \" @ x32 y306 704x1569",
+      "    section.showcase-notes \"Reusable components The star, sunflo @ x32 y306 704x389",
+      "      h2 \"Reusable components\" @ x32 y331 704x45",
+      "      p \"The star, sunflower and flower document \" @ x32 y401 704x60",
+      "    aside#cards \"Today's progress 1 of 8 finished Every b\" @ x32 y719 704x1157",
+      "      div.pg-sidebar \"Today's progress 1 of 8 finished Every b\" @ x32 y719 704x1157"
+    ],
+    "findings": [],
+    "height": 1907
+  },
+  {
+    "viewport": "1440x900",
+    "screenshot": "/Users/jerry/Documents/avwa-msworld/mockup/projector-garden/component-review/1440x900.png",
+    "outline": [
+      "main.showcase \"Projector garden UI assets Design exampl\" @ x0 y0 1440x1436",
+      "  header \"Projector garden UI assets Design exampl\" @ x32 y32 1376x92",
+      "    h1 \"Projector garden UI assets\" @ x32 y32 1376x50",
+      "  section#goal \"113 stars together 4 flowers grown 7 sta\" @ x32 y156 1376x120",
+      "    section.pg-goal \"113 stars together 4 flowers grown 7 sta\" @ x32 y156 1376x120",
+      "      div.pg-goal-body \"113 stars together 4 flowers grown 7 sta\" @ x159 y179 1116x74",
+      "  div.showcase-grid \"Reusable components The star, sunflower \" @ x32 y308 1376x1097",
+      "    section.showcase-notes \"Reusable components The star, sunflo @ x32 y308 540x1097",
+      "    aside#cards \"Today's progress 1 of 8 finished Every b\" @ x768 y308 640x1097",
+      "      div.pg-sidebar \"Today's progress 1 of 8 finished Every b\" @ x768 y308 640x1097"
+    ],
+    "findings": [],
+    "height": 1436
+  }
+]

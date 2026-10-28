@@ -1,0 +1,25 @@
+[
+  {
+    "viewport": "375x812",
+    "screenshot": "/Users/jerry/Documents/avwa-msworld/mockup/projector-garden/component-review-empty/375x812.png",
+    "outline": [
+      "main.showcase \"Projector garden UI assets Design exampl\" @ x0 y0 375x1503",
+      "  header \"Projector garden UI assets Design exampl\" @ x16 y16 343x141",
+      "    h1 \"Projector garden UI assets\" @ x16 y16 343x69",
+      "    p \"Design examples using editable text, liv\" @ x16 y97 343x60",
+      "  section#goal \"0 stars together 0 flowers grown 3 stars\" @ x16 y189 343x163",
+      "    section.pg-goal \"0 stars together 0 flowers grown 3 stars\" @ x16 y189 343x163",
+      "      div.pg-goal-body \"0 stars together 0 flowers grown 3 stars\" @ x89 y206 253x129",
+      "  div.showcase-grid \"Reusable components The star, sunflower \" @ x16 y376 343x1112",
+      "    section.showcase-notes \"Reusable components The star, sunflo @ x16 y376 343x479",
+      "      h2 \"Reusable components\" @ x16 y401 343x45",
+      "      p \"The star, sunflower and flower document \" @ x16 y471 343x120",
+      "      select#state \"Live class Waiting for class Loading No \" @ x16 y657 276x48",
+      "      p \"These examples are not connected to lear\" @ x16 y725 343x60",
+      "    aside#cards \"Today's progress No one has started yet \" @ x16 y879 343x609",
+      "      div.pg-sidebar \"Today's progress No one has started yet \" @ x16 y879 343x609"
+    ],
+    "findings": [],
+    "height": 1503
+  }
+]
