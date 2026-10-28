@@ -173,18 +173,6 @@ const ITEMS = [
       { id: "blank", label: T("Click Blank document", "Bấm vào Blank document") },
     ],
   },
-  {
-    id: "t1-open-word-start",
-    skill: "t1-open-word",
-    type: "click-ui",
-    mock: "start-menu",
-    prompt: T(
-      "You want to write a letter. You pressed the Windows key and typed Word. Now click Word.",
-      "Bạn muốn viết thư. Bạn đã nhấn phím Windows và gõ chữ Word. Giờ hãy bấm vào Word.",
-    ),
-    hint: T("Look at the top of the list, under Best match.", "Nhìn lên đầu danh sách, ngay dưới chữ Best match."),
-    answer: "word-app",
-  },
 
   // t1-keys
   {
@@ -488,10 +476,6 @@ const REPLAYS = {
   "t1-open-word-order": {
     mock: "start-menu",
     script: [key("Win"), typ("Word", "search-box"), go("word-app"), go("blank-document")],
-  },
-  "t1-open-word-start": {
-    mock: "start-menu",
-    script: [go("word-app"), say("Click Word, under Best match.", "Bấm vào Word, ngay dưới chữ Best match.")],
   },
   "t1-keys-space": {
     mock: "word",

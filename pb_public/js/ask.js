@@ -5,13 +5,72 @@
 //   attachAsk(button, { learner, context })    wires an existing button, e.g. home's `.ask-fab`
 // `context()` returns {session: sessionId | null, skill: skillId | null} for the screen right now.
 
-import { avatarEmoji, biPair } from "./i18n.js";
-import { createAsk, learnersByIds, markAskDone, openAsk, skillAttempts, watchAsks } from "./game-data.js";
+import { avatarEmoji, biPair, esc } from "./i18n.js";
+import { createAsk, learnersByIds, markAskDone, openAsk, sessionAttempts, skillAttempts, watchAsks } from "./game-data.js";
 import { skillState } from "./rules.js";
 import { gbi, glabel, gt } from "./strings-game.js";
 
-/** A classmate whose plant for this skill is flowering; someone in today's session first. */
-async function findClassmate(skill, me, sessionId) {
+/**
+ * Pure ranking function for classmate helpers on a skill.
+ * Learners who mastered (flowering), completed cleanly (bud), or completed with >= 2 stars qualify.
+ * Someone in today's session ranks first, then by mastery stage and max stars.
+ */
+export function rankClassmates({
+  attempts = [],
+  learners = [],
+  skill,
+  me,
+  sessionId = null,
+  sessionLearners = null,
+  today = new Date(),
+} = {}) {
+  const byLearner = new Map();
+  for (const a of attempts) {
+    if (a.learner === me) continue;
+    if (!byLearner.has(a.learner)) byLearner.set(a.learner, []);
+    byLearner.get(a.learner).push(a);
+  }
+
+  const eligible = [];
+  for (const [id, list] of byLearner.entries()) {
+    const state = skillState(list, skill, today);
+    const maxStars = Math.max(...list.map((a) => Number(a.stars) || 0));
+    if (state.stage === "flowering" || state.stage === "bud" || maxStars >= 2) {
+      eligible.push({ id, list, state, maxStars });
+    }
+  }
+  if (!eligible.length) return [];
+
+  const byId = new Map(learners.map((p) => [p.id, p]));
+  const presentSet = sessionLearners instanceof Set ? sessionLearners : new Set(sessionLearners ?? []);
+
+  const isHere = (id, list) =>
+    presentSet.size > 0 ? presentSet.has(id) : Boolean(sessionId) && list.some((a) => a.session === sessionId);
+
+  const stageScore = { flowering: 30, bud: 20, leafy: 10, sprout: 0, seed: 0 };
+
+  const ranked = eligible
+    .map((e) => {
+      const person = byId.get(e.id);
+      if (!person || person.active === false) return null;
+      const here = isHere(e.id, e.list);
+      return { person, here, stage: e.state.stage, maxStars: e.maxStars };
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      if (b.here !== a.here) return Number(b.here) - Number(a.here);
+      const sDiff = (stageScore[b.stage] ?? 0) - (stageScore[a.stage] ?? 0);
+      if (sDiff !== 0) return sDiff;
+      if (b.maxStars !== a.maxStars) return b.maxStars - a.maxStars;
+      return (a.person.name || "").localeCompare(b.person.name || "");
+    });
+
+  return ranked;
+}
+
+/** Classmates who can help with this skill; up to 6 candidates. */
+export async function findClassmates(skill, me, sessionId) {
+  if (!skill) return [];
   const rows = await skillAttempts(skill);
   const byLearner = new Map();
   for (const a of rows) {
@@ -20,18 +79,44 @@ async function findClassmate(skill, me, sessionId) {
     byLearner.get(a.learner).push(a);
   }
   const now = new Date();
-  const flowering = [...byLearner.entries()].filter(([, list]) => skillState(list, skill, now).stage === "flowering");
-  if (!flowering.length) return null;
-  const here = (list) => Boolean(sessionId) && list.some((a) => a.session === sessionId);
-  const people = await learnersByIds(flowering.map(([id]) => id));
-  const byId = new Map(people.map((p) => [p.id, p]));
-  const ranked = flowering
-    .map(([id, list]) => ({ person: byId.get(id), here: here(list) }))
-    .filter((x) => x.person)
-    .sort((a, b) => Number(b.here) - Number(a.here) || Number(Boolean(b.person.active)) - Number(Boolean(a.person.active)));
-  if (!ranked.length) return null;
-  const best = ranked.filter((x) => x.here === ranked[0].here);
-  return best[Math.floor(Math.random() * best.length)].person;
+  const eligibleIds = [];
+  for (const [id, list] of byLearner.entries()) {
+    const state = skillState(list, skill, now);
+    const maxStars = Math.max(...list.map((a) => Number(a.stars) || 0));
+    if (state.stage === "flowering" || state.stage === "bud" || maxStars >= 2) {
+      eligibleIds.push(id);
+    }
+  }
+  if (!eligibleIds.length) return [];
+
+  const people = await learnersByIds(eligibleIds);
+
+  let presentIds = new Set();
+  if (sessionId) {
+    try {
+      const sRows = await sessionAttempts(sessionId);
+      presentIds = new Set(sRows.map((a) => a.learner));
+    } catch (err) {
+      console.error("could not check session learners", err);
+    }
+  }
+
+  const ranked = rankClassmates({
+    attempts: rows,
+    learners: people,
+    skill,
+    me,
+    sessionId,
+    sessionLearners: presentIds,
+    today: now,
+  });
+
+  return ranked.slice(0, 6);
+}
+
+export async function findClassmate(skill, me, sessionId) {
+  const mates = await findClassmates(skill, me, sessionId);
+  return mates[0]?.person ?? null;
 }
 
 function buttonHtml(open) {
@@ -96,7 +181,11 @@ export function attachAsk(button, { learner, context = () => ({}) } = {}) {
         ${extra}${lock}`;
       pop.querySelectorAll(".ask-choice").forEach((b) => b.addEventListener("click", () => send(b.dataset.type)));
     } else {
-      pop.innerHTML = `<p class="ask-msg">${extra}</p>
+      const bodyHtml =
+        typeof extra === "string" && extra.startsWith("<") && (extra.includes("ask-msg") || extra.includes("ask-mates"))
+          ? extra
+          : `<p class="ask-msg">${extra}</p>`;
+      pop.innerHTML = `${bodyHtml}
         <button type="button" class="btn-sm ask-ok">${gbi("askDone")}</button>${lock}`;
       pop.querySelector(".ask-ok").addEventListener("click", done);
     }
@@ -111,17 +200,45 @@ export function attachAsk(button, { learner, context = () => ({}) } = {}) {
     const { session = null, skill = null } = context() ?? {};
     try {
       ask = await createAsk({ learner: learner.id, session, type, skill });
-      let msg = biPair(gt(type === "learn_more" ? "askSentMore" : "askSent"));
-      if (type === "classmate" && skill) {
-        let mate = null;
+      let msg = "";
+      if (type === "learn_more") {
+        msg = gbi("askSentMore");
+      } else if (type === "classmate" && skill) {
+        let mates = [];
         try {
-          mate = await findClassmate(skill, learner.id, session);
+          mates = await findClassmates(skill, learner.id, session);
         } catch (err) {
-          console.error("could not look for a classmate", err);
+          console.error("could not look for classmates", err);
         }
-        msg = mate
-          ? biPair(gt("askMateFound", { name: `${mate.name} ${avatarEmoji(mate.avatar)}` }))
-          : biPair(gt("askMateNone"));
+        if (mates.length > 0) {
+          const intro =
+            mates.length === 1
+              ? gbi("askMateFound", { name: esc(mates[0].person.name) })
+              : gbi("askMateList");
+          const listHtml = `<ul class="ask-mates">${mates
+            .map(
+              (m) => `
+            <li class="ask-mate">
+              <span class="face" style="--ring:${esc(m.person.colour || "#2F7370")}" aria-hidden="true">${avatarEmoji(m.person.avatar)}</span>
+              <div class="ask-mate-info">
+                <span class="ask-mate-name">${esc(m.person.name)}</span>
+                ${
+                  m.here
+                    ? `<span class="ask-mate-tag">${gbi("askMateHere")}</span>`
+                    : m.stage === "flowering"
+                      ? `<span class="ask-mate-tag is-master">${gbi("askMateMastered")}</span>`
+                      : ""
+                }
+              </div>
+            </li>`
+            )
+            .join("")}</ul>`;
+          msg = `<p class="ask-msg">${intro}</p>${listHtml}`;
+        } else {
+          msg = gbi("askMateNone");
+        }
+      } else {
+        msg = gbi("askSent");
       }
       if (closed) return;
       sync();

@@ -184,15 +184,21 @@ export function render(root, { store, logout }) {
       ? flags.map((f) => `<div class="t-flag">${face(f.learner)}<div><b>${esc(f.learner.name)}</b><small>${esc(f.why)}</small></div></div>`).join("")
       : `<p class="t-empty">${session ? "Nobody is struggling right now." : "Flags show during a session."}</p>`;
 
-    /* who can help: per skill, learners with it flowering */
+    /* who can help: per skill, learners who completed it cleanly (flowering or bud) */
     const helperRows = skills
-      .map((s) => ({ s, who: active.filter((l) => gardens.get(l.id).get(s.id).stage === "flowering") }))
+      .map((s) => ({
+        s,
+        who: active.filter((l) => {
+          const st = gardens.get(l.id)?.get(s.id);
+          return st && (st.stage === "flowering" || st.stage === "bud");
+        }),
+      }))
       .filter((r) => r.who.length);
     $("#helpers").innerHTML = helperRows.length
       ? helperRows
           .map((r) => `<div class="t-pair"><span>${esc(s0(r.s))}</span><span>${r.who.map((l) => `${face(l, "t-face-sm")}${esc(l.name)}`).join(" ")}</span></div>`)
           .join("")
-      : `<p class="t-empty">Nobody has mastered a skill yet (3★ on 2 different days).</p>`;
+      : `<p class="t-empty">Nobody has completed a skill with 3★ yet.</p>`;
 
     /* class garden: kept across sessions; the next flower is a surprise unless the trainer picks it */
     const garden = gardenProgress(totalStars(attempts));

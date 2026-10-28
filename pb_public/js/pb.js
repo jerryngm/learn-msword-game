@@ -2,7 +2,7 @@
 import PocketBase from "../vendor/pocketbase.es.mjs";
 import { setViHidden } from "./i18n.js";
 
-export const pb = new PocketBase(location.origin);
+export const pb = new PocketBase(typeof location !== "undefined" ? location.origin : "http://127.0.0.1:8090");
 
 const LEARNER_KEY = "learner_id";
 
