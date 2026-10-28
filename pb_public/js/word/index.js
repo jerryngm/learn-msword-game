@@ -175,16 +175,18 @@ export function mountWord(el, opts = {}) {
   let demoPicture = -1;
   let demoAt = null;
   let demoPlaceholder = null;
-  let demoReplacement = null;
-  let demoPictureHistory = [];
+  let demoSelection = null;
+  let demoHistory = null;
+  let demoClipboard = null;
   const listeners = new Map();
 
   function resetDemoTracking() {
-    demoPictureHistory = [];
     demoPicture = -1;
     demoAt = null;
     demoPlaceholder = null;
-    demoReplacement = null;
+    demoSelection = null;
+    demoHistory = null;
+    demoClipboard = null;
     root.querySelectorAll(".is-demo-placeholder").forEach((el) => el.classList.remove("is-demo-placeholder"));
   }
 
@@ -207,6 +209,7 @@ export function mountWord(el, opts = {}) {
 
   /* ---------- events ---------- */
   function emit(name, payload) {
+    if (locked) return; // Demonstration actions and restoration are never learner activity.
     for (const fn of listeners.get(name) ?? []) {
       try {
         fn(payload);
@@ -242,10 +245,11 @@ export function mountWord(el, opts = {}) {
 
   /* ---------- state for buttons ---------- */
   function computeState() {
-    const r = selRange(sel);
+    const source = demoDoc ?? doc;
+    const r = selRange(clampSel(source, demoSelection ?? sel));
     const collapsed = isCollapsed(r);
-    const props = collapsed ? { ...propsAt(doc, r.from), ...(pending ?? {}) } : commonProps(slices(doc, r).map((s) => s.run));
-    const paras = doc.p.slice(r.from.p, r.to.p + 1);
+    const props = collapsed ? { ...propsAt(source, r.from), ...(pending ?? {}) } : commonProps(slices(source, r).map((s) => s.run));
+    const paras = source.p.slice(r.from.p, r.to.p + 1);
     return {
       props,
       collapsed,
@@ -256,9 +260,9 @@ export function mountWord(el, opts = {}) {
       after: common(paras, (p) => p.spacing.after),
       indentLeft: common(paras, (p) => p.indent.left),
       indentRight: common(paras, (p) => p.indent.right),
-      marks,
-      painter: Boolean(painter),
-      clip: Boolean(clip),
+      marks: demoSelection ? demoState.marks : marks,
+      painter: Boolean(demoSelection ? demoState.painter : painter),
+      clip: Boolean(demoSelection ? demoClipboard : clip),
     };
   }
 
@@ -532,7 +536,7 @@ export function mountWord(el, opts = {}) {
     pages: pageCount,
   };
 
-  function setZoom(z) {
+  function setZoom(z, notify = true) {
     const before = zoom;
     zoom = Math.max(30, Math.min(300, Math.round(Number(z) || 100)));
     pagewrap.style.zoom = String(zoom / 100);
@@ -540,7 +544,7 @@ export function mountWord(el, opts = {}) {
     root.querySelector(".wd-zr").value = String(zoom <= 100 ? ((zoom - 30) / 70) * 50 : 50 + ((zoom - 100) / 200) * 50);
     updateUI();
     // Zoom is a view change, not a document change, but mission and item checks re-run on `change`.
-    if (zoom !== before) emit("change", { doc, prevDoc: doc, lastCommand: "status.zoom" });
+    if (notify && zoom !== before) emit("change", { doc, prevDoc: doc, lastCommand: "status.zoom" });
   }
 
   /* ---------- command execution ---------- */
@@ -1126,7 +1130,7 @@ export function mountWord(el, opts = {}) {
   }
 
   function openContextMenu(x, y, position = selRange(sel).from) {
-    spellingMenu = spellingRanges(doc, position.p).find((r) => position.offset >= r.from.offset && position.offset < r.to.offset) ?? null;
+    spellingMenu = spellingRanges(demoDoc ?? doc, position.p).find((r) => position.offset >= r.from.offset && position.offset < r.to.offset) ?? null;
     const r = selRange(sel);
     const hasSel = !isCollapsed(r);
     const R = root.getBoundingClientRect();
@@ -1415,6 +1419,139 @@ export function mountWord(el, opts = {}) {
   /* ---------- demo (Show me): drawn by js/demo/player.js, never touches the document ---------- */
   let demoState = null;
 
+  function demoRange() {
+    return selRange(clampSel(demoDoc ?? doc, demoSelection ?? sel));
+  }
+  function demoCommit(next, selection = demoSelection, label = "Demo") {
+    const source = demoDoc ?? doc;
+    if (next !== source) demoHistory?.record({ doc: source, sel: demoSelection ?? sel }, label);
+    demoDoc = next;
+    demoSelection = clampSel(next, selection ?? sel);
+    demoAt = demoSelection.focus;
+    renderer.render(next);
+    observer.takeRecords();
+    updateUI();
+  }
+  function demoType(text) {
+    const source = demoDoc ?? doc;
+    const range = demoPlaceholder ?? demoRange();
+    demoPlaceholder = null;
+    const next = insertText(deleteRange(source, range.from, range.to), range.from, text);
+    const lines = text.split("\n");
+    const at = { p: range.from.p + lines.length - 1, offset: lines.length > 1 ? lines.at(-1).length : range.from.offset + text.length };
+    demoCommit(next, collapsedSel(at), "Typing");
+  }
+  // Run the same document commands as the learner, using only temporary state. In particular,
+  // clipboard and history operations must never reach the system clipboard or learner history.
+  function demoCommand(id, arg) {
+    const source = demoDoc ?? doc;
+    if (id === "qat.undo" || id === "qat.redo") {
+      const entry = demoHistory?.[id === "qat.undo" ? "undo" : "redo"]({ doc: source, sel: demoSelection ?? sel });
+      if (entry) {
+        demoDoc = entry.doc; demoSelection = entry.sel; demoAt = entry.sel.focus;
+        renderer.render(demoDoc); observer.takeRecords(); updateUI();
+      }
+      return;
+    }
+    if (id.startsWith("spelling.")) {
+      const match = spellingMenu;
+      const text = id.slice(9);
+      if (match?.suggestions.includes(text)) {
+        demoSelection = { anchor: match.from, focus: match.to };
+        demoType(text);
+      }
+      spellingMenu = null;
+      return;
+    }
+    if (id === "home.editing.selectAll") {
+      demoSelection = selectAll(source);
+      writeSelection(page, demoSelection);
+      return;
+    }
+    const cmd = getCommand(id);
+    if (!cmd?.run) return;
+    let range = demoRange();
+    if (cmd.scope === "chars" && isCollapsed(range)) range = wordAround(source, range.from) ?? range;
+    if (cmd.scope === "paras") {
+      const pTo = !isCollapsed(range) && range.to.offset === 0 && range.to.p > range.from.p ? range.to.p - 1 : range.to.p;
+      range = { from: { p: range.from.p, offset: 0 }, to: { p: pTo, offset: source.p[pTo].length } };
+    }
+    const demoUI = {
+      ...ui,
+      clipboard: () => demoClipboard,
+      setClipboard: (value) => { demoClipboard = value; },
+      setZoom: (value) => setZoom(value, false),
+      lastColour: (kind, value) => {
+        if (value !== undefined) demoState.colours[kind] = value;
+        return demoState.colours[kind];
+      },
+      lastList: (kind, value) => {
+        if (value !== undefined) demoState.lists[kind] = value;
+        return demoState.lists[kind];
+      },
+      lastBorder: (value) => {
+        if (value !== undefined && value !== "none") demoState.border = value;
+        return demoState.border;
+      },
+      painterActive: () => Boolean(demoState.painter),
+      startPainter: (props) => { demoState.painter = props; },
+      stopPainter: () => { demoState.painter = null; },
+      toggleMarks: () => { demoState.marks = !demoState.marks; page.classList.toggle("is-marks", demoState.marks); },
+    };
+    const target = { ...range, anchor: range.from, focus: range.to, collapsed: isCollapsed(range) };
+    const result = cmd.run(source, target, { arg, ui: demoUI, props: propsAt(source, range.from), state: computeState(), origin: "key" });
+    const next = result?.doc ?? result;
+    if (next?.p) demoCommit(next, result.sel ?? demoSelection, cmd.label);
+  }
+  function demoKey(combo) {
+    const shortcut = { "ctrl+c": "home.clipboard.copy", "ctrl+x": "home.clipboard.cut", "ctrl+v": "home.clipboard.paste", ...SHORTCUTS }[combo.toLowerCase()];
+    if (shortcut) { demoCommand(shortcut); return true; }
+    const source = demoDoc ?? doc;
+    let range = demoPlaceholder ?? demoRange();
+    if (combo === "Backspace" || combo === "Delete") {
+      if (demoPicture >= 0) { demoDeletePicture(); return true; }
+      if (isCollapsed(range)) {
+        const at = range.from;
+        if (combo === "Backspace") range = { from: at.offset ? { p: at.p, offset: at.offset - 1 } : at.p ? { p: at.p - 1, offset: source.p[at.p - 1].length } : at, to: at };
+        else range = { from: at, to: at.offset < source.p[at.p].length ? { p: at.p, offset: at.offset + 1 } : at.p < source.p.length - 1 ? { p: at.p + 1, offset: 0 } : at };
+      }
+      demoPlaceholder = null;
+      demoCommit(deleteRange(source, range.from, range.to), collapsedSel(range.from), "Delete");
+      return true;
+    }
+    if (combo === "Enter") {
+      const base = deleteRange(source, range.from, range.to);
+      const para = base.p[range.from.p];
+      const next = para.list && !para.length ? applyParaFormat(base, range.from.p, range.from.p, { list: null }) : splitParagraph(base, range.from);
+      const at = next.p.length === base.p.length ? range.from : { p: range.from.p + 1, offset: 0 };
+      demoCommit(next, collapsedSel(at), "Enter");
+      return true;
+    }
+    if (combo === "Tab") {
+      const cell = source.p[range.from.p].cell;
+      if (!cell) { demoType("\t"); return true; }
+      const p = source.p.findIndex((para, index) => index > range.from.p && para.cell?.table === cell.table && (para.cell.row !== cell.row || para.cell.col !== cell.col));
+      if (p >= 0) {
+        demoSelection = { anchor: { p, offset: 0 }, focus: { p, offset: source.p[p].length } }; demoAt = demoSelection.focus;
+        writeSelection(page, demoSelection);
+      }
+      return true;
+    }
+    if (combo === "Space") { demoType(" "); return true; }
+    if (combo.length === 1 || /^Shift\+.$/.test(combo)) { demoType(combo.length === 1 ? combo : combo.slice(6).toUpperCase()); return true; }
+    return false;
+  }
+
+  function restoreDemoView(view) {
+    if (!view || destroyed) return;
+    setZoom(view.zoom, false);
+    root.querySelector(".wd-name").innerHTML = view.title;
+    tab = view.tab; prevTab = view.prevTab;
+    renderRibbon();
+    canvas.scrollTop = view.top; canvas.scrollLeft = view.left;
+    writeSel();
+  }
+
   // Aborting the player removes all of its overlays, including the markers that stay after a
   // reduced-motion demo.
   function clearDemo() {
@@ -1427,13 +1564,15 @@ export function mountWord(el, opts = {}) {
   }
   function cancelDemo() {
     const was = demoState?.was;
+    const view = demoState?.view;
     demoToken += 1;
     clearDemo();
     popups.closeAll();
-    locked = false;
     root.classList.remove("is-demo");
-    if (!destroyed) updateUI();
     if (was && !destroyed) restoreBackstage(was);
+    restoreDemoView(view);
+    locked = false;
+    if (!destroyed) updateUI();
   }
 
   function relOf(rect) {
@@ -1545,18 +1684,12 @@ export function mountWord(el, opts = {}) {
   }
   /** Where ghost typing starts: a `doc:` target, or the caret (start of the selection) for null. */
   function demoCaret(target) {
-    if (demoPlaceholder) {
-      const range=demoPlaceholder;
-      demoDoc=deleteRange(demoDoc??doc,range.from,range.to);
-      demoReplacement=range.from; demoPlaceholder=null;
-      renderer.render(demoDoc); observer.takeRecords();
-    }
     const source = demoDoc ?? doc;
     let pos;
     let past = 0;
     if (target == null) {
       if (backstage) return null;
-      pos = orderRange(clampPos(source, sel.anchor), clampPos(source, sel.focus)).from;
+      pos = demoRange().from;
     } else {
       pos = parseDocTarget(target);
       if (!pos) return null;
@@ -1584,6 +1717,7 @@ export function mountWord(el, opts = {}) {
   function demoSelectRects(range) {
     const r = orderRange(clampPos(demoDoc??doc, range.from), clampPos(demoDoc??doc, range.to));
     demoAt = r.from;
+    demoSelection = { anchor: r.from, focus: r.to };
     const first = rangeRects(r)[0];
     if (first) ensureVisible(first);
     return rangeRects(r);
@@ -1593,8 +1727,8 @@ export function mountWord(el, opts = {}) {
   function demoDeletePicture() {
     const source=demoDoc??doc;
     if(demoPicture<0||!source.p[demoPicture]?.picture) return;
-    demoDoc=updatePicture(source,{p:demoPicture},null); demoPicture=-1;
-    renderer.render(demoDoc); observer.takeRecords(); popups.closeAll(); updateUI();
+    const next=updatePicture(source,{p:demoPicture},null); demoPicture=-1;
+    demoCommit(next); popups.closeAll();
   }
   // Ghost insert of the file chosen in the picker: the picture lands in the demo view only, and
   // Picture Format opens, as after a real insert.
@@ -1603,8 +1737,8 @@ export function mountWord(el, opts = {}) {
     const source=demoDoc??doc;
     const at=clampPos(source,demoAt??selRange(sel).from);
     const result=getCommand("insert.pictures.choose").run(source,{from:at,to:at},{arg:id,ui});
-    demoDoc=result.doc??result; demoPicture=result.sel?.focus.p??demoPicture; demoAt=result.sel?.focus??demoAt;
-    renderer.render(demoDoc);observer.takeRecords();popups.closeAll();popups.closeDialog();
+    demoPicture=result.sel?.focus.p??demoPicture;
+    demoCommit(result.doc??result, result.sel); popups.closeAll();popups.closeDialog();
     if (demoPicture>=0) setTab("picture");
     updateUI();
   }
@@ -1617,13 +1751,15 @@ export function mountWord(el, opts = {}) {
       const para=(demoDoc??doc).p[p];
       if (para) {
         demoPlaceholder={from:{p,offset:0},to:{p,offset:para.length}};
+        demoSelection={anchor:demoPlaceholder.from,focus:demoPlaceholder.to};
+        demoAt=demoPlaceholder.from;
         commandEl(target)?.classList.add("is-demo-placeholder");
       }
       return;
     }
     if (target === "new.create") {
       const id=commandEl(target)?.dataset.id;
-      if (id) {demoDoc=templateDoc(id); renderer.render(demoDoc); observer.takeRecords(); backstage?.close();}
+      if (id) {demoCommit(templateDoc(id), collapsedSel({p:0,offset:0}), "Template"); backstage?.close();}
       return;
     }
     if (target === "print.submit") {
@@ -1654,11 +1790,11 @@ export function mountWord(el, opts = {}) {
       const [,id,arg]=target.split(":"); const source=demoDoc??doc;
       const at=demoPicture>=0?{p:demoPicture,offset:0}:selRange(sel).from;
       const result=getCommand(id).run(source,{from:at,to:at},{arg,ui});
-      demoDoc=result.doc??result; demoPicture=result.sel?.focus.p??demoPicture;
-      renderer.render(demoDoc);observer.takeRecords();popups.closeAll();popups.closeDialog();updateUI();return;
+      demoPicture=result.sel?.focus.p??demoPicture;
+      demoCommit(result.doc??result,result.sel);popups.closeAll();popups.closeDialog();return;
     }
     const pos = parseDocTarget(target);
-    if (pos) demoAt=pos;
+    if (pos) { demoAt=pos; demoSelection=collapsedSel(pos); }
     if (pos && kind === "right") {
       const rect = demoCaretRect(pos, 0);
       openContextMenu(rect.left, rect.bottom, pos);
@@ -1672,24 +1808,25 @@ export function mountWord(el, opts = {}) {
       return;
     }
     if (target.startsWith("tab.")) { setTab(target.slice(4)); return; }
-    if (target.startsWith("choice:insert.table.create:") || target.startsWith("table.") || target.startsWith("choice:layout.")) {
-      const parts=target.split(":"); const id=parts[0]==="choice" ? parts[1] : target; const arg=parts.slice(2).join(":");
-      const cmd=getCommand(id);
-      if (cmd?.run) {
-        const source=demoDoc??doc;
-        const pos=source.p.findIndex(p=>p.cell);
-        const at=id.startsWith("table.") && pos>=0 ? {p:pos,offset:0} : clampPos(source,demoAt??selRange(sel).from);
-        const result=cmd.run(source,{from:at,to:at,anchor:at,focus:at},{arg,ui});
-        demoDoc=result.doc??result; renderer.render(demoDoc); observer.takeRecords();
-      }
-      popups.closeAll(); return;
-    }
-    if (target.startsWith("choice:") || target.startsWith("spelling.") || target.startsWith("home.clipboard.")) {
+    if (target.startsWith("choice:")) {
+      const [, id, ...parts] = target.split(":");
+      demoCommand(id, parts.join(":"));
       popups.closeAll();
       return;
     }
+    if (target.startsWith("spelling.") || getCommand(target)?.run || getCommand(target)?.special) {
+      demoCommand(target); popups.closeAll(); return;
+    }
     if (target === "file") return openFile("home");
-    if (target === "sa.name" || target === "sa.save") return;
+    if (target === "sa.name") return;
+    if (target === "sa.save") {
+      const name = commandEl("sa.name")?.value.trim();
+      if (name) {
+        root.querySelector(".wd-name").textContent = `${name} - Word`;
+        backstage?.close();
+      }
+      return;
+    }
     if (target.startsWith("bs.") || target.startsWith("sa.")) commandEl(target)?.click();
   }
   // What the demo opened is closed again, so the learner starts from where they were.
@@ -1715,7 +1852,11 @@ export function mountWord(el, opts = {}) {
     const token = ++demoToken;
     const ctrl = new AbortController();
     const wasBackstage = backstageSnapshot();
-    demoState = { ctrl, was: wasBackstage, tracksInsertion: script.some(s => s.target === PICTURE_INSERT || s.target?.startsWith("choice:insert.pictures.choose:")) };
+    const view = { zoom, tab, prevTab, top: canvas.scrollTop, left: canvas.scrollLeft, title: root.querySelector(".wd-name").innerHTML };
+    demoState = { ctrl, was: wasBackstage, view, colours: { ...lastColours }, lists: { ...lastLists }, border: lastBorderSide, marks, painter };
+    demoSelection = clampSel(doc, sel);
+    demoHistory = history.fork();
+    demoClipboard = clip;
     const before = JSON.stringify(doc);
     const beforeSel = JSON.stringify(sel);
     locked = true;
@@ -1736,37 +1877,27 @@ export function mountWord(el, opts = {}) {
           const dx=delta.dx/(zoom/100),dy=delta.dy/(zoom/100);
           const patch=handle?pictureResize(picture,handle,dx,dy):["front","behind"].includes(picture.wrap)?pictureMove(picture,el,dx,dy):null;
           if(!patch) return;
-          demoPictureHistory.push(source);
-          demoDoc=updatePicture(source,{p},patch);
-          demoPicture=p;renderer.render(demoDoc);observer.takeRecords();updateUI();
+          demoPicture=p;demoCommit(updatePicture(source,{p},patch));
         },
-        typed: (text, target) => {
-          if (demoReplacement) {
-            demoDoc=insertText(demoDoc??doc,demoReplacement,text);
-            demoReplacement=null; renderer.render(demoDoc); observer.takeRecords(); return true;
-          }
+        typed: (text, target, explicitTarget) => {
           if (target === "new.search") {
             const input=commandEl(target); if(input) {input.value=text;input.dispatchEvent(new Event("input"));} return true;
+          }
+          if (target === "sa.name") {
+            const input = commandEl(target); if (input) input.value = text;
+            return true;
+          }
+          if (!backstage) {
+            const at = explicitTarget && parseDocTarget(target);
+            if (at) demoSelection = collapsedSel(at);
+            demoType(text); return true;
           }
           return false;
         },
         key: (combo)=>{
-          if (combo === "Ctrl+Z" && demoPictureHistory.length) {
-            demoDoc = demoPictureHistory.pop();
-            renderer.render(demoDoc); observer.takeRecords(); updateUI();
-          }
-          if (combo === "Enter" && demoAt && demoState?.tracksInsertion) {
-            demoDoc=splitParagraph(demoDoc??doc,demoAt);
-            demoAt={p:demoAt.p+1,offset:0};
-            renderer.render(demoDoc); observer.takeRecords();
-          }
-          if (combo === "ArrowUp") { const copies=commandEl("print.copies"); if(copies) copies.stepUp(); }
-          if(combo==="Delete"||combo==="Backspace") {
-            if(demoPlaceholder) {
-              demoDoc=deleteRange(demoDoc??doc,demoPlaceholder.from,demoPlaceholder.to);
-              demoPlaceholder=null; renderer.render(demoDoc); observer.takeRecords();
-            } else demoDeletePicture();
-          }
+          if (combo === "ArrowUp") { const copies=commandEl("print.copies"); if(copies) copies.stepUp(); return true; }
+          if (!backstage) return demoKey(combo);
+          return false;
         },
         reducedMotion: reducedMotion(),
         signal: ctrl.signal,
@@ -1776,14 +1907,16 @@ export function mountWord(el, opts = {}) {
         popups.closeAll();
         popups.closeDialog();
         resetDemoTracking();
-        locked = false;
         if (demoDoc) { demoDoc=null; render(); writeSel(); }
         updateUI(); // a contextual tab the demo opened goes away with the demo view
         root.classList.remove("is-demo");
         if (JSON.stringify(doc) !== before || JSON.stringify(sel) !== beforeSel) console.error("demo changed the document or selection; this must never happen");
         // A demo that ran to the end puts the Backstage back itself; cancelDemo does it for one cut short.
-        if (demoState) demoState.was = null;
+        if (demoState) { demoState.was = null; demoState.view = null; }
         if (!destroyed) restoreBackstage(wasBackstage);
+        restoreDemoView(view);
+        locked = false;
+        updateUI();
       }
     }
   }

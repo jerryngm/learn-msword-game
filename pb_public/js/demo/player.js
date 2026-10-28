@@ -25,6 +25,9 @@
 //   selectRects(select) -> DOMRect[]   optional host hook: client rects of a model range
 //   key(combo)      optional host hook, called after a `key` step lights its keys: the host may
 //                   show the key's effect in its temporary demo view only (Word: Delete on a picture)
+//                   Return true to clear ghost typing after the host renders the effect.
+//   typed(text, target, explicitTarget)  optional hook after typing; explicitTarget means `at` was
+//                   supplied. Return true after rendering the text in the temporary view.
 //   act(target)     optional host hook, called after each ghost click on an element: the host may
 //                   open what the click opens (a menu, a Backstage page) so later targets exist.
 //                   It must never change the document; the host restores the UI when the demo ends.
@@ -592,7 +595,11 @@ export async function playDemo(host, script, opts = {}) {
       }
     }
     await lightKeys(ids, reduced ? 1200 : 1400);
-    if (!aborted()) opts.key?.(step.key);
+    if (!aborted() && opts.key?.(step.key)) {
+      layer.querySelectorAll(".dm-type").forEach(el => el.remove());
+      typing = null;
+      lastTarget = null;
+    }
     await sleep(500);
   }
 
@@ -613,9 +620,10 @@ export async function playDemo(host, script, opts = {}) {
       else if ("type" in step) {
         await doType(step);
         // Hosts can persist typed text in their isolated demo view after its key animation.
-        if (!aborted() && opts.typed?.(step.type, step.at ?? lastTarget)) {
+        if (!aborted() && opts.typed?.(step.type, step.at ?? lastTarget, Boolean(step.at))) {
           layer.querySelectorAll(".dm-type").forEach(el => el.remove());
           typing = null;
+          lastTarget = null;
         }
       }
       else if ("key" in step) await doKey(step);

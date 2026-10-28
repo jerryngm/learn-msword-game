@@ -754,7 +754,7 @@ export const missions = [
       "Your page is finished and you want to keep it. Save it in the Documents folder. Name it About Me and your name, like About_Me_Lan or About Me Lan.",
       "Bạn đã viết xong trang này và muốn giữ lại. Hãy lưu vào thư mục Documents. Đặt tên là About Me và tên bạn, ví dụ About_Me_Lan hoặc About Me Lan.",
     ),
-    startDoc: "About me\nMy name is Lan. I live in Melbourne.",
+    startDoc: (learner) => `About me\nMy name is ${learner?.name ? asciiFirst(learner.name) : "Lan"}. I live in Melbourne.`,
     tabs: ["home"],
     steps: saveSteps,
     goal: { check: (doc, ctx) => savedOk(ctx), progress: progressOf(saveSteps) },

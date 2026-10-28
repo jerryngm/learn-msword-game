@@ -148,7 +148,7 @@ export const items = [
     tableDoc([['Dish', 'Small', 'Medium', 'Large'], ['Pho', '$12', '$14', '$16']], 'Menu'), (doc) => landscape(doc),
     orientationScript('landscape'), 'layout.pageSetup', LAYOUT_TABS),
   pick('t5-margins-pick', 't5-margins',
-    T('Margins are the empty edges around the page. Your flyer has a lot of text. Which margins leave the most room for the text?', 'Lề trang (Margins) là phần mép trống quanh trang giấy. Tờ rơi của bạn có nhiều chữ. Chọn lề nào thì còn nhiều chỗ cho chữ nhất?'),
+    T('Margins are the empty edges around the page. Which margins leave the most room for the text to sit wide?', 'Lề trang (Margins) là phần mép trống quanh trang giấy. Chọn lề nào thì còn nhiều chỗ cho chữ trải rộng nhất?'),
     T('Narrow margins are thin edges, 1.27 cm. Thin edges leave more room for text.', 'Lề Narrow là lề hẹp, chỉ 1.27 cm. Lề hẹp thì còn nhiều chỗ cho chữ hơn.'),
     [option('narrow', 'Narrow (1.27 cm)', 'Narrow (1.27 cm)'), option('normal', 'Normal (2.54 cm)', 'Normal (2.54 cm)')], 'narrow',
     flyerText, marginScript),
@@ -227,7 +227,7 @@ const flyerSteps = [
 
 export const missions = [
   mission('t5-m-timetable', 't5-insert-table', T('Weekly class timetable', 'Thời khoá biểu hằng tuần'),
-    T('Make a timetable for your week. Insert a table with 2 columns and 3 rows under the heading. Type Day and Class in the top row.', 'Hãy làm thời khoá biểu trong tuần của bạn. Chèn một bảng có 2 cột và 3 hàng dưới tiêu đề. Gõ Day và Class vào hàng trên cùng.'),
+    T('Set up a timetable for your class. Insert a table with 2 columns and 3 rows under the heading. In the first row, type the column headings Day and Class.', 'Hãy tạo khung thời khoá biểu cho lớp học. Chèn một bảng có 2 cột và 3 hàng dưới tiêu đề. Gõ hai tiêu đề cột Day và Class vào hàng trên cùng.'),
     'Class timetable', tableDoc(timetableRows, 'Class timetable'), TABLE_TABS, timetableSteps, timetableCheck),
   mission('t5-m-price-list', 't5-table-type', T('Fill in the price list', 'Điền bảng giá'),
     T('Your café needs a price list. Fill in two drinks: Tea costs $3 and Coffee costs $4. Use Tab to move to the next cell.', 'Quán cà phê của bạn cần một bảng giá. Hãy điền hai thức uống: Tea giá $3 và Coffee giá $4. Nhấn Tab để sang ô tiếp theo.'),
@@ -239,6 +239,6 @@ export const missions = [
     T('Your menu table has four columns, so it needs a wide page. Turn the page to Landscape.', 'Bảng thực đơn có bốn cột nên cần trang rộng. Hãy xoay trang sang Landscape.'),
     tableDoc(menuRows, 'Menu'), tableDoc(menuRows, 'Menu', { orientation: 'landscape' }), LAYOUT_TABS, menuSteps, landscape),
   mission('t5-m-flyer-margins', 't5-margins', T('Narrow margins for a flyer', 'Lề hẹp cho tờ rơi'),
-    T('Your garden club flyer needs more room for text. Make the empty edges smaller: change the Margins to Narrow.', 'Tờ rơi của câu lạc bộ làm vườn cần thêm chỗ cho chữ. Hãy làm phần mép trống nhỏ lại: đổi Margins thành Narrow.'),
+    T('Make your garden club flyer spread wider on the page. Make the empty edges smaller: change Margins to Narrow (1.27 cm).', 'Làm cho tờ rơi câu lạc bộ làm vườn trải rộng trên trang hơn. Hãy thu nhỏ phần mép trống: đổi Margins thành Narrow (1.27 cm).'),
     flyerText, createDoc({ p: flyerText.split('\n'), page: { margins: 'narrow' } }), LAYOUT_TABS, flyerSteps, narrow),
 ];

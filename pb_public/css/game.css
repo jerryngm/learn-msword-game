@@ -214,15 +214,33 @@ html.hide-vi .home-links { margin-top: 28px; }
 .ask-err { display: block; margin-top: 8px; color: var(--orange-d); font-weight: 700; font-size: 17px; }
 
 /* ---------- Revision (#s3, #s13) ---------- */
-.wg-rev { min-height: 100vh; display: flex; flex-direction: column; padding-bottom: 24px; overflow-y: auto; }
-.wg-rev .lhead { padding-right: 220px; gap: 12px; }
-.wg-top-actions { display: flex; align-items: center; gap: 10px; }
-.wg-top-actions .wg-finish { position: static; background: #fff; }
-.wg-top-actions .ask-fab.ask-inline { border-width: 2px; }
-.wg-rev .lhead { flex: none; }
-.wg-rev-body { flex: 1; min-height: 560px; width: 100%; max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; }
-.wg-q-top { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 14px; min-height: 44px; }
-.wg-q-card { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 26px 40px 18px; text-align: center; animation: fadeIn .35s var(--ease) both; }
+.wg-rev { min-height: 100vh; height: 100vh; display: flex; flex-direction: column; padding: 8px 24px 10px; overflow-y: auto; }
+.wg-rev .lhead { display: flex; align-items: center; justify-content: space-between; min-height: 42px; height: 42px; margin-bottom: 6px; padding-right: 236px; gap: 10px; flex: none; }
+.wg-top-actions { display: flex; align-items: center; gap: 8px; }
+.wg-rev .wg-top-actions .wg-finish {
+  position: static; min-height: 40px; height: 40px; padding: 2px 14px; border-radius: 999px;
+  background: #fff; border: 2px solid var(--line); font-size: 18px; font-weight: 700; line-height: 1.15;
+  display: inline-flex; flex-direction: column; justify-content: center; align-items: flex-start;
+  white-space: nowrap; text-decoration: none; color: var(--ink-2);
+}
+.wg-rev .wg-top-actions .wg-finish:hover { border-color: var(--teal); color: var(--ink); }
+.wg-rev .wg-top-actions .wg-finish .vi { font-size: 13px; line-height: 1.1; margin-top: 0; }
+.wg-rev .wg-top-actions .ask-fab.ask-inline {
+  position: static; min-height: 40px; height: 40px; padding: 2px 14px 2px 12px; border-radius: 999px;
+  border: 2px solid var(--orange); background: #fff; font-size: 19px; font-weight: 700; line-height: 1.15;
+  box-shadow: none; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+}
+.wg-rev .wg-top-actions .ask-fab.ask-inline .e { font-size: 20px; line-height: 1; }
+.wg-rev .wg-top-actions .ask-fab.ask-inline .vi { font-size: 13px; line-height: 1.1; margin-top: 0; }
+body:has(.wg-rev) .lang-slot { top: 8px; right: max(24px, calc((100vw - 1240px) / 2 + 24px)); }
+body:has(.wg-rev) .lang-switch { min-height: 40px; height: 40px; padding: 2px 14px; font-size: 17px; gap: 8px; }
+body:has(.wg-rev) .lang-track { width: 38px; height: 22px; border-radius: 11px; }
+body:has(.wg-rev) .lang-knob { width: 16px; height: 16px; top: 3px; left: 3px; }
+body:has(.wg-rev) .lang-switch[aria-checked="true"] .lang-knob { transform: translateX(16px); }
+.wg-rev-body { flex: 1; min-height: 0; width: 100%; max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; }
+.wg-q-top { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 6px; min-height: 32px; }
+.wg-rev .chip { padding: 3px 12px; font-size: 16px; }
+.wg-q-card { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 18px 32px 14px; text-align: center; animation: fadeIn .35s var(--ease) both; }
 .wg-q-h { font-size: 36px; max-width: 900px; margin: 0 auto; }
 .wg-q-h .vi { font-size: 21px; margin-top: 4px; }
 .wg-q-main { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 16px 0 8px; }
@@ -351,14 +369,14 @@ html.hide-vi .home-links { margin-top: 28px; }
 .wg-fix-mt { display: block; font-family: "Aptos", Calibri, "Segoe UI", sans-serif; font-size: 28px; color: #000; }
 
 /* do: a small Word task inside the card */
-.wg-q-card.is-do { padding: 14px 16px 14px; display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto 1fr; gap: 10px 16px; text-align: left; }
-.wg-q-card.is-do .wg-q-h { font-size: 26px; margin: 0; align-self: center; }
-.wg-q-card.is-do .wg-q-h .vi { font-size: 16px; }
+.wg-q-card.is-do { padding: 8px 14px 10px; display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto 1fr; gap: 6px 14px; text-align: left; }
+.wg-q-card.is-do .wg-q-h { font-size: 24px; margin: 0; align-self: center; }
+.wg-q-card.is-do .wg-q-h .vi { font-size: 15px; margin-top: 2px; }
 .wg-q-card.is-do .wg-q-foot { grid-column: 2; grid-row: 1; min-height: 0; }
 .wg-q-card.is-do .wg-q-fbcol { max-width: 420px; }
 .wg-q-card.is-do .wg-q-feedback { font-size: 18px; }
 .wg-q-card.is-do .wg-q-main { grid-column: 1 / -1; padding: 0; align-items: stretch; }
-.wg-do-host { width: 100%; height: clamp(390px, calc(100vh - 210px), 580px); min-height: 0; }
+.wg-do-host { width: 100%; height: clamp(400px, calc(100vh - 170px), 640px); min-height: 0; }
 
 /* ---------- Mission (#s4) ---------- */
 .wg-mis { height: 100vh; display: grid; grid-template-columns: 300px 1fr; gap: 12px; padding: 10px; overflow: hidden; animation: fadeIn .4s var(--ease) both; }
@@ -724,7 +742,6 @@ html:not(.hide-vi) .wg-q-context figcaption .vi { display: inline; margin-left: 
 .wg-m-navbtn { font-size: 14px; padding: 2px 4px; white-space: nowrap; }
 .wg-mtop { padding-right: 340px; }
 .wg-g-head { padding-right: 320px; }
-.wg-rev .lhead { padding-right: 260px; }
 
 /* Short laptop screens (about 14 inch with the taskbar and browser bar): tighten the big headings */
 @media (max-height: 700px) {

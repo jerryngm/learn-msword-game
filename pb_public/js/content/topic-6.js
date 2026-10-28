@@ -64,8 +64,8 @@ const caretAtEnd = (doc, ctx, text) => {
 const pictureSelected = (doc, ctx) => Boolean(doc.p[caretAt(ctx)?.p]?.picture);
 // Only In Front of Text and Behind Text let the learner drag a picture anywhere (the trainer teaches In Front of Text).
 const floating = (p) => p.wrap === 'front' || p.wrap === 'behind';
-// The trainer teaches "drag it there": any real move to the right counts (40 px or more), with no exact spot.
-const movedRight = (p) => floating(p) && (p.x ?? 0) >= 40;
+// The trainer teaches "drag it there": a real move to the right (160 px or more so it clears the heading).
+const movedRight = (p) => floating(p) && (p.x ?? 0) >= 160;
 /** One picture, the right one, set to float and dragged to the right, with the text unchanged. */
 const movedCheck = (id, text) => (doc) => {
   const all = pictures(doc);
@@ -227,16 +227,20 @@ const flyerText = ['Garden club', ...flyerLines];
 const insertCheck = (doc) => onePictureAfter(doc, 'flower', 'Garden club') && sameLines(doc, flyerText);
 // Enter at the end of the heading opens an empty line right under it (the place for the picture).
 const newLineUnder = (doc, text) => doc.p.some((p, i) => i > 0 && !p.picture && !loose(textOf(p)) && loose(textOf(doc.p[i - 1])) === loose(text));
+const isDeviceDialogOpen = () => typeof document !== 'undefined' && Boolean(document.querySelector('.wd-dlg.wd-pic .pd-tb-t'));
 const insertSteps = [
-  step(T('Click at the end of Garden club.', 'Bấm vào cuối dòng Garden club.'),
+  step(T('Click at the end of "Garden club".', 'Bấm vào cuối dòng “Garden club”.'),
     T('Click just after the last letter of Garden club.', 'Bấm ngay sau chữ cái cuối cùng của Garden club.'),
     (doc, ctx) => caretAtEnd(doc, ctx, 'Garden club') || newLineUnder(doc, 'Garden club') || insertCheck(doc), [go('doc:0,11')]),
   step(T('Press Enter.', 'Nhấn Enter.'),
     T('Enter makes a new empty line under Garden club. The picture will go on this new line.', 'Phím Enter tạo một dòng trống mới dưới Garden club. Hình sẽ nằm ở dòng mới này.'),
     (doc) => newLineUnder(doc, 'Garden club') || insertCheck(doc), [key('Enter')]),
-  step(T('On the Insert tab, click Pictures, then This Device. In Downloads, click flower.png, then click Insert.', 'Trên thẻ Insert, bấm Pictures, rồi This Device. Trong thư mục Downloads, bấm vào hình flower.png, rồi bấm nút Insert.'),
-    T('First click the Insert tab. Click Pictures, then This Device. In the Insert Picture window, click Downloads on the left. Your photos are there. Click the flower.png photo, then click the Insert button. If the picture goes to the wrong place, press Ctrl+Z and try again.', 'Trước tiên bấm thẻ Insert. Bấm Pictures, rồi This Device. Trong cửa sổ Insert Picture, bấm Downloads ở bên trái. Hình của bạn nằm ở đó. Bấm vào tấm hình flower.png, rồi bấm nút Insert. Nếu hình nằm sai chỗ, nhấn Ctrl+Z rồi làm lại.'),
-    insertCheck, insertScript('flower'), 'insert.pictures.insert'),
+  step(T('On the Insert tab, click Pictures, then This Device.', 'Trên thẻ Insert, bấm Pictures, rồi bấm This Device.'),
+    T('First click the Insert tab. Then click Pictures, then This Device to open the picture window.', 'Trước tiên bấm thẻ Insert. Rồi bấm Pictures, rồi chọn This Device để mở cửa sổ chọn hình.'),
+    (doc) => isDeviceDialogOpen() || insertCheck(doc), openPicker, 'insert.pictures.device'),
+  step(T('In Downloads, click "flower.png", then click Insert.', 'Trong thư mục Downloads, bấm vào hình “flower.png”, rồi bấm nút Insert.'),
+    T('Click Downloads on the left. Click flower.png, then click the Insert button.', 'Bấm Downloads ở bên trái. Bấm hình flower.png, rồi bấm nút Insert.'),
+    insertCheck, choosePicture('flower'), 'insert.pictures.insert'),
 ];
 
 const resizeStart = flyer('Garden club', pic('flower', 480), flyerLines);

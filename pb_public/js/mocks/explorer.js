@@ -14,6 +14,7 @@
 // picture to Documents. A mission never changes view on resolve: it is the learner's own window.
 // onOpen(name) reports the folder you went to ("Documents") or the file you opened ("About_Me_Lan.docx").
 
+import { playDemo } from "../demo/player.js";
 import { ico } from "../word/icons.js";
 import { biPair, esc, labelPair } from "../i18n.js";
 
@@ -147,13 +148,21 @@ export function mount(el, { item, mission, learner, onRegion, onOpen, onWrong } 
   const mine = aboutMeFile(learner?.name);
   const root = document.createElement("div");
   root.className = `mk-root${interactive ? " is-tall" : ""}`;
+  root.style.position = "relative";
   useStyles(root);
   el.appendChild(root);
   let view = "home";
   let spot = null;
   let toastTimer = 0;
   let demoRun = 0;
-  const timers = new Set();
+  let demoPreview = null;
+  function cancelDemo() {
+    demoRun += 1;
+    demoPreview?.ctrl.abort();
+    demoPreview?.mock.destroy();
+    demoPreview?.host.remove();
+    demoPreview = null;
+  }
 
   function draw() {
     root.innerHTML = html({ view, mine, interactive, withTaskbar });
@@ -253,69 +262,31 @@ export function mount(el, { item, mission, learner, onRegion, onOpen, onWrong } 
   draw();
 
   /* ----- help: spotlight and Show me ----- */
-  const reduced = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-  const wait = (ms) => new Promise((res) => timers.add(setTimeout(res, ms)));
-
   async function demo(script) {
-    const steps = Array.isArray(script) ? script : [];
-    const run = ++demoRun;
-    root.querySelector(".mke-ghost")?.remove();
-    root.querySelectorAll(".mk-marker").forEach((n) => n.remove());
-    const box = root.querySelector(".mk-ex");
-    if (!box || !steps.length) return;
-    box.classList.add("is-demo");
-    const ghost = document.createElement("div");
-    ghost.className = "mke-ghost";
-    ghost.innerHTML = `<svg viewBox="0 0 30 36" aria-hidden="true"><path d="M3 2 L3 28 L10 21 L15 33 L20 31 L15 19 L25 19 Z" fill="#fff" stroke="#17324D" stroke-width="2" stroke-linejoin="round"/></svg>`;
-    const B = box.getBoundingClientRect();
-    ghost.style.left = `${B.width * 0.7}px`;
-    ghost.style.top = `${B.height * 0.75}px`;
-    if (!reduced()) box.appendChild(ghost);
-    let n = 0;
+    cancelDemo();
+    if (!Array.isArray(script) || !script.length) return;
+    const run = demoRun;
+    const host = document.createElement("div");
+    Object.assign(host.style, { position: "absolute", inset: "0", zIndex: "20", background: "white", display: "flex" });
+    for (const event of ["click", "dblclick", "keydown"]) host.addEventListener(event, e => e.stopPropagation());
+    root.appendChild(host);
+    const ctrl = new AbortController();
+    // A disposable Explorer runs the real UI interactions without reporting learner progress.
+    const mock = mount(host, { mission: mission ?? {}, learner });
+    if (view !== "home") mock.resolve(`nav-${view}`)?.click();
+    demoPreview = { host, ctrl, mock };
     try {
-      for (const step of steps) {
-        if (run !== demoRun) return;
-        if (step?.say) {
-          toast({ en: String(step.say.en ?? ""), vi: String(step.say.vi ?? "") }, true);
-          await wait(2400);
-          continue;
-        }
-        const target = resolve(step?.target);
-        if (!target) continue;
-        const R = target.getBoundingClientRect();
-        const x = R.left - B.left + Math.min(R.width / 2, 90);
-        const y = R.top - B.top + R.height / 2;
-        if (reduced()) {
-          const m = document.createElement("div");
-          m.className = "mk-marker";
-          m.textContent = String(++n);
-          m.style.left = `${x - 14}px`;
-          m.style.top = `${y + 10}px`;
-          box.appendChild(m);
-          await wait(1100);
-          continue;
-        }
-        ghost.style.left = `${x - 4}px`;
-        ghost.style.top = `${y - 2}px`;
-        await wait(950);
-        const dbl = step.dbl || step.click === "double";
-        for (let k = 0; k < (dbl ? 2 : 1); k++) {
-          if (run !== demoRun) return;
-          ghost.classList.remove("is-press");
-          void ghost.offsetWidth;
-          ghost.classList.add("is-press");
-          target.classList.add("is-demo-press");
-          await wait(dbl ? 330 : 520);
-          target.classList.remove("is-demo-press");
-        }
-        await wait(350);
-      }
+      await playDemo(host, script, {
+        resolve: mock.resolve,
+        signal: ctrl.signal,
+        act: (id, kind) => {
+          const target = mock.resolve(id);
+          target?.click();
+          if (kind === "double") target?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+        },
+      });
     } finally {
-      if (run === demoRun) {
-        ghost.remove();
-        box.classList.remove("is-demo");
-        root.querySelectorAll(".mk-marker").forEach((m) => m.remove());
-      }
+      if (run === demoRun) cancelDemo();
     }
   }
 
@@ -330,9 +301,8 @@ export function mount(el, { item, mission, learner, onRegion, onOpen, onWrong } 
     demo,
     resolve,
     destroy() {
-      demoRun += 1;
+      cancelDemo();
       clearTimeout(toastTimer);
-      timers.forEach((t) => clearTimeout(t));
       root.removeEventListener("click", onClick);
       root.removeEventListener("dblclick", onDbl);
       root.removeEventListener("keydown", onKey);

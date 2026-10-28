@@ -241,7 +241,8 @@ export async function render(root, { id, learner }) {
     let mock = null;
     let hints = null;
 
-    const docNow = () => (word ? word.getDoc() : createDoc(mission.startDoc ?? ""));
+    const initialDoc = typeof mission.startDoc === "function" ? mission.startDoc(learner) : (mission.startDoc ?? "");
+    const docNow = () => (word ? word.getDoc() : createDoc(initialDoc));
     const goalMet = () => safeBool(() => mission.goal.check(docNow(), ctx));
     const reminderNow = () => mission.completionReminder?.(docNow()) ?? punctuationReminder(docNow(), mission.targetDoc);
     checkBtn.addEventListener("click", () => goalMet() && finish());
@@ -462,7 +463,7 @@ export async function render(root, { id, learner }) {
     /* ----- work area: Word or a mini mock ----- */
     if (usesWord) {
       word = mountWord(host, {
-        doc: mission.startDoc ?? "",
+        doc: initialDoc,
         tabs: Array.isArray(mission.tabs) ? mission.tabs : ["home"],
         title: mission.title_bar || "Document1",
         initials: initialsOf(learner.name),
