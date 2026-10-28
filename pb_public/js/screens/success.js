@@ -51,7 +51,7 @@ function headlineKey({ stars, before, help_level = 0, tries = 1 }) {
  * result: {stars, skill, before, after, help_level, tries, nextKey: 'next'|'toEnd'|'toGarden', onNext()}.
  * `before`/`after` are rules.skillState() results for the skill. Returns a cleanup function.
  */
-export function renderSuccess(root, result, { learner, sessionId } = {}) {
+export function renderSuccess(root, result, { learner, sessionId, asOverlay = false } = {}) {
   const { stars, skill, before, after, nextKey = "next", onNext } = result;
   const kind = plantKindOf(learner);
   const fromSym = plantSymbol(before, kind);
@@ -61,8 +61,8 @@ export function renderSuccess(root, result, { learner, sessionId } = {}) {
   const ican = icanOf(skill);
 
   root.innerHTML = `
-    <main class="screen wg-win-screen">
-      <header class="lhead"><span class="brand">🌱 ${esc(t("brand").en)}</span></header>
+    <main class="screen wg-win-screen${asOverlay ? " is-overlay" : ""}"${asOverlay ? ' role="dialog" aria-modal="true"' : ""}>
+      ${asOverlay ? "" : `<header class="lhead"><span class="brand">🌱 ${esc(t("brand").en)}</span></header>`}
       <div class="wg-win">
         <div class="wg-stars" role="img" aria-label="${esc(glabel("starsLabel", { n: stars }))}">${starsHtml(stars, { pop: true })}</div>
         <div class="wg-potstage${grows ? " grows" : " watered"}">
@@ -81,6 +81,7 @@ export function renderSuccess(root, result, { learner, sessionId } = {}) {
         ${result.reminder ? `<p class="wg-newbadge wg-completion-reminder" role="status">${biPair(result.reminder)}</p>` : ""}
         ${result.note ? `<p class="wg-newbadge wg-save-note" role="status">${biPair(result.note)}</p>` : ""}
         <button type="button" class="btn btn-primary wg-win-next">${gbi(nextKey)}</button>
+        ${asOverlay ? `<button type="button" class="wg-win-peek">${gbi("viewMyWork")}</button>` : ""}
         <div id="helperAlertSlot" style="width:100%;max-width:520px;margin-top:14px"></div>
       </div>
     </main>`;
@@ -91,15 +92,64 @@ export function renderSuccess(root, result, { learner, sessionId } = {}) {
   next.addEventListener("keydown", (e) => e.repeat && e.preventDefault());
   // Focus Next after the stars have popped, so Enter moves on without a mouse.
   const focusTimer = setTimeout(() => next.focus({ preventScroll: true }), 700);
-  const stopAsk = learner ? mountAsk(root.querySelector("main"), { learner, context: () => ({ session: sessionId ?? null, skill }) }) : () => {};
+  const stopAsk = learner && !asOverlay ? mountAsk(root.querySelector("main"), { learner, context: () => ({ session: sessionId ?? null, skill }) }) : () => {};
   const stopAlert = learner ? mountHelperAlert({
     slot: root.querySelector("#helperAlertSlot"),
     learner,
     session: sessionId,
     variant: "hero",
   }) : () => {};
+
+  let peeking = false;
+  const screen = root.querySelector(".wg-win-screen");
+  const peekBtn = root.querySelector(".wg-win-peek");
+  const alertSlot = root.querySelector("#helperAlertSlot");
+  const onPeek = () => {
+    peeking = !peeking;
+    screen?.classList.toggle("is-peeking", peeking);
+    if (peekBtn) {
+      peekBtn.innerHTML = gbi(peeking ? "backToResult" : "viewMyWork");
+    }
+  };
+  peekBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    onPeek();
+  });
+  const onScreenClick = (e) => {
+    if (peeking) {
+      onPeek();
+      return;
+    }
+    if (e.target === screen) {
+      onPeek();
+    }
+  };
+  if (asOverlay) {
+    screen?.addEventListener("click", onScreenClick);
+  }
+  const onKey = (e) => {
+    if (asOverlay && peeking && (e.key === "Escape" || e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      onPeek();
+    }
+  };
+  window.addEventListener("keydown", onKey);
+
+  // If a peer helper alert arrives while peeking, automatically exit peek mode so learner sees it
+  let alertObserver = null;
+  if (asOverlay && alertSlot && typeof MutationObserver !== "undefined") {
+    alertObserver = new MutationObserver(() => {
+      if (alertSlot.children.length > 0 && peeking) {
+        onPeek();
+      }
+    });
+    alertObserver.observe(alertSlot, { childList: true });
+  }
+
   return () => {
     clearTimeout(focusTimer);
+    window.removeEventListener("keydown", onKey);
+    alertObserver?.disconnect();
     stopAlert();
     stopAsk();
   };

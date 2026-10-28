@@ -8,4 +8,6 @@ Punctuation correction exercises remain strict, as do capitalization exercises a
 
 Literal text in mission instructions, revision prompts and hints is quoted and emphasized using the activity's example or demo text; personalized sentence fragments are quoted explicitly. The quotation marks identify the text and are not part of the answer.
 
-Implementation: `pb_public/js/content/text-rules.js`, topic predicates in `pb_public/js/content/`, and the mission/revision/success screens. Regression coverage: `tests/completion.test.mjs`. Existing permissive filename and capstone matching is unchanged. No persistence schema changes are required.
+When a mission is completed, the result screen (`renderSuccess`) is embedded directly as an overlay over the completed workspace with a gentle blurred backdrop (`backdrop-filter: blur(2.5px)`), instead of destroying the document and abruptly wiping to a standalone page. This preserves spatial continuity and pride of authorship, allows learners to view their finished work (with an interactive "Look at my work" peek toggle), and reuses the existing result component including peer helper alert notifications (`#helperAlertSlot`).
+
+Implementation: `pb_public/js/content/text-rules.js`, topic predicates in `pb_public/js/content/`, and the mission/revision/success screens. Regression coverage: `tests/completion.test.mjs` and `tests/success-overlay.test.mjs`. Existing permissive filename and capstone matching is unchanged. No persistence schema changes are required.

@@ -462,14 +462,46 @@ export async function render(root, { id, learner }) {
         nextKey = more ? "next" : "toEnd";
         onNext = () => (more ? start("next") : (location.hash = "#/end"));
       }
-      await new Promise((res) => setTimeout(res, reducedMotion() ? 150 : 900));
+      // Keep the completed document in place, make inputs inert while celebrating
+      col.setAttribute("inert", "");
+      host.setAttribute("inert", "");
+      host.style.pointerEvents = "none";
+
+      await new Promise((res) => setTimeout(res, reducedMotion() ? 150 : 1000));
       if (!alive) return;
       // Say so calmly if the stars were not sent (given a moment to finish; a slow save never holds the learner back).
       const outcomes = await Promise.race([Promise.all(saves), new Promise((res) => setTimeout(() => res([]), 1200))]);
       if (!alive) return;
       const noteKey = outcomes.some((o) => o?.refused) ? "saveRefused" : outcomes.some((o) => o?.queued) ? "saveFailed" : null;
-      cleanupMission();
-      active = renderSuccess(root, { ...result, nextKey, onNext, note: noteKey ? gt(noteKey) : null }, { learner, sessionId });
+
+      // Stop the in-mission banner helper alert so the result page hero alert can take over
+      stopAlert?.();
+
+      const overlay = document.createElement("div");
+      overlay.className = "wg-win-overlay-host";
+      root.appendChild(overlay);
+
+      let nextDone = false;
+      const handleNext = () => {
+        if (nextDone) return;
+        nextDone = true;
+        stopSuccess?.();
+        overlay.remove();
+        cleanupMission();
+        onNext?.();
+      };
+
+      const stopSuccess = renderSuccess(
+        overlay,
+        { ...result, nextKey, onNext: handleNext, note: noteKey ? gt(noteKey) : null },
+        { learner, sessionId, asOverlay: true },
+      );
+
+      active = () => {
+        stopSuccess?.();
+        overlay.remove();
+        cleanupMission();
+      };
     }
 
     /* ----- work area: Word or a mini mock ----- */

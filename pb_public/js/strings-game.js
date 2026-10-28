@@ -112,6 +112,8 @@ export const GAME_STRINGS = {
   starsLabel: { en: "{n} of 3 stars", vi: "{n} trên 3 sao" },
   toEnd: { en: "See my session ▶", vi: "Xem kết quả buổi học" },
   toGarden: { en: "Back to my garden ▶", vi: "Về khu vườn của tôi" },
+  viewMyWork: { en: "👁️ Look at my work", vi: "Xem lại bài làm của tôi" },
+  backToResult: { en: "⭐ Back to result", vi: "Quay lại xem kết quả" },
 
   // Garden
   plantsN: { en: "{n} plants", vi: "{n} cây" },

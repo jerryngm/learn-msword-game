@@ -489,6 +489,166 @@ body:has(.wg-rev) .lang-switch[aria-checked="true"] .lang-knob { transform: tran
 .wg-completion-reminder { animation: none; }
 .wg-win .btn { margin-top: 20px; min-width: 260px; }
 
+/* ---------- Success Overlay (Mission Completion) ---------- */
+.wg-win-overlay-host {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  pointer-events: none;
+}
+.wg-win-screen.is-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 120 !important;
+  min-height: 0 !important;
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100vh !important;
+  margin: 0 !important;
+  padding: 16px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(18, 32, 51, 0.44) !important;
+  backdrop-filter: blur(2.5px);
+  -webkit-backdrop-filter: blur(2.5px);
+  animation: fadeIn .3s var(--ease) both;
+  transition: background .25s var(--ease), backdrop-filter .25s var(--ease);
+  pointer-events: auto;
+}
+.wg-win-screen.is-overlay .lhead {
+  display: none !important;
+}
+.wg-win-screen.is-overlay .wg-win {
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 16px 48px rgba(18, 38, 60, .26);
+  padding: 24px 28px 20px;
+  max-width: 520px;
+  width: 100%;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  animation: wgWinZoomIn .35s var(--ease) both;
+}
+.wg-win-screen.is-overlay .wg-stars .wg-star {
+  width: 52px;
+  height: 52px;
+}
+.wg-win-screen.is-overlay .wg-potstage {
+  width: 170px;
+  height: 170px;
+  margin: 6px 0 10px;
+}
+.wg-win-screen.is-overlay .wg-pot {
+  width: 136px;
+  margin-left: -68px;
+  bottom: 8px;
+}
+.wg-win-screen.is-overlay h1 {
+  font-size: 32px;
+}
+.wg-win-screen.is-overlay h1 .vi {
+  font-size: 18px;
+  margin-top: 4px;
+}
+.wg-win-screen.is-overlay .wg-win .btn.wg-win-next {
+  margin-top: 14px;
+}
+.wg-win-screen.is-overlay .wg-win-peek {
+  margin-top: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--teal-d);
+  border: 1.5px solid var(--teal);
+  border-radius: 12px;
+  padding: 8px 18px;
+  background: var(--teal-l);
+  cursor: pointer;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: all .15s;
+}
+.wg-win-screen.is-overlay .wg-win-peek:hover {
+  background: #d4e8e5;
+  border-color: var(--teal-d);
+}
+.wg-win-screen.is-overlay .wg-win-peek .vi {
+  font-size: 12px;
+  color: var(--ink-2);
+  margin-top: 0;
+}
+.wg-win-screen.is-overlay .wg-helper-hero {
+  margin-top: 12px;
+  margin-bottom: 0;
+  text-align: left;
+}
+
+/* Peeking state: hides the celebration card so learner can clearly view their document */
+.wg-win-screen.is-overlay.is-peeking {
+  background: rgba(18, 32, 51, 0.08) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  cursor: pointer;
+}
+.wg-win-screen.is-overlay.is-peeking .wg-win {
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+}
+.wg-win-screen.is-overlay.is-peeking .wg-win > :not(.wg-win-peek) {
+  opacity: 0;
+}
+.wg-win-screen.is-overlay.is-peeking .wg-win-peek {
+  pointer-events: auto;
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--teal);
+  color: #fff;
+  border: 2px solid #fff;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .35);
+  border-radius: 999px;
+  padding: 10px 28px;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  z-index: 130;
+  animation: wgSlideUpPill .25s ease both;
+  transition: transform .15s, background .15s;
+}
+.wg-win-screen.is-overlay.is-peeking .wg-win-peek:hover {
+  background: var(--teal-d);
+  transform: translateX(-50%) translateY(-2px);
+}
+.wg-win-screen.is-overlay.is-peeking .wg-win-peek .vi {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, .9);
+  margin-top: 0;
+}
+  font-weight: 700;
+  z-index: 130;
+  animation: wgSlideUpPill .25s ease both;
+}
+
+@keyframes wgWinZoomIn {
+  from { opacity: 0; transform: scale(.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes wgSlideUpPill {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
 /* ---------- Garden (#s7) ---------- */
 .wg-garden { min-height: 100vh; max-width: 1340px; display: flex; flex-direction: column; padding: 10px 24px 24px; overflow-y: auto; }
 .wg-g-head { flex: none; display: flex; align-items: center; gap: 16px; min-height: 64px; margin-bottom: 8px; padding-right: 220px; flex-wrap: wrap; }
@@ -909,7 +1069,7 @@ html:not(.hide-vi) .wg-q-context figcaption .vi { display: inline; margin-left: 
 .wg-helper-modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 150;
   background: rgba(23, 50, 77, .36);
   display: flex;
   align-items: center;

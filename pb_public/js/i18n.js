@@ -162,7 +162,7 @@ const HIDE_VI_KEY = "hide_vi";
 export const VI_CHANGE_EVENT = "vi-change";
 
 export function viHidden() {
-  return document.documentElement.classList.contains("hide-vi");
+  return typeof document !== "undefined" && Boolean(document.documentElement?.classList?.contains("hide-vi"));
 }
 
 /** Hide or show every Vietnamese line. index.html applies the cached value before first paint. */
