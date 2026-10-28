@@ -94,11 +94,21 @@ export function mountHelperAlert({ slot, learner, session, variant = "hero" } = 
       const askerName = asker?.name ?? "Classmate";
       clearModal();
 
-      slot.innerHTML = `
-        <div class="wg-helper-hero wg-helper-confirmed">
-          <span class="e" aria-hidden="true">🌱</span>
-          <p class="wg-helper-confirmed-msg">${gbi("helperAlertAccepted", { name: esc(askerName) })}</p>
-        </div>`;
+      if (variant === "banner") {
+        slot.innerHTML = `
+          <aside class="wg-helper-banner wg-helper-accepted" role="status">
+            <span class="face" aria-hidden="true">🌱</span>
+            <div class="wg-helper-banner-msg">
+              <p class="wg-helper-confirmed-msg">${gbi("helperAlertAccepted", { name: esc(askerName) })}</p>
+            </div>
+          </aside>`;
+      } else {
+        slot.innerHTML = `
+          <div class="wg-helper-hero wg-helper-confirmed">
+            <span class="e" aria-hidden="true">🌱</span>
+            <p class="wg-helper-confirmed-msg">${gbi("helperAlertAccepted", { name: esc(askerName) })}</p>
+          </div>`;
+      }
 
       setTimeout(() => {
         if (!closed) clearAlert();
@@ -111,8 +121,7 @@ export function mountHelperAlert({ slot, learner, session, variant = "hero" } = 
 
   const renderHero = (ask, asker, overview) => {
     const { topic, typeKey, title, goal } = overview;
-    const taskTitleHtml = title && typeof title === "object" ? biPair(title) : esc(title);
-    const typeLabel = gt(typeKey);
+    const type = gt(typeKey);
 
     slot.innerHTML = `
       <section class="wg-helper-hero card" role="alert">
@@ -122,7 +131,7 @@ export function mountHelperAlert({ slot, learner, session, variant = "hero" } = 
         </h2>
         <div class="wg-helper-task-box">
           <div class="wg-helper-task-meta">
-            <span class="chip">${gbi("helperTopicTask", { topic, type: typeLabel, title: taskTitleHtml })}</span>
+            <span class="chip">${gbi("helperTopicTask", { topic, type, title })}</span>
           </div>
           <p class="wg-helper-task-goal">${gbi("helperAlertGoal", { ican: goal })}</p>
         </div>
@@ -139,13 +148,13 @@ export function mountHelperAlert({ slot, learner, session, variant = "hero" } = 
 
   const renderBanner = (ask, asker, overview) => {
     const { title, goal } = overview;
-    const displayTask = title && typeof title === "object" ? biPair(title) : esc(title || goal);
+    const task = title || goal;
 
     slot.innerHTML = `
       <aside class="wg-helper-banner" role="alert">
         <span class="face" style="--ring:${esc(asker?.colour || "#2F7370")}" aria-hidden="true">${avatarEmoji(asker?.avatar)}</span>
         <div class="wg-helper-banner-msg">
-          <b>${gbi("helperAlertBanner", { name: esc(asker?.name ?? "Someone"), task: displayTask })}</b>
+          <b>${gbi("helperAlertBanner", { name: esc(asker?.name ?? "Someone"), task })}</b>
         </div>
         <button type="button" class="btn-sm btn-primary wg-helper-view">${gbi("helperAlertView")}</button>
         <button type="button" class="wg-helper-banner-close" aria-label="${esc(glabel("close"))}">✕</button>
@@ -171,8 +180,7 @@ export function mountHelperAlert({ slot, learner, session, variant = "hero" } = 
 
   const renderHeroInContainer = (container, ask, asker, overview) => {
     const { topic, typeKey, title, goal } = overview;
-    const taskTitleHtml = title && typeof title === "object" ? biPair(title) : esc(title);
-    const typeLabel = gt(typeKey);
+    const type = gt(typeKey);
 
     container.innerHTML = `
       <section class="wg-helper-hero card" role="alert" style="margin-bottom:0">
@@ -182,7 +190,7 @@ export function mountHelperAlert({ slot, learner, session, variant = "hero" } = 
         </h2>
         <div class="wg-helper-task-box">
           <div class="wg-helper-task-meta">
-            <span class="chip">${gbi("helperTopicTask", { topic, type: typeLabel, title: taskTitleHtml })}</span>
+            <span class="chip">${gbi("helperTopicTask", { topic, type, title })}</span>
           </div>
           <p class="wg-helper-task-goal">${gbi("helperAlertGoal", { ican: goal })}</p>
         </div>

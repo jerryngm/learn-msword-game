@@ -865,6 +865,35 @@ html:not(.hide-vi) .wg-q-context figcaption .vi { display: inline; margin-left: 
 .wg-helper-banner .face { width: 36px; height: 36px; font-size: 20px; flex: none; }
 .wg-helper-banner-msg { font-size: 15px; color: var(--ink); line-height: 1.2; }
 .wg-helper-banner-msg .vi { font-size: 12px; }
+.wg-helper-banner .wg-helper-view {
+  min-height: 42px;
+  padding: 4px 18px;
+  font-size: 16px;
+  background: var(--teal);
+  color: #fff;
+  border: 2px solid var(--teal-d);
+  border-radius: 999px;
+  box-shadow: 0 4px 0 var(--teal-d);
+  flex: none;
+  white-space: nowrap;
+}
+.wg-helper-banner .wg-helper-view:hover {
+  background: #337E7A;
+}
+.wg-helper-banner .wg-helper-view .vi {
+  color: rgba(255, 255, 255, .9);
+  font-size: 12px;
+}
+.wg-helper-banner.wg-helper-accepted {
+  background: #e6f4ea;
+  border-color: var(--leaf-d);
+  color: var(--leaf-d);
+  padding: 10px 20px;
+}
+.wg-helper-banner.wg-helper-accepted .wg-helper-confirmed-msg {
+  font-size: 16px;
+  margin: 0;
+}
 .wg-helper-banner-close {
   border: none;
   background: transparent;
