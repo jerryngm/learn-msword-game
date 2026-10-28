@@ -1,21 +1,36 @@
 // Topic 7: local templates, placeholder text, Save As versions and practice printing.
+import { practiceText } from './text-rules.js';
 import { createDoc, textOf } from '../word/model.js';
 import { templateDoc } from '../word/templates.js';
 const T = (en, vi) => ({ en, vi });
 const go = target => ({ target, click: 'single' });
 const key = key => ({ key });
 const type = (type, at) => ({ type, ...(at ? { at } : {}) });
-const say = (en, vi) => ({ say: T(en, vi) });
 const option = (id, en, vi) => ({ id, label: T(en, vi) });
 const replay = (doc, script) => ({ mock: 'word', doc, script });
 const resume = templateDoc('resume');
+const contactLine = 'Phone: 0400 123 456 | Melbourne';
+const skillsHeading = 'Skills:';
 const lines = doc => doc.p.map(textOf).map(s => s.trim().replace(/\s+/g, ' ')).filter(Boolean);
 const same = (doc, expected) => JSON.stringify(lines(doc)) === JSON.stringify(expected);
+const validName = s => {
+  const t = String(s ?? '').trim();
+  return Boolean(t && !/[\[\]]/.test(t) && practiceText(t).toLowerCase() !== 'your name' && /\p{L}.*\p{L}/u.test(t));
+};
 const openedResume = (doc, ctx) => ctx?.commands?.includes('file.new.template.resume') && same(doc, lines(resume));
-const named = doc => same(doc, ['Lan Nguyen', 'Resume', '[Your skills]', '[Optional interests]']);
-const trimmed = doc => same(doc, ['[Your name]', 'Resume', '[Your skills]']);
-const filled = createDoc({p:[{runs:[{text:'Lan Nguyen',b:true,size:20}]},'Resume','Cooking and cleaning','']});
-const filledCheck = doc => same(doc, ['Lan Nguyen', 'Resume', 'Cooking and cleaning']);
+const named = doc => {
+  const ls = lines(doc);
+  return ls.length === 5 && validName(ls[0]) && ls[1] === contactLine && ls[2] === skillsHeading && ls[3] === '[Your skills]' && ls[4] === '[Optional interests]';
+};
+const trimmed = doc => same(doc, ['[Your name]', contactLine, skillsHeading, '[Your skills]']);
+const filled = createDoc({ p: [{ runs: [{ text: 'Lan Nguyen', b: true, size: 20 }] }, contactLine, skillsHeading, 'Cooking and cleaning', ''] });
+const filledCheck = doc => {
+  const ls = lines(doc);
+  return ls.length === 4 && validName(ls[0]) &&
+    practiceText(ls[1]).toLowerCase() === practiceText(contactLine).toLowerCase() &&
+    practiceText(ls[2]).toLowerCase() === practiceText(skillsHeading).toLowerCase() &&
+    practiceText(ls[3]).toLowerCase() === 'cooking and cleaning';
+};
 // Match meaningful words, accepting spaces, punctuation, accents, capitals and a typed extension.
 const versionName = name => String(name ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\.docx$/i,'').toLowerCase().replace(/[^a-z0-9]/g,'') === 'resumev2';
 const savedVersion = (doc, ctx) => filledCheck(doc) && ctx?.saved?.folder?.length === 1 && ctx.saved.folder[0] === 'Documents' && versionName(ctx.saved.name);
@@ -27,7 +42,7 @@ const resumePreview = () => typeof document !== 'undefined' && Boolean(document.
 const searchedResume = () => inPage('new') && /^resume$/i.test(field('[data-new="search"]').trim());
 const templateRoute = [go('file'),go('bs.new'),go('new.search'),type('resume','new.search'),go('new.template:resume'),go('new.create')];
 const replaceName = [go('placeholder:0'),type('Lan Nguyen','doc:0,0')];
-const deleteOptional = [go('placeholder:3'),key('Delete')];
+const deleteOptional = [go('placeholder:4'),key('Delete')];
 const saveRoute = [go('file'),go('bs.saveas'),go('sa.browse'),go('sa.documents'),go('sa.name'),type('Resume_V2','sa.name'),go('sa.save')];
 const printRoute = [go('file'),go('bs.print'),go('print.copies'),key('ArrowUp'),go('print.submit')];
 const step = (text, hint, done, demo) => ({ text, hint, done, demo });
@@ -35,7 +50,7 @@ const mission = (id,skill,title,scenario,startDoc,targetDoc,steps,check,extra={}
   id,skill,title,scenario,startDoc,targetDoc,tabs:['home'],steps,...extra,
   goal:{check,progress:(doc,ctx)=>check(doc,ctx)?1:steps.filter(s=>s.done(doc,ctx)).length/steps.length},
 });
-const replaceHint = T('Click the grey [Your name] text once. The whole block is selected. Type Lan Nguyen to replace it.', 'Bấm một lần vào phần chữ màu xám [Your name]. Cả phần chữ sẽ được bôi đen. Gõ Lan Nguyen để thay thế.');
+const replaceHint = T('Click the grey [Your name] text once. The whole block is selected. Type your name (for example: Lan Nguyen) to replace it.', 'Bấm một lần vào phần chữ màu xám [Your name]. Cả phần chữ sẽ được bôi đen. Gõ tên của bạn (ví dụ: Lan Nguyen) để thay thế.');
 const deleteHint = T('Click [Optional interests] once to select the whole block. Press Delete. Keep the other lines.', 'Bấm một lần vào [Optional interests] để bôi đen cả phần chữ. Nhấn Delete. Giữ lại các dòng khác.');
 const versionHint = T('Use File, Save As, Browse, then Documents. Click File name and type Resume_V2. Click Save. A space instead of the underscore is fine.', 'Bấm File, Save As, Browse, rồi Documents. Bấm ô File name và gõ Resume_V2. Bấm Save. Bạn có thể dùng dấu cách thay cho dấu gạch dưới (_).');
 export const items = [
@@ -48,7 +63,7 @@ export const items = [
   },
   {
     id:'t7-placeholder-replace-do',skill:'t7-placeholder',type:'do',tabs:['home'],doc:resume,
-    prompt:T('This resume template has example text in brackets. Replace [Your name] with Lan Nguyen. Keep the other lines.', 'Mẫu resume này có phần chữ trong dấu ngoặc vuông để bạn thay. Hãy thay [Your name] bằng Lan Nguyen. Giữ lại các dòng khác.'),
+    prompt:T('This resume template has example text in brackets. Replace [Your name] with your name (or Lan Nguyen). Keep the other lines.', 'Mẫu resume này có phần chữ trong ngoặc vuông để bạn thay. Hãy thay [Your name] bằng tên của bạn (hoặc Lan Nguyen). Giữ lại các dòng khác.'),
     hint:replaceHint,check:named,demo:replaceName,replay:replay(resume,replaceName),
   },
   {
@@ -92,9 +107,17 @@ const templateSteps = [
   step(T('Click Create.', 'Bấm Create.'),T('Create opens a new document using this template.', 'Create mở một văn bản mới theo mẫu này.'),openedResume,[go('new.create')]),
 ];
 const fillSteps = [
-  step(T('Replace [Your name] with Lan Nguyen.', 'Thay [Your name] bằng Lan Nguyen.'),replaceHint,(doc)=>textOf(doc.p[0]).trim()==='Lan Nguyen',replaceName),
-  step(T('Replace [Your skills] with Cooking and cleaning.', 'Thay [Your skills] bằng Cooking and cleaning.'),T('Click [Your skills] once. Type Cooking and cleaning.', 'Bấm một lần vào [Your skills]. Gõ Cooking and cleaning.'),(doc)=>textOf(doc.p[2]??{}).trim()==='Cooking and cleaning',[go('placeholder:2'),type('Cooking and cleaning','doc:2,0')]),
-  step(T('Delete [Optional interests].', 'Xoá [Optional interests].'),deleteHint,(doc)=>!doc.p.some(p=>textOf(p).includes('[Optional interests]')),deleteOptional),
+  step(T('Replace [Your name] with your name (or Lan Nguyen).', 'Thay [Your name] bằng tên của bạn (hoặc Lan Nguyen).'),replaceHint,(doc)=>validName(textOf(doc.p[0]??{})),replaceName),
+  step(T('Replace [Your skills] with Cooking and cleaning.', 'Thay [Your skills] bằng Cooking and cleaning.'),T('Click [Your skills] once. Type Cooking and cleaning.', 'Bấm một lần vào [Your skills]. Gõ Cooking and cleaning.'),(doc)=>doc.p.some(p=>practiceText(textOf(p)).toLowerCase()==='cooking and cleaning'),[go('placeholder:3'),type('Cooking and cleaning','doc:3,0')]),
+  {
+    text:T('Delete [Optional interests].', 'Xoá [Optional interests].'),
+    hint:deleteHint,
+    done:(doc)=>!doc.p.some(p=>textOf(p).includes('[Optional interests]')),
+    get demo() {
+      const p = typeof document !== 'undefined' ? document.querySelector('[data-placeholder="[Optional interests]"]')?.dataset.p ?? 4 : 4;
+      return [go(`placeholder:${p}`),key('Delete')];
+    },
+  },
 ];
 const saveSteps = [
   step(T('Click File, then Save As.', 'Bấm File, rồi Save As.'),T('Save As makes a new version with a different name.', 'Save As lưu thêm một bản với tên khác.'),(doc,ctx)=>/^(saveas|dialog)/.test(stage())||savedVersion(doc,ctx),[go('file'),go('bs.saveas')]),
@@ -109,7 +132,7 @@ const printSteps = [
 ];
 export const missions = [
   mission('t7-m-open-template','t7-template',T('Open a resume template','Mở mẫu resume'),T('You want to apply for a job. Open the Simple resume template so the layout is ready for you.', 'Bạn muốn xin việc. Hãy mở mẫu Simple resume để có sẵn bố cục.'),'',resume,templateSteps,openedResume),
-  mission('t7-m-fill-resume','t7-placeholder',T('Fill in a simple resume','Điền thông tin vào resume'),T('Practise with the name Lan Nguyen. Replace the name and skills in this resume, then remove the interests line. Use Cooking and cleaning for the skills.', 'Thực hành với tên Lan Nguyen. Hãy thay tên và kỹ năng trong resume này, rồi bỏ dòng sở thích. Ghi Cooking and cleaning ở phần kỹ năng.'),resume,filled,fillSteps,filledCheck),
+  mission('t7-m-fill-resume','t7-placeholder',T('Fill in a simple resume','Điền thông tin vào resume'),T('Fill in this resume with your own name (or Lan Nguyen) and your skills, then remove the optional interests line. Use Cooking and cleaning for the skills.', 'Điền tên của bạn (hoặc Lan Nguyen) và kỹ năng vào resume này, rồi xoá dòng sở thích không bắt buộc. Ghi Cooking and cleaning ở phần kỹ năng.'),resume,filled,fillSteps,filledCheck),
   mission('t7-m-save-version','t7-save-version',T('Save a new resume version','Lưu thêm bản resume mới'),T('You updated Resume_V1. Keep the first version and save this one in Documents as Resume_V2. A space instead of the underscore is fine.', 'Bạn vừa sửa Resume_V1. Hãy giữ bản đầu và lưu bản này vào Documents với tên Resume_V2. Bạn có thể dùng dấu cách thay cho dấu gạch dưới (_).'),filled,filled,saveSteps,savedVersion,{title_bar:'Resume_V1'}),
   mission('t7-m-print-two','t7-print',T('Print two resume copies','In hai bản resume'),T('You need two copies of your resume for an interview. Practise printing 2 copies. The game shows a confirmation and does not print paper.', 'Bạn cần hai bản resume để đi phỏng vấn. Hãy thực hành in 2 bản. Trò chơi hiện thông báo xác nhận và không in ra giấy.'),filled,filled,printSteps,printedTwo),
 ];

@@ -1,3 +1,4 @@
+import { practiceText, punctuationReminder } from './text-rules.js';
 // Topic 4: lists, everyday notes and readable notices.
 import { createDoc, Para, makeRun, textOf } from '../word/model.js';
 
@@ -7,7 +8,7 @@ const key = (key) => ({ key });
 const type = (type) => ({ type });
 const select = (first, last, end) => ({ select: { from: { p: first, offset: 0 }, to: { p: last, offset: end } } });
 const menu = (cmd, arg) => [go(`menu:${cmd}`), go(`choice:${cmd}:${arg}`)];
-const clean = (value) => String(value ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+const clean = (value) => practiceText(value).toLowerCase();
 const line = (doc, p) => doc.p[p] ? textOf(doc.p[p]) : '';
 const sameLines = (doc, expected) => {
   const actual = doc.p.map(textOf).filter((s) => s.trim());
@@ -24,16 +25,16 @@ const doItem = (id, skill, prompt, hint, doc, check, demo, spotlight = 'home.par
   id, skill, type: 'do', prompt, hint, doc, tabs: ['home'], check, demo, spotlight, replay: replay(doc, demo),
 });
 const step = (text, hint, done, demo, spotlight = 'home.paragraph') => ({ text, hint, done, demo, spotlight });
-const mission = (id, skill, title, scenario, startDoc, targetDoc, steps, check) => ({
-  id, skill, title, scenario, startDoc, targetDoc, tabs: ['home'], steps,
+const mission = (id, skill, title, scenario, startDoc, targetDoc, steps, check, extra = {}) => ({
+  id, skill, title, scenario, startDoc, targetDoc, tabs: ['home'], steps, ...extra,
   goal: { check, progress: (doc, ctx) => check(doc, ctx) ? 1 : steps.filter((s) => s.done(doc, ctx)).length / steps.length },
 });
 
 const sortBins = [option('bullet', 'Bullets: items in any order', 'Bullets: các món không cần theo thứ tự'), option('number', 'Numbering: steps in order', 'Numbering: các bước phải theo thứ tự')];
 const sortReplay = replay('Bread\nMilk\nWash rice.\nAdd water.', [select(0, 1, 4), go('home.paragraph.bullets'), select(2, 3, 10), go('home.paragraph.numbering')]);
-const endDoc = listDoc(['Bread'], 0, 0, 'bullet');
-const endScript = [go('doc:0,5'), key('Enter'), key('Enter'), type('Done.')];
-const endCheck = (doc) => sameLines(doc, ['Bread', 'Done.']) && listed(doc, 0, 0, 'bullet') && plainLine(doc, 1, 'Done.');
+const endDoc = listDoc(['Bread', 'Milk'], 0, 1, 'bullet');
+const endScript = [go('doc:1,4'), key('Enter'), key('Enter'), type('Bring a bag.')];
+const endCheck = (doc) => sameLines(doc, ['Bread', 'Milk', 'Bring a bag.']) && listed(doc, 0, 1, 'bullet') && plainLine(doc, 2, 'Bring a bag.');
 const headingText = ['Lost cat', 'Black cat with a white tail.', 'Please call Lan.'];
 function headingFormat(doc, props) {
   const runs = doc.p[0]?.runs.filter((r) => r.text.trim()) ?? [];
@@ -62,7 +63,7 @@ export const items = [
     [select(0, 1, 4), go('home.paragraph.bullets')]),
   {
     id: 't4-numbering-sort', skill: 't4-numbering', type: 'sort',
-    prompt: T('Help a friend choose a list style. Sort these jobs into Bullets or Numbering.', 'Giúp bạn chọn kiểu danh sách. Xếp các việc vào Bullets hoặc Numbering.'),
+    prompt: T('Help a friend choose a list style. Sort these jobs into Bullets or Numbering.', 'Giúp một người bạn chọn kiểu danh sách. Xếp các việc vào Bullets hoặc Numbering.'),
     hint: T('Numbers show what to do first, next and last. Dots list things without an order.', 'Số cho biết việc nào làm trước, làm sau. Dấu chấm dùng để liệt kê các thứ không cần theo thứ tự.'),
     bins: sortBins,
     cards: [
@@ -84,10 +85,10 @@ export const items = [
     options: [option('twice', 'Press Enter twice', 'Nhấn Enter hai lần'), option('once', 'Press Enter once', 'Nhấn Enter một lần'), option('space', 'Press Space twice', 'Nhấn phím cách hai lần')],
     answer: 'twice', replay: replay(endDoc, endScript),
   },
-  doItem('t4-end-list-do', 't4-end-list',
-    T('Finish this shopping list. Click after Bread, press Enter twice, then type Done. without a bullet.', 'Kết thúc danh sách đi chợ. Bấm sau Bread, nhấn Enter hai lần rồi gõ Done. ở dòng không có dấu chấm đầu dòng.'),
-    T('Press Enter once for an empty bullet. Press Enter again to end the list. Then type Done.', 'Nhấn Enter một lần để tạo mục trống. Nhấn thêm lần nữa để kết thúc danh sách. Sau đó gõ Done.'),
-    endDoc, endCheck, endScript),
+  { ...doItem('t4-end-list-do', 't4-end-list',
+    T('Add a reminder under this shopping list. Click after Milk, press Enter twice, then type Bring a bag. without a bullet.', 'Thêm câu nhắc bên dưới danh sách đi chợ. Bấm sau Milk, nhấn Enter hai lần rồi gõ Bring a bag. ở dòng không có dấu chấm đầu dòng.'),
+    T('Press Enter once for an empty bullet. Press Enter again to end the list. Then type Bring a bag.', 'Nhấn Enter một lần để ra mục trống. Nhấn thêm lần nữa để kết thúc danh sách. Sau đó gõ Bring a bag.'),
+    endDoc, endCheck, endScript), expectedText: 'Bread\nMilk\nBring a bag.' },
   {
     id: 't4-note-tea-order', skill: 't4-note', type: 'order',
     prompt: T('You want Mai to bring tea. Put the steps in order to write her a short note.', 'Bạn muốn nhờ Mai mang trà đến. Xếp các bước theo thứ tự để viết lời nhắn cho Mai.'),
@@ -131,24 +132,58 @@ const riceSteps = [
     riceCheck, [select(1, 3, 19), go('home.paragraph.numbering')]),
 ];
 const packDoc = listDoc(['Things to pack', 'Water', 'Hat'], 1, 2, 'bullet');
-const packCheck = (doc) => sameLines(doc, ['Things to pack', 'Water', 'Hat', 'Ready.']) && listed(doc, 1, 2, 'bullet') && plainLine(doc, 3, 'Ready.');
+const packCheck = (doc) => sameLines(doc, ['Things to pack', 'Water', 'Hat', 'We leave at 9 am.']) && listed(doc, 1, 2, 'bullet') && plainLine(doc, 3, 'We leave at 9 am.');
 const packSteps = [
-  step(T('Click after Hat. Press Enter twice.', 'Bấm sau Hat. Nhấn Enter hai lần.'),
-    T('The second Enter ends the bullet list.', 'Nhấn Enter lần thứ hai để kết thúc danh sách.'),
+  step(T('Click after Hat. Press Enter twice to end the list.', 'Bấm sau Hat. Nhấn Enter hai lần để kết thúc danh sách.'),
+    T('The second Enter removes the bullet so you get a normal line.', 'Nhấn Enter lần thứ hai sẽ bỏ dấu chấm đầu dòng để ra dòng bình thường.'),
     (doc) => doc.p.length >= 4 && !doc.p[3].list, [go('doc:2,3'), key('Enter'), key('Enter')]),
-  step(T('Type Ready. on the line without a bullet.', 'Gõ Ready. ở dòng không có dấu chấm đầu dòng.'),
-    T('Click on the new line below Hat. Type Ready. with a full stop.', 'Bấm dòng mới dưới Hat. Gõ Ready. có dấu chấm cuối câu.'),
-    packCheck, [go('doc:3,0'), type('Ready.')]),
+  step(T('On the new line, type: We leave at 9 am.', 'Ở dòng mới, gõ: We leave at 9 am.'),
+    T('Type We leave at 9 am. on the line without a bullet.', 'Gõ We leave at 9 am. ở dòng không có dấu chấm đầu dòng.'),
+    packCheck, [go('doc:3,0'), type('We leave at 9 am.')]),
 ];
+const asciiFirst = (name) => {
+  const t = String(name ?? '').trim().split(/\s+/)[0] ?? '';
+  const a = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^A-Za-z]/g, '');
+  return a ? a[0].toUpperCase() + a.slice(1).toLowerCase() : '';
+};
+let demoWho = 'Lan';
+const withWho = (fn) => (doc, ctx) => {
+  demoWho = asciiFirst(ctx?.learner?.name) || 'Lan';
+  return fn(doc, ctx);
+};
 const noteLines = ['Dear Mai,', 'Please water my plants.', 'I am away today.', 'Thank you, Lan'];
-const noteCheck = (doc) => sameLines(doc, noteLines);
-const noteSteps = noteLines.map((text, p) => step(
-  T(`Line ${p + 1}: type ${text}`, `Dòng ${p + 1}: gõ ${text}`),
-  T(p === 0 ? 'Begin with Dear Mai, including the comma.' : 'Press Enter after the previous line. Type the words shown for this line.', p === 0 ? 'Bắt đầu bằng Dear Mai, có dấu phẩy.' : 'Nhấn Enter sau dòng trước. Gõ đúng nội dung dành cho dòng này.'),
-  (doc) => clean(line(doc, p)) === clean(text),
-  p === 0 ? [go('doc:0,0'), type(text)] : [go(`doc:${p - 1},${noteLines[p - 1].length}`), key('Enter'), type(text)],
-  'home.paragraph',
-));
+const thankYouLine = (s) => /^thank you\s+\p{L}[\p{L}’' -]*$/iu.test(practiceText(s));
+const noteCheck = (doc, ctx) => {
+  demoWho = asciiFirst(ctx?.learner?.name) || 'Lan';
+  const actual = doc.p.map(textOf).filter((s) => s.trim());
+  return actual.length === 4 && noteLines.slice(0, 3).every((t, i) => clean(actual[i]) === clean(t)) && thankYouLine(actual[3]);
+};
+const noteReminder = (doc) => {
+  const actual = doc.p.map(textOf).filter((s) => s.trim());
+  if (actual.length !== 4) return null;
+  const m = /^thank you[, ]+\s*(.+?)\.?$/iu.exec(actual[3].trim());
+  const who = m ? m[1].trim() : 'Lan';
+  const dot = actual[3].trim().endsWith('.') ? '.' : '';
+  return punctuationReminder(actual.join('\n'), ['Dear Mai,', 'Please water my plants.', 'I am away today.', `Thank you, ${who}${dot}`].join('\n'));
+};
+const noteSteps = [
+  ...noteLines.slice(0, 3).map((text, p) => step(
+    T(`Line ${p + 1}: type ${text}`, `Dòng ${p + 1}: gõ ${text}`),
+    T(p === 0 ? 'Begin with Dear Mai, including the comma.' : 'Press Enter after the previous line. Type the words shown for this line.', p === 0 ? 'Bắt đầu bằng Dear Mai, có dấu phẩy.' : 'Nhấn Enter sau dòng trước. Gõ đúng nội dung dành cho dòng này.'),
+    withWho((doc) => clean(line(doc, p)) === clean(text)),
+    p === 0 ? [go('doc:0,0'), type(text)] : [go(`doc:${p - 1},${noteLines[p - 1].length}`), key('Enter'), type(text)],
+    'home.paragraph',
+  )),
+  {
+    text: T('Line 4: type Thank you, and your name (for example: Thank you, Lan).', 'Dòng 4: gõ Thank you, kèm tên của bạn (ví dụ: Thank you, Lan).'),
+    hint: T('Press Enter after the third line. Type Thank you, then a comma, a space and your name.', 'Nhấn Enter sau dòng thứ ba. Gõ Thank you, rồi dấu phẩy, dấu cách và tên của bạn.'),
+    done: withWho((doc) => thankYouLine(line(doc, 3))),
+    get demo() {
+      return [go(`doc:2,${noteLines[2].length}`), key('Enter'), type(`Thank you, ${demoWho}`)];
+    },
+    spotlight: 'home.paragraph',
+  },
+];
 const noticeSteps = [
   step(T('Select Lost cat. Change Font Size to 20.', 'Bôi đen Lost cat. Đổi Font Size thành 20.'),
     T('Select only the first line. Open Font Size and click 20.', 'Chỉ bôi đen dòng đầu. Mở Font Size rồi bấm 20.'),
@@ -163,17 +198,17 @@ const noticeSteps = [
 
 export const missions = [
   mission('t4-m-pho-list', 't4-bullets', T('Shopping for pho', 'Danh sách mua đồ nấu phở'),
-    T('Make a shopping list for pho. Give each food a bullet. Finish with Thank you. on a line without a bullet.', 'Làm danh sách mua đồ nấu phở. Thêm dấu chấm đầu dòng cho từng món. Cuối cùng gõ Thank you. ở dòng không có dấu chấm đầu dòng.'),
+    T('Your family member is going to the market for you. Give each pho ingredient a bullet, then write Thank you. on a plain line below.', 'Người nhà sẽ đi chợ giúp bạn. Hãy thêm dấu chấm đầu dòng cho từng nguyên liệu nấu phở, rồi gõ Thank you. ở dòng bình thường bên dưới.'),
     phoLines.slice(0, 4).join('\n'), listDoc(phoLines, 1, 3, 'bullet'), phoSteps, phoCheck),
   mission('t4-m-rice-steps', 't4-numbering', T('Steps to cook rice', 'Các bước nấu cơm'),
     T('Help someone follow your rice instructions. Number the three steps. Keep the title without a number.', 'Giúp người khác làm theo hướng dẫn nấu cơm. Đánh số ba bước. Không đánh số tiêu đề.'),
     riceLines.join('\n'), listDoc(riceLines, 1, 3, 'number'), riceSteps, riceCheck),
-  mission('t4-m-finish-list', 't4-end-list', T('Finish your packing list', 'Kết thúc danh sách đồ mang theo'),
-    T('Your bag is packed. End the bullet list after Hat. Type Ready. on a new line without a bullet.', 'Bạn đã xếp xong đồ vào túi. Kết thúc danh sách sau Hat. Gõ Ready. ở dòng mới không có dấu chấm đầu dòng.'),
-    packDoc, listDoc(['Things to pack', 'Water', 'Hat', 'Ready.'], 1, 2, 'bullet'), packSteps, packCheck),
+  mission('t4-m-finish-list', 't4-end-list', T('Add a note below a packing list', 'Thêm lời nhắn dưới danh sách đồ mang theo'),
+    T('Add the departure time below your packing list. End the bullet list after Hat, then type We leave at 9 am. on a plain line.', 'Ghi thêm giờ khởi hành bên dưới danh sách đồ mang theo. Kết thúc danh sách sau chữ Hat, rồi gõ We leave at 9 am. ở dòng không có dấu chấm đầu dòng.'),
+    packDoc, listDoc(['Things to pack', 'Water', 'Hat', 'We leave at 9 am.'], 1, 2, 'bullet'), packSteps, packCheck),
   mission('t4-m-neighbour-note', 't4-note', T('A note to your neighbour', 'Lời nhắn cho hàng xóm'),
-    T('Ask Mai to water your plants while you are away. Write four lines: a greeting, two sentences and your name. Use the words shown in each step.', 'Nhờ Mai tưới cây khi bạn đi vắng. Viết bốn dòng: lời chào, hai câu nhắn và tên người gửi. Dùng nội dung cho sẵn ở từng bước.'),
-    '', noteLines.join('\n'), noteSteps, noteCheck),
+    T('Ask Mai to water your plants while you are away. Write four lines: a greeting, two sentences, and Thank you with your name.', 'Nhờ Mai tưới cây giúp khi bạn đi vắng. Viết bốn dòng: lời chào, hai câu nhắn, và lời cảm ơn kèm tên của bạn.'),
+    '', noteLines.join('\n'), noteSteps, noteCheck, { completionReminder: noteReminder }),
   mission('t4-m-lost-cat-notice', 't4-heading-sign', T('A lost cat notice', 'Thông báo tìm mèo lạc'),
     T('Help your neighbours notice your missing cat. Make Lost cat size 20, bold and centred. Keep the message below it.', 'Giúp hàng xóm chú ý đến thông báo tìm mèo. Làm Lost cat cỡ 20, in đậm và canh giữa. Giữ lời nhắn ở bên dưới.'),
     headingText.join('\n'), createDoc({ p: headingText.map((text, p) => new Para(p === 0 ? { align: 'center' } : {}, [makeRun(text, p === 0 ? { size: 20, b: true } : {})])) }), noticeSteps, headingCheck),
