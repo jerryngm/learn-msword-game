@@ -12,6 +12,7 @@ import { playDemo, validateScript } from "../demo/player.js";
 import { buildRound } from "../revision.js";
 import { reviewComplete, skillState, starsFor } from "../rules.js";
 import { mountAsk } from "../ask.js";
+import { mountHelperAlert } from "../helper-alerts.js";
 import {
   getRun, hintCount, learnerAttempts, loadContent, playContext, recordAttempt, setRun, takePracticeSkill, tapGuard,
 } from "../game-data.js";
@@ -755,6 +756,7 @@ export async function render(root, { learner }) {
   const round = run.round.map((id) => byId.get(id));
   let current = null; // {ctl, item}
   let currentSkill = null;
+  let currentItem = null;
   let toastTimer = 0;
   let closed = false;
   let savedNoteShown = false;
@@ -775,6 +777,7 @@ export async function render(root, { learner }) {
   root.innerHTML = `<main class="screen wg-rev">
       <header class="lhead"><span class="brand">🌱 ${esc(t("brand").en)}</span>
         <div class="wg-top-actions"><a class="wg-finish" href="#/home">🏠 ${gbi("backHome")}</a><a class="wg-finish wg-finish-end" href="#/end">${gbi("finish")}</a><span id="askSlot"></span></div>
+        <div id="helperBannerSlot"></div>
       </header>
       <div class="wg-rev-body" id="revBody"></div>
       <div class="wg-gtoast" id="revToast" role="status" aria-live="polite"></div>
@@ -782,7 +785,17 @@ export async function render(root, { learner }) {
   const main = root.querySelector("main");
   const body = root.querySelector("#revBody");
   const toastEl = root.querySelector("#revToast");
-  const stopAsk = mountAsk(root.querySelector("#askSlot"), { inline: true, learner, context: () => ({ session: sessionId, skill: currentSkill }) });
+  const stopAsk = mountAsk(root.querySelector("#askSlot"), {
+    inline: true,
+    learner,
+    context: () => ({ session: sessionId, skill: currentSkill, item: currentItem?.id ?? null, kind: "revision" }),
+  });
+  const stopAlert = mountHelperAlert({
+    slot: root.querySelector("#helperBannerSlot") || root.querySelector("main"),
+    learner,
+    session: sessionId,
+    variant: "banner",
+  });
   if (run.kind === "practice") main.querySelector(".wg-finish-end").href = "#/garden";
 
   const toast = (html) => {
@@ -813,6 +826,7 @@ export async function render(root, { learner }) {
     clearTimeout(toastTimer);
     toastEl.classList.remove("is-shown");
     const item = round[i];
+    currentItem = item;
     currentSkill = item.skill;
     const isDo = item.type === "do";
     const optional = Boolean(skillById(item.skill)?.optional);
@@ -1025,6 +1039,7 @@ export async function render(root, { learner }) {
     clearTimeout(toastTimer);
     clearCardExtras();
     current?.ctl?.destroy?.();
+    stopAlert();
     stopAsk();
   };
 }

@@ -197,9 +197,9 @@ export function attachAsk(button, { learner, context = () => ({}) } = {}) {
     if (busy) return;
     busy = true;
     pop?.querySelectorAll("button").forEach((b) => (b.disabled = true));
-    const { session = null, skill = null } = context() ?? {};
+    const { session = null, skill = null, item = null, kind = null } = context() ?? {};
     try {
-      ask = await createAsk({ learner: learner.id, session, type, skill });
+      ask = await createAsk({ learner: learner.id, session, type, skill, item, kind });
       let msg = "";
       if (type === "learn_more") {
         msg = gbi("askSentMore");
@@ -286,8 +286,19 @@ export function attachAsk(button, { learner, context = () => ({}) } = {}) {
     document.addEventListener("mousedown", onOutside, true);
     document.addEventListener("keydown", onKey, true);
     sync();
-    if (ask) render("sent", biPair(gt("askWaiting")));
-    else render("menu");
+    if (ask) {
+      if (ask.helper && ask.helper_status === "accepted") {
+        learnersByIds([ask.helper])
+          .then(([h]) => {
+            if (!closed && pop) render("sent", gbi("helperComing", { name: `${h ? h.name : "Someone"} ${avatarEmoji(h?.avatar)}` }));
+          })
+          .catch(() => render("sent", biPair(gt("askWaiting"))));
+      } else {
+        render("sent", biPair(gt("askWaiting")));
+      }
+    } else {
+      render("menu");
+    }
   };
 
   button.addEventListener("click", open);
@@ -303,8 +314,18 @@ export function attachAsk(button, { learner, context = () => ({}) } = {}) {
     })
     .catch((err) => console.error("could not load open ask", err));
   const stopWatch = watchAsks(learner.id, (rec) => {
-    if (rec.status === "open") ask = rec;
-    else if (ask && rec.id === ask.id) ask = null;
+    if (rec.status === "open") {
+      ask = rec;
+      if (rec.helper && rec.helper_status === "accepted") {
+        learnersByIds([rec.helper])
+          .then(([h]) => {
+            if (!closed && pop) render("sent", gbi("helperComing", { name: `${h ? h.name : "Someone"} ${avatarEmoji(h?.avatar)}` }));
+          })
+          .catch(() => {});
+      }
+    } else if (ask && rec.id === ask.id) {
+      ask = null;
+    }
     sync();
     if (pop && !busy && !ask) close(false); // the teacher marked it done
   });

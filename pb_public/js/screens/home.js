@@ -4,6 +4,7 @@ import { avatarEmoji, bi, esc, label, t } from "../i18n.js";
 import { gardenState, weeklyStreak } from "../rules.js";
 import { attachAsk } from "../ask.js";
 import { plantKindOf, plantSymbol } from "../plants.js";
+import { mountHelperAlert } from "../helper-alerts.js";
 
 const PEEK_PLANTS = 4;
 
@@ -107,6 +108,7 @@ export function render(root, { learner }) {
         </div>
         <div class="streak" id="streak" hidden></div>
       </div>
+      <div id="helperAlertSlot"></div>
       <div class="home-grid">
         <div class="cards" id="cards"></div>
         <a class="peek card" href="#/garden" aria-label="${esc(label("seeGarden"))}">
@@ -126,9 +128,17 @@ export function render(root, { learner }) {
   let closed = false;
   let drawnKey = null;
   let liveId = null;
+  let stopAlert = () => {};
 
   const draw = (session, error) => {
     liveId = session?.id ?? null;
+    stopAlert();
+    stopAlert = mountHelperAlert({
+      slot: root.querySelector("#helperAlertSlot"),
+      learner,
+      session,
+      variant: "hero",
+    });
     const key = session ? `${session.id}|${session.mode}|${session.length}` : `none|${error ? "offline" : "ok"}`;
     if (key === drawnKey) return; // nothing visible changed
     drawnKey = key;
@@ -163,6 +173,7 @@ export function render(root, { learner }) {
 
   return () => {
     closed = true;
+    stopAlert();
     stopLive();
     stopAsk?.();
   };

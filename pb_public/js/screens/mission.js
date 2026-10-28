@@ -19,6 +19,7 @@ import { createRenderer } from "../word/render.js";
 import { pickNextMission } from "../revision.js";
 import { skillState, starsFor, supportLevel } from "../rules.js";
 import { mountAsk } from "../ask.js";
+import { mountHelperAlert } from "../helper-alerts.js";
 import { getRun, learnerAttempts, loadAllContent, missionsPerRun, playContext, recordAttempt, setRun, tapGuard } from "../game-data.js";
 import { gbi, glabel, gt } from "../strings-game.js";
 import { calmHtml, renderSuccess } from "./success.js";
@@ -210,6 +211,7 @@ export async function render(root, { id, learner }) {
             <button type="button" class="btn wg-check" hidden>${gbi("check")}</button>
             <button type="button" class="wg-helpbtn"><span aria-hidden="true">💡</span><span class="wg-help-t"></span><span class="wg-ladder" aria-hidden="true" hidden><i></i><i></i><i></i></span></button>
             <div class="wg-ask-slot"></div>
+            <div id="helperBannerSlot"></div>
           </div>
           <div class="wg-whost"></div>
         </section>
@@ -226,7 +228,17 @@ export async function render(root, { id, learner }) {
     const thumb = col.querySelector(".wg-thumb");
     root.querySelector(".wg-pick-btn").addEventListener("click", () => openPicker());
     const stopThumb = thumb ? drawThumb(thumb, mission.targetDoc) : () => {};
-    const stopAsk = mountAsk(root.querySelector(".wg-ask-slot"), { learner, inline: true, context: () => ({ session: sessionId, skill: mission.skill }) });
+    const stopAsk = mountAsk(root.querySelector(".wg-ask-slot"), {
+      learner,
+      inline: true,
+      context: () => ({ session: sessionId, skill: mission.skill, item: mission.id, kind: "mission" }),
+    });
+    const stopAlert = mountHelperAlert({
+      slot: root.querySelector("#helperBannerSlot") || root.querySelector("main"),
+      learner,
+      session: sessionId,
+      variant: "banner",
+    });
 
     let help = 0; // highest Help level used
     let lastLevel = 0; // the level the Help button last showed
@@ -577,6 +589,7 @@ export async function render(root, { id, learner }) {
       word?.destroy();
       mock?.destroy?.();
       stopThumb();
+      stopAlert?.();
       stopAsk();
     }
     return cleanupMission;

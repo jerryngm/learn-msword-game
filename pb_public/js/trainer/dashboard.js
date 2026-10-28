@@ -134,11 +134,14 @@ export function render(root, { store, logout }) {
       ? asks
           .map((a) => {
             const l = learners.find((x) => x.id === a.learner);
+            const h = a.helper ? learners.find((x) => x.id === a.helper) : null;
             const skill = a.skill ? skillById(a.skill)?.ican.en ?? a.skill : "";
-            return `<div class="t-q t-q-${esc(a.type)}">
+            const helperLine = h ? `<div class="t-helper-line" style="color:var(--leaf);font-weight:700">🤝 <b>${esc(h.name)}</b> is helping</div>` : "";
+            return `<div class="t-q t-q-${esc(a.type)}${h ? " is-helping" : ""}">
               ${face(l)}
               <div><b>${esc(l?.name ?? "Someone")}</b>
                 <div>${esc(ASK_LABEL[a.type] ?? a.type)}</div>
+                ${helperLine}
                 ${skill ? `<small class="t-muted">${esc(skill)}</small>` : ""}
                 <small class="t-muted">${esc(ago(a.created))}</small></div>
               <button class="t-btn t-btn-sm" type="button" data-done="${esc(a.id)}">Done</button>

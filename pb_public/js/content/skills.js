@@ -131,7 +131,7 @@ export async function loadTopic(n) {
     const mod = await import(`./topic-${n}.js`);
     return { items: mod.items ?? [], missions: mod.missions ?? [] };
   } catch (err) {
-    if (err instanceof TypeError || err?.name === "TypeError") return { items: [], missions: [] };
+    if (err?.code === "ERR_MODULE_NOT_FOUND" || err instanceof TypeError || err?.name === "TypeError") return { items: [], missions: [] };
     throw err;
   }
 }

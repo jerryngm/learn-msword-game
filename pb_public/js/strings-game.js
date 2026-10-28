@@ -202,6 +202,21 @@ export const GAME_STRINGS = {
   askThanks: { en: "Great. Keep going! 🌱", vi: "Tốt quá. Làm tiếp nhé!" },
   askFail: { en: "That did not send. Please try again.", vi: "Chưa gửi được. Bạn thử lại nhé." },
   askWaiting: { en: "You asked your teacher. They will come soon.", vi: "Bạn đã hỏi giáo viên. Giáo viên sẽ đến sớm thôi." },
+
+  // Peer Helper Alerts
+  helperAlertTitle: { en: "Help a classmate", vi: "Giúp bạn cùng lớp" },
+  helperAlertAsking: { en: "{name} is asking for your help!", vi: "{name} đang cần bạn giúp một tay!" },
+  helperAlertBanner: { en: "🤝 {name} needs help with {task}", vi: "🤝 {name} cần giúp phần {task}" },
+  helperAlertView: { en: "View & Help", vi: "Xem & Giúp" },
+  helperAlertGoal: { en: "Goal: {ican}", vi: "Mục tiêu: {ican}" },
+  helperAlertPrompt: { en: "Can you walk over to {name}'s desk and help?", vi: "Bạn có thể qua bàn của {name} để chỉ giúp không?" },
+  helperAlertAccept: { en: "🤝 I'll come to help", vi: "🤝 Tôi sẽ giúp" },
+  helperAlertDecline: { en: "Can't right now", vi: "Bận rồi" },
+  helperAlertAccepted: { en: "Thank you! Please walk over to {name}'s laptop. 🌱", vi: "Cảm ơn bạn! Hãy qua máy của {name} nhé. 🌱" },
+  helperComing: { en: "🤝 {name} is coming to help you!", vi: "🤝 {name} đang đến giúp bạn!" },
+  helperTopicTask: { en: "Topic {topic} · {type}: {title}", vi: "Chủ đề {topic} · {type}: {title}" },
+  taskMission: { en: "Mission", vi: "Nhiệm vụ" },
+  taskRevision: { en: "Revision", vi: "Ôn tập" },
 };
 
 /**

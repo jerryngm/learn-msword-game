@@ -362,16 +362,29 @@ export function loadAllContent() {
 
 /* ---------- asks ---------- */
 
-export async function createAsk({ learner, session, type, skill }) {
+export async function createAsk({ learner, session, type, skill, item = null, kind = null }) {
   if (!ASK_TYPES.has(type)) throw new RangeError(`ask type must be stuck, learn_more or classmate, got ${type}`);
   const body = {
     learner: requiredId(learner, "learner"),
     session: optionalId(session, "session"),
     type,
     skill: skill ? text(skill, 40, "skill") : "",
+    item: item ? text(item, 60, "item") : "",
+    kind: kind ? text(kind, 20, "kind") : "",
+    helper_status: "open",
     status: "open",
   };
   return pb.collection("asks").create(body, { requestKey: null });
+}
+
+/** A classmate accepts an open ask to help their peer. */
+export async function acceptAsk(askId, helperId) {
+  const id = requiredId(askId, "ask");
+  const helper = requiredId(helperId, "helper");
+  return pb.collection("asks").update(id, {
+    helper,
+    helper_status: "accepted",
+  }, { requestKey: null });
 }
 
 /** A learner may only flip their own ask to done (the API rule allows nothing else). */
@@ -405,6 +418,52 @@ export function watchAsks(learnerId, cb) {
   return () => {
     closed = true;
     sub.then((off) => off()).catch(() => {});
+  };
+}
+
+/**
+ * Watch open classmate asks in the session so eligible helpers are notified in real-time.
+ * Calls cb(asks) on any change. Returns unsubscribe function.
+ */
+export function watchOpenClassmateAsks(sessionId, cb) {
+  let closed = false;
+  let list = [];
+  let latest = 0;
+
+  const load = async () => {
+    const mine = ++latest;
+    try {
+      const filter = sessionId
+        ? pb.filter('status = "open" && type = "classmate" && session = {:sid}', { sid: sessionId })
+        : 'status = "open" && type = "classmate"';
+      const rows = await pb.collection("asks").getFullList({
+        filter,
+        sort: "-created",
+        requestKey: null,
+      });
+      if (closed || mine !== latest) return;
+      list = rows;
+      cb(list);
+    } catch (err) {
+      if (!closed && mine === latest) cb(list, err);
+    }
+  };
+
+  load();
+  const sub = pb.collection("asks").subscribe("*", () => {
+    if (closed) return;
+    load();
+  }).catch((err) => {
+    console.error("could not subscribe to classmate asks", err);
+    return () => {};
+  });
+
+  const offConnect = pb.realtime.subscribe("PB_CONNECT", load);
+
+  return () => {
+    closed = true;
+    sub.then((off) => off?.()).catch(() => {});
+    offConnect.then((off) => off?.()).catch(() => {});
   };
 }
 

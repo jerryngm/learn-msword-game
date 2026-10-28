@@ -10,6 +10,7 @@ import { learnerAttempts, learnerEncouragements, loadAllContent, playContext, se
 import { gbi, glabel, gt, STAR_PRESETS } from "../strings-game.js";
 import { icanOf } from "./success.js";
 import { plantKindOf, plantSymbol } from "../plants.js";
+import { mountHelperAlert } from "../helper-alerts.js";
 
 const stageKey = (state) => (state.wilted ? "wilted" : state.stage);
 
@@ -110,6 +111,7 @@ export async function render(root, { learner }) {
           <p class="wg-legend-tap">${biPair(gt("tapPlant"))}</p>
         </div>
         <aside class="wg-g-aside">
+          <div id="helperAlertSlot"></div>
           <div class="wg-panel wg-tmsg" id="tmsg" hidden></div>
           <div class="wg-panel">
             <div class="wg-stabs" role="tablist">
@@ -137,6 +139,12 @@ export async function render(root, { learner }) {
 
   const main = root.querySelector("main");
   const stopAsk = mountAsk(root.querySelector("#askSlot"), { inline: true, learner, context: () => ({ session: play.session?.id ?? null, skill: null }) });
+  const stopAlert = mountHelperAlert({
+    slot: root.querySelector("#helperAlertSlot"),
+    learner,
+    session: play.session,
+    variant: "hero",
+  });
 
   /* ----- tabs ----- */
   const tabs = [...root.querySelectorAll(".wg-stab")];
@@ -258,6 +266,7 @@ export async function render(root, { learner }) {
   return () => {
     closeCard();
     stopEnc();
+    stopAlert();
     stopAsk();
   };
 }

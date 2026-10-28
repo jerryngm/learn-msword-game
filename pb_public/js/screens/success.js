@@ -5,6 +5,7 @@
 import { biPair, esc, t } from "../i18n.js";
 import { skillById } from "../content/skills.js";
 import { mountAsk } from "../ask.js";
+import { mountHelperAlert } from "../helper-alerts.js";
 import { getRun, tapGuard } from "../game-data.js";
 import { gbi, glabel } from "../strings-game.js";
 import { plantKindOf, plantSymbol } from "../plants.js";
@@ -80,6 +81,7 @@ export function renderSuccess(root, result, { learner, sessionId } = {}) {
         ${result.reminder ? `<p class="wg-newbadge wg-completion-reminder" role="status">${biPair(result.reminder)}</p>` : ""}
         ${result.note ? `<p class="wg-newbadge wg-save-note" role="status">${biPair(result.note)}</p>` : ""}
         <button type="button" class="btn btn-primary wg-win-next">${gbi(nextKey)}</button>
+        <div id="helperAlertSlot" style="width:100%;max-width:520px;margin-top:14px"></div>
       </div>
     </main>`;
 
@@ -90,8 +92,15 @@ export function renderSuccess(root, result, { learner, sessionId } = {}) {
   // Focus Next after the stars have popped, so Enter moves on without a mouse.
   const focusTimer = setTimeout(() => next.focus({ preventScroll: true }), 700);
   const stopAsk = learner ? mountAsk(root.querySelector("main"), { learner, context: () => ({ session: sessionId ?? null, skill }) }) : () => {};
+  const stopAlert = learner ? mountHelperAlert({
+    slot: root.querySelector("#helperAlertSlot"),
+    learner,
+    session: sessionId,
+    variant: "hero",
+  }) : () => {};
   return () => {
     clearTimeout(focusTimer);
+    stopAlert();
     stopAsk();
   };
 }
