@@ -1,3 +1,4 @@
+import { practiceText, punctuationReminder } from './text-rules.js';
 // Topic 1: Getting started. Revision items and missions (shapes: see skills.js).
 // Windows and Word names stay in English in both languages (File, Save As, Browse, Documents, Ribbon, Shift...),
 // because the learners meet them in English on the class laptops.
@@ -34,9 +35,10 @@ const savedInDocuments = (ctx) => Boolean(ctx.saved && ctx.saved.folder.length =
 const savedOk = (ctx) => savedInDocuments(ctx) && isAboutMeName(ctx.saved.name);
 
 const cap = /^\p{Lu}/u;
-/** Splits text into sentences (up to and including . ! ?). A last piece with no end mark still counts as a piece. */
-const sentencesOf = (text) => (String(text).match(/[^.!?]+[.!?]*/g) ?? []).map((s) => s.trim()).filter(Boolean);
-const goodSentence = (s) => cap.test(s) && /[.!?]$/.test(s) && /\s/.test(s);
+/** Keep the two introduction prompts distinct even when the first full stop is missing. */
+const sentencesOf = (text) => (String(text).replace(/\s+(?=I live in\b)/g, "\n").match(/[^.!?\n]+[.!?]*/g) ?? []).map((s) => s.trim()).filter(Boolean);
+const nameSentence = /^My name is\s+\p{Lu}[\p{L}’' -]+[.!?]?$/u;
+const placeSentence = /^I live in\s+\p{L}[\p{L}’' -]+[.!?]?$/u;
 
 /** fix check: same words as the model (any capitals), but the start is a capital and the end a full stop. */
 const sentenceFix = (model) => (text) => {
@@ -279,7 +281,8 @@ const ITEMS = [
     ),
     doc: "",
     tabs: ["home"],
-    check: (doc) => /^i like tea\.$/i.test(textOf(doc).trim().replace(/\s+/g, " ")),
+    expectedText: "I like tea.",
+    check: (doc) => practiceText(textOf(doc)).toLowerCase() === "i like tea",
     demo: [
       go("doc:0,0"),
       say("Space bar between words. Full stop at the end.", "Các chữ cách nhau bằng phím cách. Cuối câu có dấu chấm."),
@@ -559,7 +562,7 @@ export const items = ITEMS.map((item) => ({ ...item, replay: REPLAYS[item.id] })
 
 const typeNameSteps = [
   {
-    text: T("Type the first words: My name is. Hold Shift for the capital M.", "Gõ phần đầu câu: My name is. Giữ phím Shift để gõ chữ M hoa."),
+    text: T("Type the first words: “My name is”. Hold Shift for the capital M.", "Gõ phần đầu câu: “My name is”. Giữ phím Shift để gõ chữ M hoa."),
     hint: T("Hold Shift, press M, then let go. Type y, press the Space bar, and type name is.", "Giữ phím Shift, nhấn M rồi thả ra. Gõ y, nhấn phím cách, rồi gõ name is."),
     done: withWho((doc) => /^My name is\b/.test(textOf(doc).trim())),
     demo: [go("doc:0,0"), say("Hold Shift for the capital M.", "Giữ Shift để gõ M hoa."), typ("My name is")],
@@ -575,7 +578,7 @@ const typeNameSteps = [
   {
     text: T("Press the full stop key (.) at the end.", "Nhấn phím dấu chấm (.) ở cuối câu."),
     hint: T("The full stop key is at the bottom right of the letters, next to the comma.", "Phím dấu chấm nằm ở hàng dưới cùng bên phải, cạnh phím dấu phẩy."),
-    done: withWho((doc) => /^My name is\s+\p{Lu}[^.]*\.\s*$/u.test(textOf(doc).trim())),
+    done: withWho((doc) => /^My name is\s+\p{Lu}[\p{L}’' -]+\.?$/u.test(textOf(doc).trim())),
     demo: [say("The full stop key is next to the comma.", "Phím dấu chấm nằm cạnh phím dấu phẩy."), typ(".")],
   },
 ];
@@ -589,16 +592,16 @@ const aboutMeSteps = [
   },
   {
     text: T(
-      "Sentence 1: My name is ___. Start with a capital letter. End with a full stop.",
-      "Câu 1: My name is ___. Bắt đầu bằng chữ hoa, kết thúc bằng dấu chấm.",
+      "Sentence 1: “My name is ___.” Start with a capital letter. End with a full stop.",
+      "Câu 1: “My name is ___.” Bắt đầu bằng chữ hoa, kết thúc bằng dấu chấm.",
     ),
     hint: T(
-      "Type My name is, then your name, then a full stop (.). For example: My name is Lan.",
-      "Gõ My name is, rồi đến tên của bạn, rồi dấu chấm (.). Ví dụ: My name is Lan.",
+      "Type “My name is”, then your name, then a full stop (.). For example: My name is Lan.",
+      "Gõ “My name is”, rồi đến tên của bạn, rồi dấu chấm (.). Ví dụ: My name is Lan.",
     ),
     done: withWho((doc) => {
       const body = sentencesOf(doc.p.slice(1).map(textOf).join(" "));
-      return body.length > 0 && goodSentence(body[0]);
+      return body.length > 0 && nameSentence.test(body[0]);
     }),
     get demo() {
       return [go("doc:1,0"), say("Capital M, your name, then a full stop.", "Chữ M hoa, tên của bạn, rồi dấu chấm."), typ(`My name is ${demoWho}.`)];
@@ -606,16 +609,16 @@ const aboutMeSteps = [
   },
   {
     text: T(
-      "Press the Space bar. Sentence 2: I live in ___. Capital letter at the start, full stop at the end.",
-      "Nhấn phím cách. Câu 2: I live in ___. Chữ hoa ở đầu, dấu chấm ở cuối câu.",
+      "Press the Space bar. Sentence 2: “I live in ___.” Capital letter at the start, full stop at the end.",
+      "Nhấn phím cách. Câu 2: “I live in ___.” Chữ hoa ở đầu, dấu chấm ở cuối câu.",
     ),
     hint: T(
-      "Press the Space bar after the first full stop. Type I live in and your city. End with a full stop. For example: I live in Melbourne.",
-      "Nhấn phím cách sau dấu chấm thứ nhất. Gõ I live in và tên thành phố của bạn. Kết thúc bằng dấu chấm. Ví dụ: I live in Melbourne.",
+      "Press the Space bar after the first full stop. Type “I live in” and your city. End with a full stop. For example: I live in Melbourne.",
+      "Nhấn phím cách sau dấu chấm thứ nhất. Gõ “I live in” và tên thành phố của bạn. Kết thúc bằng dấu chấm. Ví dụ: I live in Melbourne.",
     ),
     done: (doc) => {
       const body = sentencesOf(doc.p.slice(1).map(textOf).join(" "));
-      return body.length >= 2 && body.every(goodSentence);
+      return body.length === 2 && nameSentence.test(body[0]) && placeSentence.test(body[1]);
     },
     demo: [key("Space"), say("Capital I, your city, then a full stop.", "Chữ I hoa, thành phố của bạn, rồi dấu chấm."), typ("I live in Melbourne.")],
   },
@@ -714,6 +717,7 @@ export const missions = [
     targetDoc: "My name is Lan.",
     tabs: ["home"],
     steps: typeNameSteps,
+    completionReminder: (doc) => punctuationReminder(textOf(doc), textOf(doc).trim().replace(/\.?$/, ".")),
     goal: { check: typeNameSteps[2].done, progress: progressOf(typeNameSteps) },
   },
   {
@@ -728,6 +732,10 @@ export const missions = [
     targetDoc: "About me\nMy name is Lan. I live in Melbourne.",
     tabs: ["home"],
     steps: aboutMeSteps,
+    completionReminder: (doc) => {
+      const body = doc.p.slice(1).map(textOf).join(" ");
+      return punctuationReminder(body, sentencesOf(body).map(s => /[.!?]$/.test(s) ? s : `${s}.`).join(" "));
+    },
     goal: { check: (doc, ctx) => aboutMeSteps.every((s) => s.done(doc, ctx)), progress: progressOf(aboutMeSteps) },
   },
   {

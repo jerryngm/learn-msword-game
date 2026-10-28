@@ -1,3 +1,4 @@
+import { instructionPair, punctuationReminder } from "../content/text-rules.js";
 // Missions (#s4, with the stuck helps of #s5 folded into the Help ladder and the 🙋 Ask button).
 // Left: the task column (goal, "Make it look like this" picture, steps that tick themselves, Help).
 // Right: Word (or a mini mock such as File Explorer). The text is never pre-selected.
@@ -181,11 +182,11 @@ export async function render(root, { id, learner }) {
         <aside class="wg-mcol card" aria-label="${esc(labelPair(pair(mission.title)))}">
           <div class="wg-eyebrow">${run ? gbi("missionN", { n, total: run.target }) : gbi("missionOne")}</div>
           <h1 class="wg-m-goal">${biPair(pair(mission.title))}</h1>
-          ${mission.scenario ? `<p class="wg-m-scn">${biPair(pair(mission.scenario))}</p>` : ""}
+          ${mission.scenario ? `<p class="wg-m-scn">${instructionPair(pair(mission.scenario), mission)}</p>` : ""}
           ${mission.targetDoc != null ? `<div class="wg-m-look">${gbi("lookLike")}
             <button type="button" class="wg-thumb" aria-haspopup="dialog" aria-label="${esc(glabel("enlargeGoalPicture"))}"><span class="wg-thumb-page" aria-hidden="true"></span><span class="wg-thumb-ok" aria-hidden="true">✓</span></button></div>` : ""}
           ${steps.length ? `<ol class="wg-msteps">${steps
-            .map((s, i) => `<li class="wg-mstep" data-step="${i}"><span class="wg-num" aria-hidden="true"><span>${i + 1}</span></span><span class="wg-mstep-t">${biPair(pair(s.text))}</span></li>`)
+            .map((s, i) => `<li class="wg-mstep" data-step="${i}"><span class="wg-num" aria-hidden="true"><span>${i + 1}</span></span><span class="wg-mstep-t">${instructionPair(pair(s.text), { ...s, targetDoc: mission.targetDoc })}</span></li>`)
             .join("")}</ol>` : ""}
           <button type="button" class="wg-offer" hidden>${gbi("offerSpot")}</button>
           <p class="wg-explore">${gbi("explore")}</p>
@@ -194,6 +195,7 @@ export async function render(root, { id, learner }) {
           <div class="wg-mtop">
             ${run ? `<div class="wg-dots" aria-hidden="true">${Array.from({ length: run.target }, (_, k) => `<i class="${k < n - 1 ? "done" : k === n - 1 ? "now" : ""}"></i>`).join("")}</div>` : ""}
             <a class="wg-finish-in" href="${run ? "#/end" : "#/garden"}">${gbi(run ? "finish" : "myGarden")}</a>
+            <button type="button" class="btn wg-check" hidden>${gbi("check")}</button>
             <button type="button" class="wg-helpbtn"><span class="wg-ladder" aria-hidden="true"><i></i><i></i><i></i></span><span class="wg-help-t"></span></button>
             <div class="wg-ask-slot"></div>
           </div>
@@ -204,6 +206,7 @@ export async function render(root, { id, learner }) {
     const col = root.querySelector(".wg-mcol");
     const host = root.querySelector(".wg-whost");
     const helpBtn = root.querySelector(".wg-helpbtn");
+    const checkBtn = root.querySelector(".wg-check");
     const offerBtn = col.querySelector(".wg-offer");
     const stepEls = [...col.querySelectorAll(".wg-mstep")];
     const thumb = col.querySelector(".wg-thumb");
@@ -225,7 +228,8 @@ export async function render(root, { id, learner }) {
 
     const docNow = () => (word ? word.getDoc() : createDoc(mission.startDoc ?? ""));
     const goalMet = () => safeBool(() => mission.goal.check(docNow(), ctx));
-    let wasMet = false;
+    const reminderNow = () => mission.completionReminder?.(docNow()) ?? punctuationReminder(docNow(), mission.targetDoc);
+    checkBtn.addEventListener("click", () => goalMet() && finish());
 
     /* ----- hint ladder ----- */
     const remainingDemo = (from) => steps.slice(from).flatMap((s) => (Array.isArray(s.demo) ? s.demo : []));
@@ -335,8 +339,9 @@ export async function render(root, { id, learner }) {
       // A picture click selects it without a browser selectionchange; refresh before the steps check it.
       if (word) ctx.selection = word.selection;
       const met = goalMet();
-      if (met && !wasMet) finish();
-      wasMet = met;
+      const reminder = met ? reminderNow() : null;
+      checkBtn.hidden = !reminder;
+      if (met && !reminder) finish();
       updateSteps();
     }
 
@@ -350,6 +355,7 @@ export async function render(root, { id, learner }) {
       updateSteps();
       thumb?.classList.add("is-met");
       helpBtn.disabled = true;
+      checkBtn.disabled = true;
 
       const tries = wrongs + 1; // 1-based like revision: a clean run is 1 try
       const stars = starsFor({ kind: "mission", help_level: help, tries });
@@ -371,7 +377,7 @@ export async function render(root, { id, learner }) {
         );
       }
       const after = skillState(attempts, mission.skill, at);
-      const result = { stars, skill: mission.skill, before, after, help_level: help, tries };
+      const result = { stars, skill: mission.skill, before, after, help_level: help, tries, reminder: reminderNow() };
 
       let nextKey = "toGarden";
       let onNext = () => (location.hash = "#/garden");
@@ -380,7 +386,7 @@ export async function render(root, { id, learner }) {
         const r = fresh?.kind === "missions" && fresh.started === run.started ? fresh : run;
         if (!r.done.includes(mission.id)) r.done.push(mission.id);
         r.results = [...(r.results ?? []), { skill: mission.skill, item: mission.id, kind: "mission", stars, before: before.stage, after: after.stage, wasWilted: before.wilted }];
-        r.lastResult = { stars, skill: mission.skill, before, after, help_level: help, tries };
+        r.lastResult = result;
         r.current = null;
         setRun(r);
         const more =
@@ -420,7 +426,7 @@ export async function render(root, { id, learner }) {
         }
       }));
       offs.push(word.on("change", evaluate));
-      offs.push(word.on("goal", () => !complete && finish()));
+      offs.push(word.on("goal", evaluate));
       offs.push(
         word.on("wrong", () => {
           if (complete) return;
@@ -457,7 +463,6 @@ export async function render(root, { id, learner }) {
         cancelAnimationFrame(raf);
         document.removeEventListener("selectionchange", onSel);
       });
-      wasMet = goalMet();
       rebuildHints();
     } else {
       loadMock(mission.mock).then((mod) => {

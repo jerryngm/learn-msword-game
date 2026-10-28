@@ -1,3 +1,4 @@
+import { instructionPair } from "../content/text-rules.js";
 // Hint ladder UI. The mission screen decides *when* each level shows; this module draws it.
 //   const hints = createHints(word, { hint1: {en, vi}, spotlight: 'home.font', demo: script });
 //   hints.show(1)  hint bubble with the text hint
@@ -76,7 +77,7 @@ export function createHints(word, cfg = {}) {
     bubble = document.createElement("div");
     bubble.className = "wg-hint";
     bubble.setAttribute("role", "status");
-    bubble.innerHTML = `<span class="wg-hint-ic" aria-hidden="true">💡</span><div class="wg-hint-txt">${biPair(hint1)}</div>
+    bubble.innerHTML = `<span class="wg-hint-ic" aria-hidden="true">💡</span><div class="wg-hint-txt">${instructionPair(hint1, { demo: script })}</div>
       <button type="button" class="wg-hint-x" aria-label="${w.labelPair(ws("close"))}">×</button>`;
     bubble.querySelector(".wg-hint-x").addEventListener("click", removeBubble);
     popups.layer.appendChild(bubble);

@@ -448,6 +448,7 @@ html.hide-vi .home-links { margin-top: 28px; }
 .wg-win h1 .vi { font-size: 26px; margin-top: 6px; }
 .wg-newbadge { margin-top: 12px; font-size: 20px; font-weight: 700; color: var(--leaf-d); line-height: 1.3; animation: fadeIn .5s 1.4s both; }
 .wg-newbadge .vi { font-size: 15px; }
+.wg-completion-reminder { animation: none; }
 .wg-win .btn { margin-top: 20px; min-width: 260px; }
 
 /* ---------- Garden (#s7) ---------- */

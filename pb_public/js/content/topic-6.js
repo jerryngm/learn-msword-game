@@ -1,3 +1,4 @@
+import { practiceText } from './text-rules.js';
 // Topic 6: pictures (insert, resize from a corner dot, Wrap Text › Square for text beside a picture, In Front of Text + drag to move it, delete) and VNI typing
 // with Unikey (optional).
 import { createDoc, textOf } from '../word/model.js';
@@ -28,7 +29,7 @@ const pic = (id, width, wrap = 'inline', height, at) => {
 };
 const flyer = (heading, picture, lines) => createDoc({ p: [heading, ...(picture ? [picture] : []), ...lines] });
 
-const loose = (s) => String(s ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+const loose = (s) => practiceText(s).toLowerCase();
 const pictures = (doc) => doc.p.map((p, i) => ({ i, ...p.picture })).filter((p) => p.id);
 /** The text lines, without picture paragraphs and empty lines (inserting a picture adds an empty line after it). */
 const lines = (doc) => doc.p.filter((p) => !p.picture && !p.cell).map(textOf).map(loose).filter(Boolean);

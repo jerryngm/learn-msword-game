@@ -1,3 +1,4 @@
+import { instructionPair, punctuationReminder } from "../content/text-rules.js";
 // Weekly Revision (#s3) with the warm-up first and the cool-down last (#s13).
 // One item per screen, at most two main buttons, no timers. The try ladder (Contracts):
 // wrong 1 → the gentle toast; wrong 2 → the hint; wrong 3 → the answer is shown, then the learner does it.
@@ -628,13 +629,14 @@ function runDo(host, item, api) {
     }
   };
   let done = false;
+  const completionReminder = () => punctuationReminder(word.getDoc(), item.expectedText ?? item.doc);
   const finish = () => {
     if (done) return;
     done = true;
     hints.hide();
-    api.solved();
+    api.solved(completionReminder());
   };
-  const offChange = word.on("change", () => met() && finish());
+  const offChange = word.on("change", () => met() && !completionReminder() && finish());
   const offCommand = word.on("command", (event) => {
     if (!event.menu && !getInternals(word).demoRunning) ctx.commands.push(event.id);
   });
@@ -785,7 +787,7 @@ export async function render(root, { learner }) {
     currentSkill = item.skill;
     const isDo = item.type === "do";
     const optional = Boolean(skillById(item.skill)?.optional);
-    const heading = `<h1 class="wg-q-h">${biPair(pair(item.prompt))}</h1>`;
+    const heading = `<h1 class="wg-q-h">${instructionPair(pair(item.prompt), item)}</h1>`;
     const hasContext = !isDo && item.context && typeof item.context.mock === "string";
     body.innerHTML = `
       <div class="wg-q-top">${dotsHtml(i, round.length)}${chipHtml(i, round.length, item)}</div>
@@ -873,7 +875,7 @@ export async function render(root, { learner }) {
           state.help = Math.max(state.help, 1);
           // A runner that shows the hint itself (Word's hint bubble) returns true.
           const shownByRunner = Boolean(current?.ctl?.hint?.());
-          if (item.hint && !shownByRunner) api.feedback(`💡 ${biPair(pair(item.hint))}`);
+          if (item.hint && !shownByRunner) api.feedback(`💡 ${instructionPair(pair(item.hint), item)}`);
           showProof();
         } else if (state.wrongs >= 3 && state.help < 2) {
           state.help = 2;
@@ -881,13 +883,14 @@ export async function render(root, { learner }) {
           showProof();
         }
       },
-      solved() {
+      solved(reminder = null) {
         if (state.solved) return;
         state.solved = true;
         const tries = state.wrongs + 1;
         const stars = starsFor({ kind: "revision", help_level: state.help, tries });
         state.nextAt = now() + NEXT_GAP_MS;
         showSolved({ stars, help_level: state.help, tries });
+        if (reminder) fb.insertAdjacentHTML("beforeend", `<p role="status">${biPair(reminder)}</p>`);
         // Keep focus in the document while a `do` item is open; elsewhere Enter moves on.
         if (!isDo) nextBtn.focus({ preventScroll: true });
         save(item, { stars, help_level: state.help, tries });

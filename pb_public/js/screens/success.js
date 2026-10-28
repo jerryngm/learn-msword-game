@@ -77,6 +77,7 @@ export function renderSuccess(root, result, { learner, sessionId } = {}) {
         </div>
         <h1>${gbi(headlineKey(result))}</h1>
         ${newBadge ? `<p class="wg-newbadge">${gbi("newBadge", { ican })}</p>` : ""}
+        ${result.reminder ? `<p class="wg-newbadge wg-completion-reminder" role="status">${biPair(result.reminder)}</p>` : ""}
         ${result.note ? `<p class="wg-newbadge wg-save-note" role="status">${biPair(result.note)}</p>` : ""}
         <button type="button" class="btn btn-primary wg-win-next">${gbi(nextKey)}</button>
       </div>
