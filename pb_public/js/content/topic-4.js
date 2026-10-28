@@ -20,7 +20,10 @@ const listDoc = (lines, first, last, kind) => createDoc({
   p: lines.map((text, p) => new Para(p >= first && p <= last ? { list: { type: kind, format: kind === 'bullet' ? '•' : '1.' } } : {}, [makeRun(text)])),
 });
 const listed = (doc, first, last, kind) => doc.p.length > last && doc.p.slice(first, last + 1).every((p) => p.list?.type === kind && textOf(p).trim());
-const plainLine = (doc, p, expected) => Boolean(doc.p[p] && !doc.p[p].list && clean(line(doc, p)) === clean(expected));
+const plainLine = (doc, p, expected) => {
+  const actual = doc.p.filter((para) => textOf(para).trim());
+  return Boolean(actual[p] && !actual[p].list && clean(textOf(actual[p])) === clean(expected));
+};
 const doItem = (id, skill, prompt, hint, doc, check, demo, spotlight = 'home.paragraph') => ({
   id, skill, type: 'do', prompt, hint, doc, tabs: ['home'], check, demo, spotlight, replay: replay(doc, demo),
 });

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createDoc, textOf } from '../pb_public/js/word/model.js';
+import { createDoc, textOf, Para, makeRun } from '../pb_public/js/word/model.js';
 import { practiceText, punctuationReminder, instructionPair } from '../pb_public/js/content/text-rules.js';
 import * as t1 from '../pb_public/js/content/topic-1.js';
 import * as t2 from '../pb_public/js/content/topic-2.js';
@@ -118,6 +118,20 @@ test('reworked missions accept learner names, lenient selections and realistic c
   assert.equal(note.goal.check(createDoc('Dear Mai,\nPlease water my plants.\nI am away today.\nThank you'), {}), false);
   assert.ok(note.completionReminder(createDoc('Dear Mai\nPlease water my plants\nI am away today\nThank you Minh')));
   assert.equal(note.completionReminder(createDoc('Dear Mai,\nPlease water my plants.\nI am away today.\nThank you, Minh')), null);
+
+  const pho = find(t4.missions, 't4-m-pho-list');
+  const phoDocWithEmpty = createDoc({
+    p: [
+      new Para({}, [makeRun('Shopping for pho')]),
+      new Para({ list: { type: 'bullet' } }, [makeRun('Rice noodles')]),
+      new Para({ list: { type: 'bullet' } }, [makeRun('Beef')]),
+      new Para({ list: { type: 'bullet' } }, [makeRun('Onion')]),
+      new Para({}, [makeRun('')]),
+      new Para({}, [makeRun('Thank you.')]),
+    ],
+  });
+  assert.equal(pho.goal.check(phoDocWithEmpty, {}), true);
+  assert.equal(pho.steps[2].done(phoDocWithEmpty, {}), true);
 
   const replaceItem = find(t7.items, 't7-placeholder-replace-do');
   assert.equal(replaceItem.check(createDoc('Nguyễn Thị Hoa\nPhone: 0400 123 456 | Melbourne\nSkills:\n[Your skills]\n[Optional interests]')), true);
