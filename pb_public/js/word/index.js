@@ -364,6 +364,16 @@ export function mountWord(el, opts = {}) {
     } else if (word && after > before + 1e-9) {
       // The caret-in-word case helped, but only one word changed.
       popups.toast(ws("nearlyPart", { word }), { undo: () => undo() });
+    } else if (Math.abs(after - before) <= 1e-9) {
+      // Step progress is discrete, so most tries leave it unchanged. Tell the two cases apart.
+      const full = meta.full;
+      if (word && full && (goalMet(full) || progressOf(full) > before + 1e-9)) {
+        popups.toast(ws("nearlyPart", { word }), { undo: () => undo() });
+      } else if (typeof goal.stepAllowsCommand === "function" && !goal.stepAllowsCommand(cmd.id)) {
+        emit("wrong", { lastCommand: cmd.id, effectName: fx, nearly: false });
+        const pair = meta.removed ? ws("wrongOff", { name: cmd.label }) : ws("wrong", { effect: fx.en }, { effect: fx.vi });
+        popups.toast(pair, { undo: () => undo() });
+      }
     }
   }
 
@@ -379,7 +389,7 @@ export function mountWord(el, opts = {}) {
     else if (r.left < c.left + m) canvas.scrollLeft -= c.left + m - r.left;
   }
 
-  function commit(next, { id, label, group = null, newSel = null, cmd = null, word = null, wasPressed = false }) {
+  function commit(next, { id, label, group = null, newSel = null, cmd = null, word = null, wasPressed = false, full = null }) {
     const prev = doc;
     history.record({ doc: prev, sel }, label, group);
     if (!group) history.seal();
@@ -398,7 +408,7 @@ export function mountWord(el, opts = {}) {
     emit("change", { doc, prevDoc: prev, lastCommand: id });
     // A pressed button that is no longer pressed means the command switched its format off.
     const removed = Boolean(wasPressed && cmd?.pressed && !cmd.pressed(computeState()));
-    evaluateGoal(prev, next, cmd, { word, removed });
+    evaluateGoal(prev, next, cmd, { word, removed, full });
   }
 
   function restore(entry, id) {
@@ -614,7 +624,19 @@ export function mountWord(el, opts = {}) {
       return;
     }
     if (next !== doc) {
-      commit(next, { id, label: cmd.label, newSel: result.sel ?? null, cmd: { ...cmd, level }, word, wasPressed });
+      // A caret-in-word format only touched one word: see what the whole paragraph would have scored.
+      let full = null;
+      if (word && goal) {
+        try {
+          const p = target.from.p;
+          const all = { from: { p, offset: 0 }, to: { p, offset: doc.p[p].length } };
+          const r = cmd.run(doc, { anchor: all.from, focus: all.to, from: all.from, to: all.to, collapsed: false }, ctx);
+          full = r && Array.isArray(r.p) ? r : r?.doc ?? null;
+        } catch {
+          full = null;
+        }
+      }
+      commit(next, { id, label: cmd.label, newSel: result.sel ?? null, cmd: { ...cmd, level }, word, wasPressed, full });
     }
     else if (result.sel) {
       sel = clampSel(doc, result.sel);
@@ -1795,6 +1817,12 @@ export function mountWord(el, opts = {}) {
     return { x, y, w: x2 - x, h: y2 - y };
   }
 
+  // The heading above the table grid reads "2x3 Table" while the pointer is over a square, as in real Word.
+  function setTableHead(from, text) {
+    const head = from.closest(".wm-menu")?.querySelector(".wm-head");
+    if (head) head.textContent = text;
+  }
+
   /* ---------- wire up ---------- */
   page.addEventListener("beforeinput", onBeforeInput);
   page.addEventListener("keydown", onKeyDown);
@@ -1814,7 +1842,14 @@ export function mountWord(el, opts = {}) {
   root.addEventListener("pointerover", e=>{
     const cell=e.target.closest?.(".wm-table-grid button"); if (!cell) return;
     cell.parentElement.querySelectorAll("button").forEach(b=>b.classList.toggle("is-on",+b.dataset.cols<=+cell.dataset.cols && +b.dataset.rows<=+cell.dataset.rows));
+    setTableHead(cell, `${cell.dataset.cols}x${cell.dataset.rows} Table`);
   });
+  root.addEventListener("focusin", e=>{
+    const cell=e.target.closest?.(".wm-table-grid button"); if (cell) setTableHead(cell, `${cell.dataset.cols}x${cell.dataset.rows} Table`);
+  });
+  root.addEventListener("pointerleave", e=>{
+    if (e.target.closest?.(".wm-table-grid")) setTableHead(e.target, "Insert Table");
+  }, true);
   root.addEventListener("keydown", onComboKey);
   root.addEventListener("focusin", onComboFocus);
   root.addEventListener("focusout", onComboBlur);

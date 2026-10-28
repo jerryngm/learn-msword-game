@@ -119,6 +119,7 @@ function listCmd(type, formats) {
 
 export const THEME_BASE = ["#FFFFFF", "#000000", "#E8E8E8", "#0E2841", "#156082", "#E97132", "#196B24", "#0F9ED5", "#A02B93", "#4EA72E"];
 export const STANDARD_COLOURS = ["#C00000", "#FF0000", "#FFC000", "#FFFF00", "#92D050", "#00B050", "#00B0F0", "#0070C0", "#002060", "#7030A0"];
+export const STANDARD_COLOUR_NAMES = ["Dark Red", "Red", "Orange", "Yellow", "Light Green", "Green", "Light Blue", "Blue", "Dark Blue", "Purple"];
 export const HIGHLIGHTS = [
   ["#FFFF00", "Yellow"], ["#00FF00", "Bright Green"], ["#00FFFF", "Turquoise"], ["#FF00FF", "Pink"], ["#0000FF", "Blue"],
   ["#FF0000", "Red"], ["#000080", "Dark Blue"], ["#008080", "Teal"], ["#008000", "Green"], ["#800080", "Violet"],
@@ -486,7 +487,7 @@ function colourMenu(cmd, autoLabel, autoArg) {
     { heading: "Theme Colors" },
     { palette: grid[0].map((_, row) => grid.map((col) => ({ hex: col[row] }))).flat(), cmd, cols: 10, firstRowGap: true },
     { heading: "Standard Colors" },
-    { palette: STANDARD_COLOURS.map((hex) => ({ hex })), cmd, cols: 10 },
+    { palette: STANDARD_COLOURS.map((hex, i) => ({ hex, name: STANDARD_COLOUR_NAMES[i] })), cmd, cols: 10 },
     { sep: true },
     { cmd: "home.font.moreColours", label: "More Colors..." },
     ...(cmd === "home.font.colour" ? [{ cmd: "home.font.gradient", label: "Gradient", submenu: true }] : []),

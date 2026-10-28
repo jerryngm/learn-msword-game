@@ -183,7 +183,9 @@ function mountLanguageSwitch() {
     const on = !viHidden();
     btn.setAttribute("aria-checked", String(on));
     btn.setAttribute("aria-label", `Tiếng Việt: ${label(on ? "viSwitchOn" : "viSwitchOff")}`);
-    btn.querySelector(".lang-state").textContent = t(on ? "viSwitchOn" : "viSwitchOff").en;
+    // Show both languages while Vietnamese is on, so the switch itself is understood by a Vietnamese reader.
+    const state = t(on ? "viSwitchOn" : "viSwitchOff");
+    btn.querySelector(".lang-state").innerHTML = on ? `${state.en}<span class="vi">· ${state.vi}</span>` : state.en;
   };
   window.addEventListener(VI_CHANGE_EVENT, sync);
   btn.addEventListener("click", async () => {

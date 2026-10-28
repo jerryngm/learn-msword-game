@@ -1,6 +1,6 @@
 // Join screen: name + picture for a new learner, or "Continue as" on a return visit.
 import { pb, setCurrentLearner, forgetLearner } from "../pb.js";
-import { AVATARS, avatarEmoji, bi, esc, label, labelPair, t, viHidden } from "../i18n.js";
+import { AVATARS, VI_CHANGE_EVENT, avatarEmoji, bi, esc, label, labelPair, t, viHidden } from "../i18n.js";
 import { pickPlantKey } from "../plants.js";
 
 const NAME_MAX = 20;
@@ -62,7 +62,7 @@ function renderForm(root) {
           </div>
           <div class="join-foot">
             <button class="btn btn-primary" type="submit" id="startBtn" disabled>${bi("joinStart")}</button>
-            <div class="me-preview"><span class="face" id="mePrev" aria-hidden="true"></span><span id="meName"></span></div>
+            <div class="me-preview" hidden><span class="face" id="mePrev" aria-hidden="true"></span><span id="meName"></span></div>
           </div>
           <p class="form-error" id="joinErr" role="alert" hidden>${bi("joinFail")}</p>
         </section>
@@ -83,8 +83,16 @@ function renderForm(root) {
   let avatarKey = AVATARS[0].key;
   let saving = false;
 
+  const syncPlaceholder = () => {
+    const ph = t("joinPlaceholder");
+    input.placeholder = viHidden() ? ph.en : `${ph.en} · ${ph.vi}`;
+  };
+  window.addEventListener(VI_CHANGE_EVENT, syncPlaceholder);
+  syncPlaceholder();
+
   const sync = () => {
     const name = input.value.trim();
+    root.querySelector(".me-preview").hidden = name.length === 0;
     prevName.textContent = name;
     prevFace.textContent = avatarEmoji(avatarKey);
     startBtn.disabled = saving || name.length === 0;
@@ -126,10 +134,15 @@ function renderForm(root) {
 
   sync();
   input.focus();
+  return () => window.removeEventListener(VI_CHANGE_EVENT, syncPlaceholder);
 }
 
 export function render(root, { learner }) {
-  const showForm = () => renderForm(root);
+  let stop = null;
+  const showForm = () => {
+    stop?.();
+    stop = renderForm(root);
+  };
   if (learner) {
     renderReturning(root, learner, () => {
       forgetLearner();
@@ -138,4 +151,5 @@ export function render(root, { learner }) {
   } else {
     showForm();
   }
+  return () => stop?.();
 }

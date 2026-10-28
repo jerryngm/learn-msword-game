@@ -382,6 +382,16 @@ function openDialog(el, ctx) {
     else if (row.dataset.kind === "folder") say("noSub");
     else nameInput.value = row.dataset.name.replace(/\.docx$/i, "");
   });
+  // Like Windows: clicking into File name selects the old name, so typing replaces it instead of adding to it.
+  let selectOnUp = false;
+  nameInput.addEventListener("focus", () => {
+    nameInput.select();
+    selectOnUp = true;
+  });
+  nameInput.addEventListener("mouseup", (e) => {
+    if (selectOnUp) e.preventDefault();
+    selectOnUp = false;
+  });
   nameInput.addEventListener("input", () => {
     say("");
     document.dispatchEvent(new Event("selectionchange"));

@@ -1,9 +1,10 @@
 // Free practice (#/free): a blank document with every built ribbon tab, no goal and no score.
 import { mountWord } from "../word/index.js";
 import { bi, biPair, label, labelPair } from "../i18n.js";
+import { mountAsk } from "../ask.js";
 
 const TIP = { en: "Try any button. Undo is always here ↶", vi: "Cứ thử bấm nút nào cũng được. Nút Undo luôn ở đây ↶" };
-const UNDO = { en: "↶ Undo", vi: "Hoàn tác" };
+const UNDO = { en: "↶ Undo", vi: "Quay lại" };
 
 function initialsOf(name) {
   const words = String(name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -19,6 +20,7 @@ export function render(root, { learner } = {}) {
         <h1>${bi("freeTitle")}</h1>
         <p>${biPair(TIP)}</p>
         <button type="button" class="btn-sm" id="freeUndo" aria-label="${labelPair(UNDO)}">${biPair(UNDO)}</button>
+        <span id="freeAsk"></span>
         <a class="btn-sm" href="#/home" aria-label="${label("backHome")}">🏠 ${bi("backHome")}</a>
       </header>
       <div class="wg-free-host" id="freeHost"></div>
@@ -34,5 +36,10 @@ export function render(root, { learner } = {}) {
   // The ribbon keeps page focus with mousedown.preventDefault; do the same for the Undo button.
   root.querySelector("#freeUndo").addEventListener("mousedown", (e) => e.preventDefault());
 
-  return () => word.destroy();
+  const stopAsk = learner?.id ? mountAsk(root.querySelector("#freeAsk"), { learner, inline: true, context: () => ({ session: null, skill: null }) }) : () => {};
+
+  return () => {
+    stopAsk();
+    word.destroy();
+  };
 }

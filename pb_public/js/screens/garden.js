@@ -101,6 +101,7 @@ export async function render(root, { learner }) {
           <span class="chip wg-chip2">${gbi(tried.length === 1 ? "plantsOne" : "plantsN", { n: tried.length })}</span>
           ${thirsty ? `<span class="chip soft wg-chip2">${gbi(thirsty === 1 ? "needWaterOne" : "needWater", { n: thirsty })}</span>` : ""}
         </div>
+        <div class="wg-top-actions"><a class="wg-finish" href="#/home">🏠 ${gbi("backHome")}</a><span id="askSlot"></span></div>
       </header>
       <div class="wg-g-grid">
         <div class="wg-g-left">
@@ -128,15 +129,14 @@ export async function render(root, { learner }) {
             <p class="wg-howto-note is-stars">${biPair(gt("grow_stars"))}</p>
             </div>
             <div class="wg-tpanel" id="tpK" role="tabpanel" aria-labelledby="tabK" hidden><div class="wg-shelf">${shelf}</div><p class="wg-k-note">${gbi("kitchenNote")}</p></div>
-            <div class="wg-tpanel" id="tpB" role="tabpanel" aria-labelledby="tabB" hidden>${checklistHtml}${badgesHtml}${helperHtml}</div>
+            <div class="wg-tpanel" id="tpB" role="tabpanel" aria-labelledby="tabB" hidden>${badgesHtml}${helperHtml}${checklistHtml}</div>
           </div>
         </aside>
       </div>
-      <a class="wg-finish" href="#/home">🏠 ${gbi("backHome")}</a>
     </main>`;
 
   const main = root.querySelector("main");
-  const stopAsk = mountAsk(main, { learner, context: () => ({ session: play.session?.id ?? null, skill: null }) });
+  const stopAsk = mountAsk(root.querySelector("#askSlot"), { inline: true, learner, context: () => ({ session: play.session?.id ?? null, skill: null }) });
 
   /* ----- tabs ----- */
   const tabs = [...root.querySelectorAll(".wg-stab")];
@@ -161,7 +161,7 @@ export async function render(root, { learner }) {
   function practiceFor(skillId) {
     const own = content.missions.filter((m) => m?.skill === skillId && m.goal && typeof m.goal.check === "function");
     const mission = own.length ? pickNextMission({ missions: own, attempts, today }) ?? own[0] : null;
-    if (mission) return { href: `#/mission/${encodeURIComponent(mission.id)}` };
+    if (mission) return { href: `#/mission/${encodeURIComponent(mission.id)}`, choices: own.length > 1 ? own : null };
     if (content.items.some((i) => i?.skill === skillId)) return { practice: skillId };
     return null;
   }
@@ -206,11 +206,19 @@ export async function render(root, { learner }) {
         <svg class="wg-pcard-plant${state.wilted ? " is-wilt" : ""}" viewBox="0 0 100 110" aria-hidden="true"><use href="#${plantSymbol(state, kind)}"/></svg>
         <h2 id="pcName">${biPair(gt("canDo", { ican: icanOf(skillId) }))}</h2>
         <span class="chip${state.wilted ? " soft" : ""}">${biPair(gt(`chip_${key}`))}</span>
-        ${target ? `<button type="button" class="btn btn-primary wg-pgo">${gbi(btnKey)}</button>` : `<p class="wg-k-note">${gbi("noPractice")}</p>`}
+        ${target?.choices
+          ? `<div class="wg-picker-list">${target.choices.map((m) => `<button type="button" class="wg-picker-item wg-pgo-choice" data-id="${esc(m.id)}"><span>${biPair(typeof m.title === "object" ? m.title : { en: String(m.title), vi: String(m.title) })}</span></button>`).join("")}</div>`
+          : target ? `<button type="button" class="btn btn-primary wg-pgo">${gbi(btnKey)}</button>` : `<p class="wg-k-note">${gbi("noPractice")}</p>`}
       </div>`;
     document.body.appendChild(back);
     back.addEventListener("mousedown", (e) => e.target === back && closeCard());
     back.querySelector(".wg-pclose").addEventListener("click", closeCard);
+    back.querySelectorAll(".wg-pgo-choice").forEach((b) =>
+      b.addEventListener("click", () => {
+        closeCard();
+        location.hash = `#/mission/${encodeURIComponent(b.dataset.id)}`;
+      }),
+    );
     back.querySelector(".wg-pgo")?.addEventListener("click", () => {
       const go = target;
       closeCard();
@@ -220,7 +228,7 @@ export async function render(root, { learner }) {
       } else location.hash = go.href;
     });
     document.addEventListener("keydown", onCardKey, true);
-    (back.querySelector(".wg-pgo") ?? back.querySelector(".wg-pclose")).focus();
+    (back.querySelector(".wg-pgo, .wg-pgo-choice") ?? back.querySelector(".wg-pclose")).focus();
   }
 
   root.addEventListener("click", (e) => {

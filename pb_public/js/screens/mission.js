@@ -11,7 +11,7 @@ import { instructionPair, punctuationReminder } from "../content/text-rules.js";
 // selection: {anchor:{p,offset}, focus:{p,offset}}} (selection is an addition, for "select the words" steps).
 
 import { VI_CHANGE_EVENT, biPair, esc, labelPair } from "../i18n.js";
-import { skillById } from "../content/skills.js";
+import { TOPICS, skillById } from "../content/skills.js";
 import { getInternals, mountWord } from "../word/index.js";
 import { createHints, setHelpGlow } from "../word/hints.js";
 import { createDoc } from "../word/model.js";
@@ -62,11 +62,12 @@ function drawThumb(box, targetDoc) {
     return () => {};
   }
   const fit = () => {
-    const scale = Math.min(box.clientWidth / page.offsetWidth, 150 / page.offsetHeight);
+    // Fit to the width so the words stay readable; a long page is cropped to its top band.
+    const scale = box.clientWidth / page.offsetWidth;
     if (!(scale > 0)) return;
     page.style.transform = `scale(${scale})`;
-    page.style.left = `${Math.max(0, (box.clientWidth - page.offsetWidth * scale) / 2)}px`;
-    box.style.height = `${Math.ceil(page.offsetHeight * scale)}px`;
+    page.style.left = "0px";
+    box.style.height = `${Math.min(96, Math.ceil(page.offsetHeight * scale))}px`;
   };
   const ro = new ResizeObserver(fit);
   ro.observe(box);
@@ -180,23 +181,34 @@ export async function render(root, { id, learner }) {
     root.innerHTML = `
       <main class="wg-mis support-${support}">
         <aside class="wg-mcol card" aria-label="${esc(labelPair(pair(mission.title)))}">
-          <div class="wg-eyebrow">${run ? gbi("missionN", { n, total: run.target }) : gbi("missionOne")}</div>
-          <h1 class="wg-m-goal">${biPair(pair(mission.title))}</h1>
-          ${mission.scenario ? `<p class="wg-m-scn">${instructionPair(pair(mission.scenario), mission)}</p>` : ""}
-          ${mission.targetDoc != null ? `<div class="wg-m-look">${gbi("lookLike")}
-            <button type="button" class="wg-thumb" aria-haspopup="dialog" aria-label="${esc(glabel("enlargeGoalPicture"))}"><span class="wg-thumb-page" aria-hidden="true"></span><span class="wg-thumb-ok" aria-hidden="true">✓</span></button></div>` : ""}
-          ${steps.length ? `<ol class="wg-msteps">${steps
-            .map((s, i) => `<li class="wg-mstep" data-step="${i}"><span class="wg-num" aria-hidden="true"><span>${i + 1}</span></span><span class="wg-mstep-t">${instructionPair(pair(s.text), { ...s, targetDoc: mission.targetDoc })}</span></li>`)
-            .join("")}</ol>` : ""}
-          <button type="button" class="wg-offer" hidden>${gbi("offerSpot")}</button>
-          <p class="wg-explore">${gbi("explore")}</p>
+          <div class="wg-m-head">
+            <div class="wg-m-nav">
+              <a class="wg-m-navbtn" href="#/home">🏠 ${gbi("backHome")}</a>
+              <button type="button" class="wg-m-navbtn wg-pick-btn">${gbi("chooseMission")}</button>
+            </div>
+            <div class="wg-eyebrow">${run ? gbi("missionN", { n, total: run.target }) : gbi("missionOne")}</div>
+            <h1 class="wg-m-goal">${biPair(pair(mission.title))}</h1>
+            ${steps.length ? `<span class="wg-m-pill" aria-live="polite"></span>` : ""}
+          </div>
+          <div class="wg-m-body">
+            ${steps.length ? `<ol class="wg-msteps">${steps
+              .map((s, i) => `<li class="wg-mstep" data-step="${i}"><span class="wg-num" aria-hidden="true"><span>${i + 1}</span></span><span class="wg-mstep-t">${instructionPair(pair(s.text), { ...s, targetDoc: mission.targetDoc })}</span></li>`)
+              .join("")}</ol>` : ""}
+            ${mission.targetDoc != null ? `<div class="wg-m-look">${gbi("lookLike")}
+              <button type="button" class="wg-thumb" aria-haspopup="dialog" aria-label="${esc(glabel("enlargeGoalPicture"))}"><span class="wg-thumb-page" aria-hidden="true"></span><span class="wg-thumb-ok" aria-hidden="true">✓</span><span class="wg-thumb-badge" aria-hidden="true">${gbi("enlargeBadge")}</span></button></div>` : ""}
+            ${mission.scenario ? `<details class="wg-m-story"${window.innerHeight >= 760 || !steps.length ? " open" : ""}><summary>${gbi("aboutMission")}</summary><p class="wg-m-scn">${instructionPair(pair(mission.scenario), mission)}</p></details>` : ""}
+          </div>
+          <div class="wg-m-foot">
+            <button type="button" class="wg-offer" hidden>${gbi("offerSpot")}</button>
+            <p class="wg-explore">${gbi("explore")}</p>
+          </div>
         </aside>
         <section class="wg-mwork">
           <div class="wg-mtop">
             ${run ? `<div class="wg-dots" aria-hidden="true">${Array.from({ length: run.target }, (_, k) => `<i class="${k < n - 1 ? "done" : k === n - 1 ? "now" : ""}"></i>`).join("")}</div>` : ""}
             <a class="wg-finish-in" href="${run ? "#/end" : "#/garden"}">${gbi(run ? "finish" : "myGarden")}</a>
             <button type="button" class="btn wg-check" hidden>${gbi("check")}</button>
-            <button type="button" class="wg-helpbtn"><span class="wg-ladder" aria-hidden="true"><i></i><i></i><i></i></span><span class="wg-help-t"></span></button>
+            <button type="button" class="wg-helpbtn"><span aria-hidden="true">💡</span><span class="wg-help-t"></span><span class="wg-ladder" aria-hidden="true" hidden><i></i><i></i><i></i></span></button>
             <div class="wg-ask-slot"></div>
           </div>
           <div class="wg-whost"></div>
@@ -208,8 +220,11 @@ export async function render(root, { id, learner }) {
     const helpBtn = root.querySelector(".wg-helpbtn");
     const checkBtn = root.querySelector(".wg-check");
     const offerBtn = col.querySelector(".wg-offer");
+    const pill = col.querySelector(".wg-m-pill");
+    const stepBody = col.querySelector(".wg-m-body");
     const stepEls = [...col.querySelectorAll(".wg-mstep")];
     const thumb = col.querySelector(".wg-thumb");
+    root.querySelector(".wg-pick-btn").addEventListener("click", () => openPicker());
     const stopThumb = thumb ? drawThumb(thumb, mission.targetDoc) : () => {};
     const stopAsk = mountAsk(root.querySelector(".wg-ask-slot"), { learner, inline: true, context: () => ({ session: sessionId, skill: mission.skill }) });
 
@@ -231,10 +246,50 @@ export async function render(root, { id, learner }) {
     const reminderNow = () => mission.completionReminder?.(docNow()) ?? punctuationReminder(docNow(), mission.targetDoc);
     checkBtn.addEventListener("click", () => goalMet() && finish());
 
+    /* ----- choose another mission ----- */
+    function openPicker() {
+      if (root.querySelector(".wg-picker-back")) return;
+      const taught = play.taught?.length ? play.taught : play.topics;
+      const doneIds = new Set(attempts.filter((a) => a.kind === "mission").map((a) => a.item));
+      const groups = TOPICS.filter((tp) => taught.includes(tp.n))
+        .map((tp) => ({ tp, list: missions.filter((m) => skillById(m.skill)?.topic === tp.n) }))
+        .filter((g) => g.list.length);
+      const back = document.createElement("div");
+      back.className = "wg-picker-back";
+      back.innerHTML = `<div class="card wg-picker" role="dialog" aria-modal="true" aria-label="${esc(glabel("pickMissionTitle"))}">
+        <h2>${gbi("pickMissionTitle")}</h2>
+        ${groups.map((g) => `<div class="wg-picker-t">${gbi("dishTopic", { n: g.tp.n })} · ${biPair(pair(g.tp.title))}</div>${g.list
+          .map((m) => `<button type="button" class="wg-picker-item" data-id="${esc(m.id)}"><span class="tick" aria-hidden="true">${doneIds.has(m.id) ? "✅" : "🧩"}</span><span>${biPair(pair(m.title))}</span></button>`)
+          .join("")}`).join("")}
+        <button type="button" class="btn btn-ghost wg-picker-x">${gbi("close")}</button></div>`;
+      const close = () => {
+        back.remove();
+        document.removeEventListener("keydown", onKey, true);
+      };
+      const onKey = (e) => {
+        if (e.key === "Escape") {
+          e.stopPropagation();
+          close();
+        }
+      };
+      back.addEventListener("mousedown", (e) => e.target === back && close());
+      back.querySelector(".wg-picker-x").addEventListener("click", close);
+      back.addEventListener("click", (e) => {
+        const b = e.target.closest(".wg-picker-item");
+        if (!b) return;
+        close();
+        if (b.dataset.id !== mission.id) location.hash = `#/mission/${encodeURIComponent(b.dataset.id)}`;
+      });
+      document.addEventListener("keydown", onKey, true);
+      root.append(back);
+      back.querySelector(".wg-picker-item")?.focus();
+    }
+
     /* ----- hint ladder ----- */
-    const remainingDemo = (from) => steps.slice(from).flatMap((s) => (Array.isArray(s.demo) ? s.demo : []));
+    // Show me plays only the step the learner is on, never the whole rest of the mission.
+    const stepDemo = (i) => (Array.isArray(steps[i]?.demo) ? steps[i].demo : []);
     const maxLevel = () => {
-      if (word) return remainingDemo(current).length ? 3 : 2;
+      if (word) return stepDemo(current).length ? 3 : 2;
       if (typeof mock?.demo === "function") return 3;
       return typeof mock?.spotlight === "function" ? 2 : 1;
     };
@@ -246,7 +301,7 @@ export async function render(root, { id, learner }) {
       if (!word) return;
       const step = steps[current] ?? {};
       try {
-        hints = createHints(word, { hint1: stepHint(), spotlight: step.spotlight ?? mission.spotlight, demo: remainingDemo(current) });
+        hints = createHints(word, { hint1: stepHint(), spotlight: step.spotlight ?? mission.spotlight, demo: stepDemo(current) });
       } catch (err) {
         console.error("hints could not be set up", err);
       }
@@ -261,19 +316,13 @@ export async function render(root, { id, learner }) {
         d.hidden = k >= max;
         d.classList.toggle("f", k < lastLevel);
       });
+      helpBtn.querySelector(".wg-ladder").hidden = lastLevel === 0;
     }
 
     function useHelp(level) {
       if (complete) return;
       help = Math.max(help, level);
       helpByStep[current] = Math.max(helpByStep[current] ?? 0, level);
-      // Word's Show me demonstrates every remaining step, so their skill awards
-      // must reflect that help too. Previously completed work keeps its score.
-      if (word && level >= 3) {
-        for (let i = current; i < steps.length; i += 1) {
-          if (!completedSteps[i]) helpByStep[i] = Math.max(helpByStep[i], level);
-        }
-      }
       lastLevel = Math.max(lastLevel, level);
       sinceHelp = 0;
       setHelpGlow(helpBtn, false);
@@ -324,8 +373,13 @@ export async function render(root, { id, learner }) {
         el.classList.toggle("now", !d && i === next);
         el.setAttribute("aria-label", labelPair(gt(d ? "stepDoneAria" : "stepAria", { n: i + 1 })) + ": " + labelPair(pair(steps[i].text)));
       });
+      if (pill) {
+        const shown = Math.min(complete ? steps.length : next + 1, steps.length);
+        pill.innerHTML = biPair(gt("stepProgress", { n: shown, total: steps.length }));
+      }
       if (!complete && next !== current && next < steps.length) {
         current = next;
+        if (current > 0) stepEls[current]?.scrollIntoView({ block: "center", behavior: reducedMotion() ? "auto" : "smooth" });
         hints?.hide();
         lastLevel = 0;
         rebuildHints();
@@ -415,6 +469,13 @@ export async function render(root, { id, learner }) {
         goal: {
           check: (d) => safeBool(() => mission.goal.check(d, ctx)),
           progress: (d) => (typeof mission.goal.progress === "function" ? safeNum(() => mission.goal.progress(d, ctx)) : 0),
+          // A command the current step does not use counts as a wrong try. Steps without a demo can't say, so allow all.
+          stepAllowsCommand: (id) => {
+            const targets = stepDemo(current).map((d) => String(d?.target ?? "").split(":")[0]).filter(Boolean);
+            if (!targets.length) return true;
+            const key = String(id).split(".").slice(0, 3).join(".");
+            return targets.some((t) => t.split(".").slice(0, 3).join(".") === key);
+          },
         },
       });
       offs.push(word.on("command", (event) => {
@@ -432,11 +493,10 @@ export async function render(root, { id, learner }) {
           if (complete) return;
           wrongs += 1;
           sinceHelp += 1;
-          if (sinceHelp >= 2) {
-            setHelpGlow(helpBtn, true);
-            const spot = steps[current]?.spotlight ?? mission.spotlight;
-            if (support === 0 && spot && lastLevel < 2) offerBtn.hidden = false;
-          }
+          // A learner who needs the most support is offered a pointer after one wrong try, not two.
+          const spot = steps[current]?.spotlight ?? mission.spotlight;
+          if (sinceHelp >= 2) setHelpGlow(helpBtn, true);
+          if (sinceHelp >= (support === 0 ? 1 : 2) && support === 0 && spot && lastLevel < 2) offerBtn.hidden = false;
         }),
       );
       const onSaved = (p) => {

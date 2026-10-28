@@ -21,7 +21,7 @@
   --fs-h2: 30px;
   --fs-label: 24px;
   --fs-small: 18px;
-  --fs-vi: .76em;
+  --fs-vi: .78em;
 
   /* tap targets for older learners */
   --tap: 60px;
@@ -47,7 +47,7 @@ a { color: inherit; }
 html.hide-vi .vi { display: none; }
 
 /* Vietnamese second line: smaller, under the English */
-.vi { display: block; font-size: var(--fs-vi); font-weight: 400; color: var(--ink-2); line-height: 1.35; margin-top: 2px; }
+.vi { display: block; font-size: var(--fs-vi); font-weight: 500; color: var(--ink-2); line-height: 1.35; margin-top: 2px; }
 
 .card { background: var(--card); border-radius: var(--r-xl); box-shadow: var(--sh); }
 .lead { font-size: var(--fs-lead); color: var(--ink-2); }
@@ -63,7 +63,7 @@ html.hide-vi .vi { display: none; }
 .btn-primary { background: var(--teal); color: #fff; box-shadow: 0 6px 0 var(--teal-d), 0 10px 24px rgba(47, 115, 112, .25); }
 .btn-primary:hover { background: #337E7A; }
 .btn-primary:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--teal-d); }
-.btn-primary[disabled] { background: #A9C4C2; box-shadow: 0 6px 0 #8FAEAC; cursor: not-allowed; }
+.btn-primary[disabled] { background: #DCE7E5; color: #355250; box-shadow: 0 4px 0 #BFCFD0; cursor: not-allowed; }
 .btn-ghost {
   background: transparent; color: var(--ink-2); font-size: 20px; min-height: 52px; padding: 8px 20px;
   text-decoration: underline; text-underline-offset: 4px;
@@ -87,3 +87,6 @@ html.hide-vi .vi { display: none; }
 }
 body[data-route="mission"] .app-version, body[data-route="free"] .app-version { display: none; }
 body.pj-body .app-version { color: #9A9AA3; }
+
+/* An element marked hidden stays hidden even when a class gives it a display value. */
+[hidden] { display: none !important; }

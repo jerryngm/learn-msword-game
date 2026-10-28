@@ -34,7 +34,7 @@
 // In reduced motion the numbered markers and the typed text stay after the promise resolves, so the
 // learner can read them; they go when `signal` aborts (callers abort when the learner moves on).
 
-import { biPair } from "../i18n.js";
+import { biPair, viHidden } from "../i18n.js";
 import { ico } from "../word/icons.js";
 import { createKeyboard, keysForChar, parseCombo } from "./keyboard.js";
 
@@ -177,7 +177,7 @@ export async function playDemo(host, script, opts = {}) {
   /* ---------- ghost cursor, ripples, markers ---------- */
   let ghost = null;
   if (!reduced) {
-    ghost = add("wg-ghost dm-ghost", `${ico("ghost")}<span class="wg-ghost-lbl">Watch</span>`);
+    ghost = add("wg-ghost dm-ghost", `${ico("ghost")}<span class="wg-ghost-lbl">${viHidden() ? "Watch" : "Watch · Xem nhé"}</span>`);
     const b = bounds();
     ghost.style.left = `${b.w * 0.7}px`;
     ghost.style.top = `${b.h * 0.6}px`;
@@ -488,7 +488,7 @@ export async function playDemo(host, script, opts = {}) {
       pressed.delete(el);
     }
     if (!aborted()) opts.act?.(step.target, kind);
-    if (tag) lbl.textContent = "Watch";
+    if (tag) lbl.textContent = viHidden() ? "Watch" : "Watch · Xem nhé";
   }
 
   async function doSelect(step) {

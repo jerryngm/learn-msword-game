@@ -130,7 +130,7 @@ function placeholderMock(host, item, onRegion) {
 // changes a model. The replay never writes an attempt.
 
 const REPLAY_STAGES = new Set(["word", "word-static", "start-menu", "explorer", "keyboard", "none"]);
-const REPLAY_DELAY_MS = 900; // the learner sees their right answer (stars, green choice) before the replay covers it
+const REPLAY_DELAY_MS = 1600; // the learner sees their right answer (stars, green choice) before the replay covers it
 
 const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 const nextFrame = () => new Promise((done) => requestAnimationFrame(() => done()));
@@ -477,8 +477,11 @@ function runOrder(host, item, api) {
       } else {
         busy = true;
         api.wrong("order");
+        // Steps already in the right place stay; only the rest go back.
+        let keep = 0;
+        while (keep < placed.length && placed[keep].id === correct[keep]) keep += 1;
         setTimeout(() => {
-          placed.length = 0;
+          placed.length = keep;
           busy = false;
           if (!host.dataset.done) draw();
         }, 900);
@@ -516,7 +519,7 @@ function runSort(host, item, api) {
         <div class="wg-bins">${bins
           .map((b) => `<button type="button" class="wg-bin${revealed && card && card.bin === b.id ? " is-reveal" : ""}" data-bin="${esc(b.id)}" ${card ? "" : "disabled"}>
               <span class="wg-bin-h">${bp(b.label)}</span>
-              <span class="wg-bin-cards">${inBin.get(b.id).map((c) => `<span class="wg-bin-chip">${esc(c.label.en)}</span>`).join("")}</span>
+              <span class="wg-bin-cards">${inBin.get(b.id).map((c) => `<span class="wg-bin-chip">${bp(c.label)}</span>`).join("")}</span>
             </button>`)
           .join("")}</div>
       </div>`;
@@ -637,6 +640,27 @@ function runDo(host, item, api) {
     api.solved(completionReminder());
   };
   const offChange = word.on("change", () => met() && !completionReminder() && finish());
+  // Selecting words is not a document change, so check once the mouse is released (not in the middle of a drag).
+  let pressed = false;
+  let selTimer = 0;
+  const onSel = () => {
+    clearTimeout(selTimer);
+    selTimer = setTimeout(() => {
+      if (done || pressed || getInternals(word).demoRunning) return;
+      if (met() && !completionReminder()) finish();
+    }, 250);
+  };
+  const watchSel = item.autoSelect ?? /^t3-select/.test(String(item.skill));
+  const onDown = () => (pressed = true);
+  const onUp = () => {
+    pressed = false;
+    onSel();
+  };
+  if (watchSel) {
+    document.addEventListener("selectionchange", onSel);
+    host.addEventListener("pointerdown", onDown, true);
+    document.addEventListener("pointerup", onUp, true);
+  }
   const offCommand = word.on("command", (event) => {
     if (!event.menu && !getInternals(word).demoRunning) ctx.commands.push(event.id);
   });
@@ -661,6 +685,10 @@ function runDo(host, item, api) {
       else if (item.spotlight) hints.show(2);
     },
     destroy() {
+      clearTimeout(selTimer);
+      document.removeEventListener("selectionchange", onSel);
+      host.removeEventListener("pointerdown", onDown, true);
+      document.removeEventListener("pointerup", onUp, true);
       offChange();
       offCommand();
       offSaved();
@@ -745,16 +773,17 @@ export async function render(root, { learner }) {
   }
 
   root.innerHTML = `<main class="screen wg-rev">
-      <header class="lhead"><span class="brand">🌱 ${esc(t("brand").en)}</span></header>
+      <header class="lhead"><span class="brand">🌱 ${esc(t("brand").en)}</span>
+        <div class="wg-top-actions"><a class="wg-finish" href="#/home">🏠 ${gbi("backHome")}</a><a class="wg-finish wg-finish-end" href="#/end">${gbi("finish")}</a><span id="askSlot"></span></div>
+      </header>
       <div class="wg-rev-body" id="revBody"></div>
-      <a class="wg-finish" href="#/end">${gbi("finish")}</a>
       <div class="wg-gtoast" id="revToast" role="status" aria-live="polite"></div>
     </main>`;
   const main = root.querySelector("main");
   const body = root.querySelector("#revBody");
   const toastEl = root.querySelector("#revToast");
-  const stopAsk = mountAsk(main, { learner, context: () => ({ session: sessionId, skill: currentSkill }) });
-  if (run.kind === "practice") main.querySelector(".wg-finish").href = "#/garden";
+  const stopAsk = mountAsk(root.querySelector("#askSlot"), { inline: true, learner, context: () => ({ session: sessionId, skill: currentSkill }) });
+  if (run.kind === "practice") main.querySelector(".wg-finish-end").href = "#/garden";
 
   const toast = (html) => {
     clearTimeout(toastTimer);
@@ -895,10 +924,8 @@ export async function render(root, { learner }) {
         if (!isDo) nextBtn.focus({ preventScroll: true });
         save(item, { stars, help_level: state.help, tries });
         // Then the real actions play once, over the item. Next works the whole time: it stops the replay and moves on.
-        clearTimeout(replayTimer);
-        replayTimer = setTimeout(() => {
-          replayTimer = 0;
-          if (closed || current?.item !== item) return;
+        const launch = () => {
+          if (closed || current?.item !== item || stopReplay) return;
           // The prompt and the item area; a `do` card keeps its prompt row, because Next sits beside it.
           const cover = isDo ? [mainEl] : [card.querySelector(".wg-q-hrow") ?? card.querySelector(".wg-q-h"), mainEl];
           stopReplay = startReplay(card, cover, item, {
@@ -910,7 +937,22 @@ export async function render(root, { learner }) {
               if ((hadFocus || lost) && !closed && nextBtn.isConnected) nextBtn.focus({ preventScroll: true });
             },
           });
-        }, REPLAY_DELAY_MS);
+        };
+        clearTimeout(replayTimer);
+        if (isDo && state.help < 2 && replayOf(item)) {
+          // They just did it themselves: don't cover their finished page. Offer the replay quietly instead.
+          const watch = document.createElement("button");
+          watch.type = "button";
+          watch.className = "btn-sm wg-watch-btn";
+          watch.innerHTML = gbi("watchReplay");
+          watch.addEventListener("click", launch);
+          fb.append(watch);
+        } else {
+          replayTimer = setTimeout(() => {
+            replayTimer = 0;
+            launch();
+          }, REPLAY_DELAY_MS);
+        }
       },
     };
 

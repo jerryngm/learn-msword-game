@@ -34,9 +34,10 @@ function useStyles(root) {
 }
 
 const MSG = {
-  other: { en: "That is a different file. Look for About_Me_ and your name.", vi: "Đó là tệp khác. Hãy tìm tệp About_Me_ có tên của bạn." },
-  opening: { en: "Your file is opening in Word.", vi: "Tệp của bạn đang mở trong Word." },
-  oneClick: { en: "One click only chooses a file. Double-click to open it.", vi: "Bấm một lần chỉ là chọn tệp. Muốn mở, hãy bấm đúp." },
+  other: { en: "That is a different file. Look for About_Me_ and your name.", vi: "Đó là file khác. Hãy tìm file About_Me_ có tên của bạn." },
+  opening: { en: "Your file is opening in Word.", vi: "File của bạn đang mở trong Word." },
+  oneClick: { en: "One click only chooses a file. Double-click to open it.", vi: "Bấm một lần chỉ là chọn file. Muốn mở, hãy bấm đúp." },
+  oneClickFolder: { en: "One click only chooses a folder. Double-click it to open it, or click it once in the list on the left.", vi: "Bấm một lần chỉ là chọn thư mục. Muốn mở, hãy bấm đúp, hoặc bấm vào tên thư mục ở danh sách bên trái." },
   folder: { en: "That folder is empty.", vi: "Thư mục đó đang trống." },
 };
 
@@ -217,6 +218,7 @@ export function mount(el, { item, mission, learner, onRegion, onOpen, onWrong } 
       const sel = root.querySelector(".mke-sel");
       if (sel) sel.textContent = "1 item selected";
       if (n.dataset.kind === "file") toast(MSG.oneClick);
+      else if (n.classList.contains("mke-tile")) toast(MSG.oneClickFolder);
     }
   };
   const onDbl = (e) => {
@@ -273,6 +275,11 @@ export function mount(el, { item, mission, learner, onRegion, onOpen, onWrong } 
     try {
       for (const step of steps) {
         if (run !== demoRun) return;
+        if (step?.say) {
+          toast({ en: String(step.say.en ?? ""), vi: String(step.say.vi ?? "") }, true);
+          await wait(2400);
+          continue;
+        }
         const target = resolve(step?.target);
         if (!target) continue;
         const R = target.getBoundingClientRect();

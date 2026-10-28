@@ -70,6 +70,7 @@ const photoBtn = (p) =>
   `<button type="button" class="pd-photo" data-picture-file="${esc(p.id)}" data-cmd="${CHOOSE}" data-arg="${esc(JSON.stringify(p.id))}" aria-pressed="false" aria-label="${esc(p.name)}" style="--r:${(p.width / p.height).toFixed(3)}">` +
   `<img src="${esc(p.src)}" alt="" draggable="false"><span class="pd-check" aria-hidden="true"></span></button>`;
 const EMPTY = `<p class="pd-empty">No items match your search.</p>`;
+const EMPTY_FOLDER = `<p class="pd-empty">This folder is empty.</p>`;
 
 function deviceHtml() {
   const nav = FOLDERS.map((f) =>
@@ -162,10 +163,10 @@ export function createPictureDialogs({ root, popups, isLocked }) {
     if (w.dataset.kind === "device") {
       const name = w.querySelector(".pd-name");
       if (picked && fillName && name) name.value = byId(picked).file;
-    } else {
-      const insert = w.querySelector(`[data-spot="${PICTURE_INSERT}"]`);
-      if (insert) insert.disabled = !picked;
     }
+    // Insert stays off until a picture is chosen (a click, or a file name that matches).
+    const insert = w.querySelector(`[data-spot="${PICTURE_INSERT}"]`);
+    if (insert) insert.disabled = !picked;
     return picked;
   }
   const picked = () => win()?.querySelector("[data-picture-file].is-picked")?.dataset.pictureFile ?? null;
@@ -181,7 +182,7 @@ export function createPictureDialogs({ root, popups, isLocked }) {
     w.querySelector(".pd-where").textContent = f.label;
     w.querySelector(".pd-search-t").textContent = `Search ${f.label}`;
     const files = f.files ?? [];
-    w.querySelector(".pd-files").innerHTML = files.length ? `<div class="pd-fgrid">${files.map(fileBtn).join("")}</div>` : EMPTY;
+    w.querySelector(".pd-files").innerHTML = files.length ? `<div class="pd-fgrid">${files.map(fileBtn).join("")}</div>` : EMPTY_FOLDER;
     syncName();
   }
   // A typed file name that matches a file in this folder highlights it (Insert then inserts it), as in Windows.
@@ -284,9 +285,8 @@ export function createPictureDialogs({ root, popups, isLocked }) {
         w.addEventListener("keydown", onKey);
         w.addEventListener("input", onInput);
         if (kind === "device") {
-          // Opens on Pictures, as on the class laptops; the pane shows OneDrive selected until a folder is clicked.
+          // Opens on Pictures (empty), as on the class laptops, with Pictures highlighted in the left pane.
           showFolder("pictures");
-          w.querySelectorAll(".pd-n").forEach((b) => b.classList.toggle("is-on", b.dataset.folder === "onedrive"));
         } else if (kind === "stock") showStock();
         else search("");
       },
