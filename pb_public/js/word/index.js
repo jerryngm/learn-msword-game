@@ -1468,14 +1468,16 @@ export function mountWord(el, opts = {}) {
 
   /** How many paragraphs a `doc:` target lies past the last one (a demo types into lines its ghost Enter opened). */
   function linesPastEnd(target) {
+    const source = demoDoc ?? doc;
     const m = /^doc:(\d+),\d+$/.exec(target ?? "");
-    return m ? Math.max(0, Number(m[1]) - (doc.p.length - 1)) : 0;
+    return m ? Math.max(0, Number(m[1]) - (source.p.length - 1)) : 0;
   }
   /** Caret rect for a doc position; `past` lines below the end of the document start at the left margin. */
   function demoCaretRect(pos, past) {
+    const source = demoDoc ?? doc;
     if (!past) return caretRect(page, pos);
-    const last = doc.p.length - 1;
-    const end = caretRect(page, { p: last, offset: doc.p[last].length });
+    const last = source.p.length - 1;
+    const end = caretRect(page, { p: last, offset: source.p[last].length });
     const para = page.querySelector(`.wd-p[data-p="${last}"]`);
     const pr = para?.getBoundingClientRect() ?? end;
     const pad = para ? (parseFloat(getComputedStyle(para).paddingLeft) || 0) * (zoom / 100) : 0;
@@ -1520,16 +1522,17 @@ export function mountWord(el, opts = {}) {
       demoReplacement=range.from; demoPlaceholder=null;
       renderer.render(demoDoc); observer.takeRecords();
     }
+    const source = demoDoc ?? doc;
     let pos;
     let past = 0;
     if (target == null) {
       if (backstage) return null;
-      pos = orderRange(clampPos(doc, sel.anchor), clampPos(doc, sel.focus)).from;
+      pos = orderRange(clampPos(source, sel.anchor), clampPos(source, sel.focus)).from;
     } else {
       pos = parseDocTarget(target);
       if (!pos) return null;
       past = linesPastEnd(target);
-      if (past) pos = { p: doc.p.length - 1, offset: doc.p[doc.p.length - 1].length };
+      if (past) pos = { p: source.p.length - 1, offset: source.p[source.p.length - 1].length };
     }
     ensureVisible(demoCaretRect(pos, past));
     const cr = demoCaretRect(pos, past);
@@ -1571,7 +1574,7 @@ export function mountWord(el, opts = {}) {
     const source=demoDoc??doc;
     const at=clampPos(source,demoAt??selRange(sel).from);
     const result=getCommand("insert.pictures.choose").run(source,{from:at,to:at},{arg:id,ui});
-    demoDoc=result.doc??result; demoPicture=result.sel?.focus.p??demoPicture;
+    demoDoc=result.doc??result; demoPicture=result.sel?.focus.p??demoPicture; demoAt=result.sel?.focus??demoAt;
     renderer.render(demoDoc);observer.takeRecords();popups.closeAll();popups.closeDialog();
     if (demoPicture>=0) setTab("picture");
     updateUI();
@@ -1646,7 +1649,7 @@ export function mountWord(el, opts = {}) {
       if (cmd?.run) {
         const source=demoDoc??doc;
         const pos=source.p.findIndex(p=>p.cell);
-        const at=id.startsWith("table.") && pos>=0 ? {p:pos,offset:0} : selRange(sel).from;
+        const at=id.startsWith("table.") && pos>=0 ? {p:pos,offset:0} : clampPos(source,demoAt??selRange(sel).from);
         const result=cmd.run(source,{from:at,to:at,anchor:at,focus:at},{arg,ui});
         demoDoc=result.doc??result; renderer.render(demoDoc); observer.takeRecords();
       }
