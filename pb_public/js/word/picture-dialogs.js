@@ -294,6 +294,25 @@ export function createPictureDialogs({ root, popups, isLocked }) {
   }
 
   return {
+    snapshot() {
+      const w = win();
+      return w ? { kind: w.dataset.kind, folder: w.dataset.folder, chip: w.dataset.chip, query: w.querySelector(".pd-q")?.value, name: w.querySelector(".pd-name")?.value, picked: picked() } : null;
+    },
+    restore(state) {
+      const w = win();
+      if (!w || !state || w.dataset.kind !== state.kind) return;
+      if (state.kind === "device") {
+        showFolder(state.folder);
+        w.querySelector(".pd-name").value = state.name ?? "";
+      } else if (state.kind === "online") search(state.query);
+      else {
+        w.dataset.chip = state.chip ?? "";
+        w.querySelectorAll(".pd-chip").forEach(c => c.setAttribute("aria-pressed", String(c.dataset.chip === w.dataset.chip)));
+        w.querySelector(".pd-q").value = state.query ?? "";
+        showStock();
+      }
+      pick(state.picked, { fillName: false });
+    },
     open,
     pick,
     picked,

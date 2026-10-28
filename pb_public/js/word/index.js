@@ -1548,6 +1548,10 @@ export function mountWord(el, opts = {}) {
     root.querySelector(".wd-name").innerHTML = view.title;
     tab = view.tab; prevTab = view.prevTab;
     renderRibbon();
+    if (view.pictureDialog) {
+      openPictureDialog(view.pictureDialog.kind);
+      pictureDialogs.restore(view.pictureDialog);
+    }
     canvas.scrollTop = view.top; canvas.scrollLeft = view.left;
     writeSel();
   }
@@ -1555,7 +1559,7 @@ export function mountWord(el, opts = {}) {
   // Aborting the player removes all of its overlays, including the markers that stay after a
   // reduced-motion demo.
   function clearDemo() {
-    if (demoState) popups.closeDialog();
+    if (demoState && locked) popups.closeDialog();
     demoState?.ctrl.abort();
     root.querySelectorAll(".is-demo-press").forEach((x) => x.classList.remove("is-demo-press"));
     demoState = null;
@@ -1852,7 +1856,7 @@ export function mountWord(el, opts = {}) {
     const token = ++demoToken;
     const ctrl = new AbortController();
     const wasBackstage = backstageSnapshot();
-    const view = { zoom, tab, prevTab, top: canvas.scrollTop, left: canvas.scrollLeft, title: root.querySelector(".wd-name").innerHTML };
+    const view = { zoom, tab, prevTab, top: canvas.scrollTop, left: canvas.scrollLeft, title: root.querySelector(".wd-name").innerHTML, pictureDialog: pictureDialogs.snapshot() };
     demoState = { ctrl, was: wasBackstage, view, colours: { ...lastColours }, lists: { ...lastLists }, border: lastBorderSide, marks, painter };
     demoSelection = clampSel(doc, sel);
     demoHistory = history.fork();

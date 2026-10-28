@@ -13,6 +13,8 @@ It was built for adult learners aged roughly 40 to 70 who are new to computers a
 - **Class garden** (`/projector.html`): a read-only, full-screen view for the classroom projector, where everyone's plants grow together.
 - **Mock Word engine** (`pb_public/js/word/`): a small copy of Word with a ribbon, document model, selection, undo, dialogs and picture handling. Missions are plain data checked against the document, so adding one doesn't need new engine code.
 
+“Show me” demonstrates the action and its visible result in a temporary preview, including zoom, formatting, editing and opening folders. When it finishes or is cancelled, the learner's work and view are restored. Demonstrations do not count as learner progress or consume their undo history.
+
 Topics (1–8 provide lessons and missions; Topic 9 reviews the taught skills):
 
 1. Getting started
