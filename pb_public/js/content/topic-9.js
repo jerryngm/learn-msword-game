@@ -272,7 +272,7 @@ const festivalSteps = [
     T('Enter makes a new empty line under Spring festival. The picture will go on this new line.', 'Phím Enter tạo một dòng trống mới dưới Spring festival. Hình sẽ nằm ở dòng mới này.'),
     doc => newLineUnderHeading(doc) || flowerUnderHeading(doc), [key('Enter')]),
   step('t6-insert-picture', T('Add the flower.png picture from Downloads.', 'Chèn hình flower.png từ thư mục Downloads.'),
-    T('Click the Insert tab, then Pictures, then This Device. Click Downloads on the left. Click flower.png, then the Insert button.', 'Bấm thẻ Insert, rồi Pictures, rồi This Device. Bấm Downloads ở bên trái. Bấm hình flower.png, rồi bấm nút Insert.'),
+    T('This is your own photo, so use This Device. Click the Insert tab, then Pictures, then This Device. Click Downloads on the left. Click flower.png, then the Insert button.', 'Đây là hình của riêng bạn, nên dùng This Device. Bấm thẻ Insert, rồi Pictures, rồi This Device. Bấm Downloads ở bên trái. Bấm hình flower.png, rồi bấm nút Insert.'),
     flowerUnderHeading, [go('tab.insert'), go('menu:insert.pictures'), go('insert.pictures.device'), go('insert.pictures.nav:downloads'), go('choice:insert.pictures.choose:flower'), go('insert.pictures.insert')], 'insert.pictures.insert'),
   step('t6-resize', T('The picture is too big. Drag the little round dot on the bottom-right corner towards the middle, to make it smaller.', 'Hình quá to. Kéo chấm tròn nhỏ ở góc dưới bên phải vào phía giữa hình để làm hình nhỏ lại.'),
     T('Click the picture once, so the little round dots show. Drag a corner dot, not a side dot, so the flower keeps its shape. If it looks stretched, press Ctrl+Z and try again.', 'Bấm vào hình một lần để các chấm tròn nhỏ hiện ra. Kéo chấm tròn ở góc, đừng kéo chấm tròn ở cạnh, để hình hoa giữ nguyên hình dạng. Nếu hình bị méo, nhấn Ctrl+Z rồi làm lại.'),
@@ -281,6 +281,66 @@ const festivalSteps = [
     T('Keep the old flyer. Save this one in Documents as Festival_V2. A space is fine too.', 'Giữ lại tờ rơi cũ. Lưu tờ rơi này vào Documents với tên Festival_V2. Dùng dấu cách cũng được.'),
     T('Click File, Save As, Browse, then Documents. Click File name and type Festival_V2. Click Save.', 'Bấm File, Save As, Browse, rồi Documents. Bấm ô File name và gõ Festival_V2. Bấm Save.'),
     (doc, ctx) => saved(ctx, 'Festival_V2'), saveScript('Festival_V2')),
+];
+
+/* ---------- mission 5: garden open day (both picture routes) ---------- */
+
+const openTitle = 'Garden open day';
+const openLines = ['Come and see our garden.', 'Everyone is welcome.'];
+const openStart = createDoc(`${openTitle}\n${openLines.join('\n')}`);
+const openTarget = createDoc({ p: [openTitle, '', pic('flower', 140), '', ...openLines, '', pic('sunflower', 240), ''] });
+const ONLINE_FLOWERS = ['sunflower', 'tulips'];
+const lastLine = openLines[openLines.length - 1];
+// The learner's own photo sits directly under the heading; spare empty lines are harmless.
+const ownPhotoUnderHeading = doc => {
+  const i = doc.p.findIndex(p => p.picture?.id === 'flower');
+  if (i < 0) return false;
+  const before = doc.p.slice(0, i).filter(p => !p.cell && textOf(p).trim());
+  return before.length === 1 && words(textOf(before[0])) === words(openTitle);
+};
+// The online picture sits below both text lines, with nothing but empty lines and pictures after it.
+const onlineNearBottom = doc => {
+  const i = doc.p.findIndex(p => ONLINE_FLOWERS.includes(p.picture?.id));
+  if (i < 0) return false;
+  const before = doc.p.slice(0, i).filter(p => !p.picture && textOf(p).trim()).map(textOf);
+  return before.length === 3 && words(before[2]) === words(lastLine) && doc.p.slice(i + 1).every(p => p.picture || !textOf(p).trim());
+};
+const openText = doc => sameLines(doc, [openTitle, ...openLines]);
+const openPictures = doc => pictures(doc).length === 2 && pictures(doc).filter(p => p.id === 'flower').length === 1;
+const onePictureSmaller = doc => pictures(doc).some(p => p.width < 230 && Math.abs(p.width / p.height / ratio(p.id) - 1) < 0.03);
+// An empty line right below the last text line (the place for the online picture).
+const emptyBelowLastLine = doc => doc.p.some((p, i) => i > 0 && !p.picture && !textOf(p).trim() && words(textOf(doc.p[i - 1])) === words(lastLine));
+const openCheck = doc => openText(doc) && ownPhotoUnderHeading(doc) && onlineNearBottom(doc) && openPictures(doc) && onePictureSmaller(doc);
+const openSteps = [
+  step('t6-insert-picture', T('Click at the end of "Garden open day".', 'Bấm vào cuối dòng “Garden open day”.'),
+    T('Click just after the last letter of Garden open day. Your own garden photo will go on a new line under it.', 'Bấm ngay sau chữ cái cuối cùng của Garden open day. Hình vườn của riêng bạn sẽ nằm ở dòng mới bên dưới.'),
+    (doc, ctx) => caretAtHeadingEnd(doc, ctx) || ownPhotoUnderHeading(doc), [go(`doc:0,${openTitle.length}`)]),
+  step('t6-insert-picture', T('Press Enter.', 'Nhấn Enter.'),
+    T('Enter makes a new empty line under Garden open day. The photo will go on this new line.', 'Phím Enter tạo một dòng trống mới dưới Garden open day. Hình sẽ nằm ở dòng mới này.'),
+    doc => doc.p.some((p, i) => i > 0 && !p.picture && !textOf(p).trim() && words(textOf(doc.p[i - 1])) === words(openTitle)) || ownPhotoUnderHeading(doc), [key('Enter')]),
+  step('t6-insert-picture', T('This is your own photo, so use This Device. Add flower.png from Downloads.', 'Đây là hình của riêng bạn, nên dùng This Device. Chèn hình flower.png từ thư mục Downloads.'),
+    T('Click the Insert tab, then Pictures, then This Device. Click Downloads on the left. Click flower.png, then the Insert button.', 'Bấm thẻ Insert, rồi Pictures, rồi This Device. Bấm Downloads ở bên trái. Bấm hình flower.png, rồi bấm nút Insert.'),
+    ownPhotoUnderHeading, [go('tab.insert'), go('menu:insert.pictures'), go('insert.pictures.device'), go('insert.pictures.nav:downloads'), go('choice:insert.pictures.choose:flower'), go('insert.pictures.insert')], 'insert.pictures.insert'),
+  {
+    skill: 't6-insert-picture',
+    text: T('Click at the end of "Everyone is welcome." Press Enter.', 'Bấm vào cuối dòng “Everyone is welcome.” rồi nhấn Enter.'),
+    hint: T('Click just after the full stop of the last line. Press Enter. The sunflower picture will go on the new line near the bottom.', 'Bấm ngay sau dấu chấm của dòng cuối cùng. Nhấn Enter. Hình hoa hướng dương sẽ nằm ở dòng mới gần cuối trang.'),
+    done: doc => emptyBelowLastLine(doc) || onlineNearBottom(doc),
+    get demo() {
+      let p = 5;
+      if (typeof document !== 'undefined' && document.querySelector('.wd-page .wd-picture')) {
+        const el = [...document.querySelectorAll('.wd-page .wd-p')].find(e => words(e.textContent) === words(lastLine));
+        if (el) p = Number(el.dataset.p);
+      }
+      return [go(`doc:${p},${lastLine.length}`), key('Enter')];
+    },
+  },
+  step('t6-insert-picture', T('You don\'t have a sunflower photo, so use Online Pictures. Add the sunflower from the Garden tile.', 'Bạn không có hình hoa hướng dương, nên dùng Online Pictures. Chèn hình hoa hướng dương từ ô Garden.'),
+    T('Click Insert, Pictures, then Online Pictures. Click the Garden tile, click the sunflower picture, then click the Insert button.', 'Bấm Insert, Pictures, rồi Online Pictures. Bấm ô Garden, bấm hình hoa hướng dương, rồi bấm nút Insert.'),
+    onlineNearBottom, [go('tab.insert'), go('menu:insert.pictures'), go('insert.pictures.online'), go('insert.pictures.online.category:garden'), go('choice:insert.pictures.choose:sunflower'), go('insert.pictures.insert')], 'insert.pictures.insert'),
+  step('t6-resize', T('Make the flower photo smaller. Drag the little round dot on its bottom-right corner towards the middle.', 'Làm hình hoa của bạn nhỏ lại. Kéo chấm tròn nhỏ ở góc dưới bên phải vào phía giữa hình.'),
+    T('Click the flower photo once, so the little round dots show. Drag a corner dot, not a side dot, so the flower keeps its shape. If it looks stretched, press Ctrl+Z and try again.', 'Bấm vào hình hoa một lần để các chấm tròn nhỏ hiện ra. Kéo chấm tròn ở góc, đừng kéo chấm tròn ở cạnh, để hình hoa giữ nguyên hình dạng. Nếu hình bị méo, nhấn Ctrl+Z rồi làm lại.'),
+    onePictureSmaller, [go('picture:0'), drag('picture:0:se', -100, -70)]),
 ];
 
 export const missions = [
@@ -296,4 +356,7 @@ export const missions = [
   mission('t9-m-festival-update', T('Festival flyer update', 'Cập nhật tờ rơi lễ hội'),
     T('The festival date has changed, and the new date is already typed. Highlight it so people see it. Add a flower picture under the heading Spring festival and make it smaller. Then save this flyer as Festival_V2 and keep the old one.', 'Ngày lễ hội đã đổi và ngày mới đã được gõ sẵn. Hãy tô nền ngày mới để mọi người dễ thấy. Chèn hình hoa dưới tiêu đề Spring festival và làm hình nhỏ lại. Rồi lưu tờ rơi này thành Festival_V2 và giữ lại tờ rơi cũ.'),
     festivalStart, festivalTarget, ['home', 'insert'], festivalSteps, festivalCheck, { title_bar: 'Festival_V1' }),
+  mission('t9-m-garden-open-day', T('Garden open day flyer', 'Tờ rơi ngày mở cửa vườn'),
+    T('Your garden club has an open day. Add your own garden photo under the heading: it is saved in Downloads, so use This Device. Add a sunflower near the bottom: you have no sunflower photo, so use Online Pictures. Then make one picture smaller.', 'Câu lạc bộ làm vườn tổ chức ngày mở cửa vườn. Hãy chèn hình vườn của riêng bạn dưới tiêu đề: hình nằm trong Downloads, nên dùng This Device. Chèn hình hoa hướng dương ở gần cuối: bạn không có hình hoa hướng dương, nên dùng Online Pictures. Rồi làm một hình nhỏ lại.'),
+    openStart, openTarget, ['home', 'insert'], openSteps, openCheck),
 ];

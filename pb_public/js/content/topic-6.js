@@ -89,6 +89,9 @@ const mission = (id, skill, title, scenario, startDoc, targetDoc, steps, check) 
 const openPicker = [go('tab.insert'), go('menu:insert.pictures'), go('insert.pictures.device'), go('insert.pictures.nav:downloads')];
 const choosePicture = (id) => [go(`choice:insert.pictures.choose:${id}`), go('insert.pictures.insert')];
 const insertScript = (id) => [...openPicker, ...choosePicture(id)];
+// Insert › Pictures › Online Pictures › a category tile › a picture › Insert. Used when the learner has no photo of their own.
+const openOnline = [go('tab.insert'), go('menu:insert.pictures'), go('insert.pictures.online')];
+const onlineScript = (term, id) => [...openOnline, go(`insert.pictures.online.category:${term}`), ...choosePicture(id)];
 // Click the end of the line, then Enter for a new empty line (where the picture goes).
 const newLineAt = (p, end) => [go(`doc:${p},${end}`), key('Enter')];
 // Click the picture › Picture Format tab › Wrap Text › a choice. The drag then moves the floating picture.
@@ -110,6 +113,7 @@ const moveScript = [...wrapTo('front'), drag('picture:0', MOVE_DX, MOVE_DY)];
 
 const gardenLines = ['We meet every Saturday at 9 am.', 'Everyone is welcome.'];
 const classLines = ['I am learning Word on a laptop.'];
+const partyLines = ['Saturday at 2 pm.', 'Everyone is welcome.'];
 const bigFlower = flyer('Garden club', pic('flower', 480), gardenLines);
 const mouseFlyer = flyer('Garden club', pic('mouse', 120), gardenLines);
 const moveLines = ['Grow your own herbs at home.', 'We share seeds and tips.', 'Come and meet us on Saturday.'];
@@ -124,7 +128,7 @@ export const items = [
   {
     id: 't6-insert-order', skill: 't6-insert-picture', type: 'order',
     prompt: T('Your garden club flyer needs a flower photo under the heading. Put the steps in order to insert the picture.', 'Tờ rơi của câu lạc bộ làm vườn cần một tấm hình hoa ngay dưới tiêu đề. Hãy xếp các bước theo thứ tự để chèn hình.'),
-    hint: T('First make a new line under the heading. Then use Pictures on the Insert tab.', 'Trước tiên tạo một dòng mới dưới tiêu đề. Sau đó dùng Pictures trên thẻ Insert.'),
+    hint: T('First make a new line under the heading. The photo is your own, so use Pictures, then This Device.', 'Trước tiên tạo một dòng mới dưới tiêu đề. Đây là hình của riêng bạn, nên dùng Pictures, rồi This Device.'),
     steps: [
       option('place', 'Click at the end of the heading. Press Enter for a new line.', 'Bấm vào cuối tiêu đề. Nhấn Enter để xuống dòng mới.'),
       option('insert', 'Click the Insert tab', 'Bấm thẻ Insert'),
@@ -135,10 +139,20 @@ export const items = [
   },
   doItem('t6-insert-do', 't6-insert-picture',
     T('You are writing about your computer class. Add the "laptop.png" picture from Downloads under the heading "My computer class".', 'Bạn đang viết về lớp học máy tính của mình. Hãy chèn hình “laptop.png” từ thư mục Downloads vào dưới tiêu đề “My computer class”.'),
-    T('Click at the end of My computer class and press Enter. Click the Insert tab, then Pictures, then This Device. Click Downloads on the left. Click laptop.png, then the Insert button.', 'Bấm vào cuối dòng My computer class rồi nhấn Enter. Bấm thẻ Insert, rồi Pictures, rồi This Device. Bấm Downloads ở bên trái. Bấm vào hình laptop.png, rồi bấm nút Insert.'),
+    T('This is your own photo, so use This Device. Click at the end of My computer class and press Enter. Click the Insert tab, then Pictures, then This Device. Click Downloads on the left. Click laptop.png, then the Insert button.', 'Đây là hình của riêng bạn, nên dùng This Device. Bấm vào cuối dòng My computer class rồi nhấn Enter. Bấm thẻ Insert, rồi Pictures, rồi This Device. Bấm Downloads ở bên trái. Bấm vào hình laptop.png, rồi bấm nút Insert.'),
     flyer('My computer class', null, classLines),
     (doc) => onePictureAfter(doc, 'laptop', 'My computer class') && sameLines(doc, ['My computer class', ...classLines]),
     [...newLineAt(0, 17), ...insertScript('laptop')], 'insert.pictures.insert'),
+  pick('t6-route-own-photo', 't6-insert-picture',
+    T('You took a photo of your garden. It is saved in Downloads. You want it on your flyer. Which do you click?', 'Bạn đã chụp một tấm hình khu vườn của mình. Hình được lưu trong thư mục Downloads. Bạn muốn đưa hình lên tờ rơi. Bạn bấm mục nào?'),
+    T('It is your own photo, so use This Device. Online Pictures is for when you have no photo of your own.', 'Đây là hình của riêng bạn, nên dùng This Device. Online Pictures dành cho lúc bạn không có hình của mình.'),
+    [option('device', 'This Device', 'Mục This Device'), option('online', 'Online Pictures', 'Mục Online Pictures')], 'device',
+    replay(flyer('Garden club', null, gardenLines), [...newLineAt(0, 11), ...insertScript('flower'), say('Your own photo: Pictures, then This Device.', 'Hình của riêng bạn: Pictures, rồi This Device.')])),
+  pick('t6-route-no-photo', 't6-insert-picture',
+    T('You are making a party notice. You don\'t have a balloon photo. Which do you click?', 'Bạn đang làm thông báo mời dự tiệc. Bạn không có hình bóng bay nào. Bạn bấm mục nào?'),
+    T('You don\'t have a balloon photo, so use Online Pictures. This Device is for a photo you already saved.', 'Bạn không có hình bóng bay, nên dùng Online Pictures. This Device dành cho hình bạn đã lưu sẵn trong máy.'),
+    [option('online', 'Online Pictures', 'Mục Online Pictures'), option('device', 'This Device', 'Mục This Device')], 'online',
+    replay(flyer('Party time', null, partyLines), [...newLineAt(0, 10), ...onlineScript('balloons', 'balloons'), say('No photo of your own: Pictures, then Online Pictures.', 'Không có hình của mình: Pictures, rồi Online Pictures.')])),
   pick('t6-resize-pick', 't6-resize',
     T('The flower picture is too big for your flyer. You want it smaller, but not squashed. When you click the picture, little round dots show on its corners and sides. Which dot do you drag?', 'Hình hoa trên tờ rơi của bạn quá to. Bạn muốn hình nhỏ lại mà không bị méo. Khi bấm vào hình, các chấm tròn nhỏ hiện ra ở các góc và các cạnh. Bạn kéo chấm tròn nào?'),
     T('A corner dot keeps the shape of the picture. A side dot stretches or squashes it.', 'Chấm tròn ở góc giữ nguyên hình dạng. Chấm tròn ở cạnh làm hình bị kéo giãn hoặc bị bẹp.'),
@@ -236,11 +250,35 @@ const insertSteps = [
     T('Enter makes a new empty line under Garden club. The picture will go on this new line.', 'Phím Enter tạo một dòng trống mới dưới Garden club. Hình sẽ nằm ở dòng mới này.'),
     (doc) => newLineUnder(doc, 'Garden club') || insertCheck(doc), [key('Enter')]),
   step(T('On the Insert tab, click Pictures, then This Device.', 'Trên thẻ Insert, bấm Pictures, rồi bấm This Device.'),
-    T('First click the Insert tab. Then click Pictures, then This Device to open the picture window.', 'Trước tiên bấm thẻ Insert. Rồi bấm Pictures, rồi chọn This Device để mở cửa sổ chọn hình.'),
+    T('This is your own photo, so use This Device. First click the Insert tab. Then click Pictures, then This Device to open the picture window.', 'Đây là hình của riêng bạn, nên dùng This Device. Trước tiên bấm thẻ Insert. Rồi bấm Pictures, rồi chọn This Device để mở cửa sổ chọn hình.'),
     (doc) => isDeviceDialogOpen() || insertCheck(doc), openPicker, 'insert.pictures.device'),
   step(T('In Downloads, click "flower.png", then click Insert.', 'Trong thư mục Downloads, bấm vào hình “flower.png”, rồi bấm nút Insert.'),
     T('Click Downloads on the left. Click flower.png, then click the Insert button.', 'Bấm Downloads ở bên trái. Bấm hình flower.png, rồi bấm nút Insert.'),
     insertCheck, choosePicture('flower'), 'insert.pictures.insert'),
+];
+
+const cakeLines = ['Our class party is on Friday at 3 pm.', 'Everyone is welcome.'];
+const cakeText = ['Birthday party', ...cakeLines];
+const cakeCheck = (doc) => onePictureAfter(doc, 'cake', 'Birthday party') && sameLines(doc, cakeText);
+const onlineWindow = () => (typeof document !== 'undefined' ? document.querySelector('.wd-dlg.wd-pic.pd-online') : null);
+const isOnlineOpen = () => Boolean(onlineWindow());
+const isOnlineResults = () => onlineWindow()?.dataset.view === 'results';
+const cakeSteps = [
+  step(T('Click at the end of "Birthday party".', 'Bấm vào cuối dòng “Birthday party”.'),
+    T('Click just after the last letter of Birthday party.', 'Bấm ngay sau chữ cái cuối cùng của Birthday party.'),
+    (doc, ctx) => caretAtEnd(doc, ctx, 'Birthday party') || newLineUnder(doc, 'Birthday party') || cakeCheck(doc), [go('doc:0,14')]),
+  step(T('Press Enter.', 'Nhấn Enter.'),
+    T('Enter makes a new empty line under Birthday party. The picture will go on this new line.', 'Phím Enter tạo một dòng trống mới dưới Birthday party. Hình sẽ nằm ở dòng mới này.'),
+    (doc) => newLineUnder(doc, 'Birthday party') || cakeCheck(doc), [key('Enter')]),
+  step(T('You don\'t have a cake photo, so use Online Pictures. On the Insert tab, click Pictures, then Online Pictures.', 'Bạn không có hình bánh sinh nhật, nên dùng Online Pictures. Trên thẻ Insert, bấm Pictures, rồi bấm Online Pictures.'),
+    T('You don\'t have a cake photo of your own, so use Online Pictures. First click the Insert tab. Then click Pictures, then Online Pictures to open the picture window.', 'Bạn không có hình bánh sinh nhật của riêng mình, nên dùng Online Pictures. Trước tiên bấm thẻ Insert. Rồi bấm Pictures, rồi bấm Online Pictures để mở cửa sổ chọn hình.'),
+    (doc) => isOnlineOpen() || cakeCheck(doc), openOnline, 'insert.pictures.online'),
+  step(T('Click the Birthday Cake tile.', 'Bấm vào ô Birthday Cake.'),
+    T('The tiles are small pictures with a name on them. Click the one named Birthday Cake.', 'Các ô là những hình nhỏ có ghi tên. Bấm vào ô có tên Birthday Cake.'),
+    (doc) => isOnlineResults() || cakeCheck(doc), [go('insert.pictures.online.category:cake')]),
+  step(T('Click the cake picture, then click the Insert button.', 'Bấm vào hình bánh sinh nhật, rồi bấm nút Insert.'),
+    T('Click the cake picture. A tick shows on it when it is chosen. Then click the Insert button at the bottom of the picture window.', 'Bấm vào hình bánh sinh nhật. Khi đã chọn, trên hình sẽ hiện dấu tích. Rồi bấm nút Insert ở cuối cửa sổ chọn hình.'),
+    cakeCheck, choosePicture('cake'), 'insert.pictures.insert'),
 ];
 
 const resizeStart = flyer('Garden club', pic('flower', 480), flyerLines);
@@ -308,7 +346,7 @@ const clubSteps = [
     T('Enter makes a new empty line under Computer club. The picture will go on this new line.', 'Phím Enter tạo một dòng trống mới dưới Computer club. Hình sẽ nằm ở dòng mới này.'),
     (doc) => newLineUnder(doc, 'Computer club') || clubInserted(doc), [key('Enter')]),
   step(T('On the Insert tab, click Pictures, then This Device.', 'Trên thẻ Insert, bấm Pictures, rồi bấm This Device.'),
-    T('First click the Insert tab. Then click Pictures, then This Device to open the picture window.', 'Trước tiên bấm thẻ Insert. Rồi bấm Pictures, rồi chọn This Device để mở cửa sổ chọn hình.'),
+    T('This is your own photo, so use This Device. First click the Insert tab. Then click Pictures, then This Device to open the picture window.', 'Đây là hình của riêng bạn, nên dùng This Device. Trước tiên bấm thẻ Insert. Rồi bấm Pictures, rồi chọn This Device để mở cửa sổ chọn hình.'),
     (doc) => isDeviceDialogOpen() || clubInserted(doc), openPicker, 'insert.pictures.device'),
   step(T('In Downloads, click "keyboard.png", then click Insert.', 'Trong thư mục Downloads, bấm vào hình “keyboard.png”, rồi bấm nút Insert.'),
     T('Click Downloads on the left. Click keyboard.png, then click the Insert button.', 'Bấm Downloads ở bên trái. Bấm hình keyboard.png, rồi bấm nút Insert.'),
@@ -343,6 +381,9 @@ export const missions = [
   mission('t6-m-flower-flyer', 't6-insert-picture', T('Add a flower photo to the flyer', 'Thêm hình hoa vào tờ rơi'),
     T('Your garden club flyer has text but no picture. Add the flower.png picture on a new line under the heading Garden club.', 'Tờ rơi của câu lạc bộ làm vườn mới có chữ mà chưa có hình. Hãy chèn hình flower.png vào một dòng mới dưới tiêu đề Garden club.'),
     flyerText.join('\n'), createDoc({ p: ['Garden club', '', pic('flower', 240), '', ...flyerLines] }), insertSteps, insertCheck),
+  mission('t6-m-online-cake', 't6-insert-picture', T('A birthday notice', 'Thông báo sinh nhật'),
+    T('Your class is having a birthday party for a classmate. You don\'t have a cake photo, so use Online Pictures. Add the Birthday Cake picture on a new line under the heading Birthday party.', 'Lớp bạn tổ chức tiệc sinh nhật cho một bạn cùng lớp. Bạn không có hình bánh sinh nhật, nên dùng Online Pictures. Hãy chèn hình Birthday Cake vào một dòng mới dưới tiêu đề Birthday party.'),
+    cakeText.join('\n'), createDoc({ p: ['Birthday party', '', pic('cake', 240), '', ...cakeLines] }), cakeSteps, cakeCheck),
   mission('t6-m-smaller-picture', 't6-resize', T('Make the picture smaller', 'Làm hình nhỏ lại'),
     T('The flower picture is too big for your flyer. Make it smaller. Drag a corner dot, so the flower does not get squashed.', 'Hình hoa quá to so với tờ rơi. Hãy làm hình nhỏ lại. Kéo chấm tròn ở góc để hình hoa không bị bẹp.'),
     resizeStart, flyer('Garden club', pic('flower', 240), flyerLines), resizeSteps, resizeCheck),
