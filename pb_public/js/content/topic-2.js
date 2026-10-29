@@ -138,6 +138,46 @@ const scheduleStart = "Tuesday class\n9 am, Room 4\nThursday class\n";
 const scheduleTarget = "Tuesday class\n9 am, Room 4\nThursday class\n9 am, Room 4";
 const signSteps = [step("Select the line: 9 am, Room 4. Click Copy.", "Bôi đen dòng: 9 am, Room 4. Bấm Copy.", "Drag across 9 am, Room 4, then click Copy in the Clipboard group.", "Kéo chuột bôi đen 9 am, Room 4 rồi bấm Copy trong nhóm Clipboard.", (doc, ctx) => used(ctx, "home.clipboard.copy"), [select(1, 0, 12), go("home.clipboard.copy")], "home.clipboard.copy"), step("Click the empty line below Thursday class. Click Paste.", "Bấm vào dòng trống dưới Thursday class. Bấm Paste.", "Keep the first 9 am, Room 4. Paste puts a copy under Thursday class.", "Giữ nguyên dòng 9 am, Room 4 ở trên. Paste sẽ dán thêm một bản xuống dưới Thursday class.", equals(scheduleTarget), [go("doc:3,0"), go("home.clipboard.paste")], "home.clipboard.paste")];
 
+/* ---------- doctor's appointment note: spelling, a capital and a full stop ---------- */
+
+const doctorStart = spellDoc("My apointment is on monday at 10 am with Dr Tran\nPlease bring your Medicare card.", { apointment: ["appointment"] });
+const doctorTarget = "My appointment is on Monday at 10 am with Dr Tran.\nPlease bring your Medicare card.";
+const firstLine = (doc) => tidy(textOf(doc.p[0]));
+// Demo offsets below are for the line after the spelling fix: "apointment" becomes "appointment" (one letter longer).
+const doctorSteps = [
+  step("Right-click apointment. Click appointment in the suggestions.", "Bấm chuột phải vào apointment. Bấm appointment trong các từ gợi ý.", "The red wavy line marks a spelling mistake. Right-click the word itself.", "Đường gạch đỏ lượn sóng báo hiệu từ có thể sai chính tả. Bấm chuột phải ngay trên từ đó.", (doc, ctx) => used(ctx, "spelling.appointment") && /\bappointment\b/.test(firstLine(doc)), spellDemo(0, 5, "appointment")),
+  { ...step("Click just after the m in monday. Press Backspace.", "Bấm ngay sau chữ m trong monday. Nhấn Backspace.", "Put the cursor between m and onday. Backspace removes the small m on its left.", "Đặt con trỏ giữa chữ m và onday. Backspace xoá chữ m nhỏ ở bên trái con trỏ.", (doc) => /\bonday\b|\bMonday\b/.test(firstLine(doc)), [go("doc:0,22"), key("Backspace")]), skill: "t2-move-cursor" },
+  { ...step("Hold Shift and type M to make Monday.", "Giữ Shift và gõ chữ M để thành Monday.", "Days of the week begin with a capital. Hold Shift, press M, then let go. Keep Caps Lock off.", "Tên ngày trong tuần bắt đầu bằng chữ hoa. Giữ Shift, nhấn M rồi thả ra. Nhớ để Caps Lock tắt.", (doc) => /\bMonday\b/.test(firstLine(doc)), [go("doc:0,21"), key("Shift+M")]), skill: "t2-capitals" },
+  { ...step("Click at the end of the first line, after Tran. Press the full stop key (.).", "Bấm vào cuối dòng đầu, sau chữ Tran. Nhấn phím dấu chấm (.).", "Put . straight after Tran, with no space before it.", "Đặt dấu . ngay sau chữ Tran, không có dấu cách ở trước.", (doc) => /\bTran\.$/.test(firstLine(doc)), [go("doc:0,49"), key(".")]), skill: "t2-punctuation" },
+];
+
+/* ---------- class jobs: Cut one line and Paste it at the end ---------- */
+
+const jobsStart = "Lock the door\nWash the cups\nPut the chairs away\n";
+const jobsOrder = ["Wash the cups", "Put the chairs away", "Lock the door"];
+/** Non-empty lines, so the empty line left by Cut never matters. */
+const jobLines = (doc) => doc.p.map((para) => tidy(textOf(para))).filter(Boolean);
+const jobsInOrder = (doc) => {
+  const lines = jobLines(doc);
+  return lines.length === jobsOrder.length && jobsOrder.every((line, i) => lines[i] === line);
+};
+/** The first line is selected whole, or with the line break that triple-click takes. */
+const jobSelected = (ctx) => {
+  const s = ctx?.selection;
+  const a = s?.anchor ?? s?.from;
+  const b = s?.focus ?? s?.to;
+  if (!a || !b) return false;
+  const [left, right] = a.p < b.p || (a.p === b.p && a.offset <= b.offset) ? [a, b] : [b, a];
+  return left.p === 0 && left.offset === 0 && ((right.p === 0 && right.offset >= 13) || (right.p === 1 && right.offset === 0));
+};
+const jobCut = (doc, ctx) => used(ctx, "home.clipboard.cut") && jobLines(doc)[0] !== "Lock the door";
+const jobSelect = [go("doc:0,0"), select(0, 0, 13)];
+const jobsSteps = [
+  step("Select the line: Lock the door", "Bôi đen dòng: Lock the door", "Drag across Lock the door. Only this line should be blue.", "Kéo chuột qua dòng Lock the door. Chỉ bôi đen dòng này.", (doc, ctx) => jobSelected(ctx) || used(ctx, "home.clipboard.cut"), jobSelect),
+  step("Click Cut.", "Bấm Cut.", "Cut is the scissors in the Clipboard group on Home. It takes the line out and keeps it ready to paste.", "Cut là hình cái kéo trong nhóm Clipboard trên Home. Cut lấy dòng ra và giữ sẵn để dán.", jobCut, [...jobSelect, go("home.clipboard.cut")], "home.clipboard.cut"),
+  step("Click the empty line at the bottom. Click Paste.", "Bấm vào dòng trống ở cuối. Bấm Paste.", "Paste puts the line in its new place, after Put the chairs away.", "Paste dán dòng vào chỗ mới, sau dòng Put the chairs away.", (doc, ctx) => jobCut(doc, ctx) && used(ctx, "home.clipboard.paste") && jobsInOrder(doc), [go("doc:3,0"), go("home.clipboard.paste")], "home.clipboard.paste"),
+];
+
 export const missions = [
   mission("t2-m-hello", "t2-backspace-delete", T("Fix a greeting", "Sửa lời chào"), T("Your welcome note has two extra letters. Remove the extra l with Backspace and the extra m with Delete.", "Lời chào mừng có hai chữ gõ thừa. Hãy xoá chữ l thừa bằng Backspace và chữ m thừa bằng Delete."), greetingStart, greetingTarget, greetingSteps),
   mission("t2-m-days", "t2-capitals", T("Days for your timetable", "Các ngày học trong tuần"), T("Write your three class days on separate lines: Monday, Tuesday and Friday. Start each day with a capital letter using Shift, and keep Caps Lock off.", "Gõ ba ngày học trên ba dòng riêng: Monday, Tuesday và Friday. Viết hoa chữ đầu mỗi ngày bằng phím Shift, và nhớ để Caps Lock tắt."), "", days.join("\n"), daysSteps),
@@ -146,4 +186,6 @@ export const missions = [
   mission("t2-m-punctuation", "t2-punctuation", T("Make a shopping sentence clear", "Thêm dấu câu vào lời nhắn đi chợ"), T("Make this shopping note easy for your family to read. Add commas after bread and milk, and put a full stop at the end.", "Làm lời nhắn đi chợ dễ đọc cho người nhà. Thêm dấu phẩy sau bread và milk, rồi đặt dấu chấm ở cuối câu."), "Buy bread milk eggs and rice", "Buy bread, milk, eggs and rice.", punctuationSteps, punctuated),
   mission("t2-m-recovery", "t2-undo-redo", T("Test Undo and Redo on a list", "Thử Undo và Redo trên danh sách"), T("You already have sugar at home. Remove Sugar from your shopping list, click Undo to see it come back, then click Redo to remove it again.", "Ở nhà vẫn còn đường. Hãy xoá Sugar khỏi danh sách đi chợ, bấm Undo để thấy chữ hiện lại, rồi bấm Redo để xoá lại."), recoveryStart, recoveryTarget, recoverySteps, (doc, ctx) => undoneThenRedone(ctx) && equals(recoveryTarget)(doc)),
   mission("t2-m-copy-address", "t2-copy-paste", T("Copy class time and room", "Sao chép giờ học và số phòng"), T("Your Tuesday and Thursday classes are at the same time and room. Copy 9 am, Room 4 and paste it on the empty line below Thursday class.", "Lớp thứ Ba và thứ Năm học cùng giờ và cùng phòng. Hãy sao chép dòng 9 am, Room 4 rồi dán xuống dòng trống dưới Thursday class."), scheduleStart, scheduleTarget, signSteps, (doc, ctx) => used(ctx, "home.clipboard.copy") && used(ctx, "home.clipboard.paste") && equals(scheduleTarget)(doc)),
+  mission("t2-m-doctor-note", "t2-spelling", T("Fix a doctor's appointment note", "Sửa lời nhắn lịch hẹn khám bệnh"), T("You are sending a note about your doctor visit, and it must be correct. Fix the spelling mistake, the small letter and the missing full stop.", "Bạn sắp gửi lời nhắn về buổi khám bệnh nên cần viết cho đúng. Hãy sửa lỗi chính tả, chữ viết thường và dấu chấm còn thiếu."), doctorStart, doctorTarget, doctorSteps, (doc, ctx) => doctorSteps.every((s) => s.done(doc, ctx)) && equals(doctorTarget)(doc)),
+  mission("t2-m-class-jobs", "t2-copy-paste", T("Put class jobs in order", "Sắp xếp việc dọn lớp theo thứ tự"), T("At the end of class, everyone tidies the room. The door is locked last, because nobody can tidy after it is locked. Use Cut and Paste to move Lock the door to the end of the list.", "Cuối buổi học, cả lớp dọn phòng. Khoá cửa là việc làm sau cùng, vì khoá xong thì không ai vào dọn được nữa. Hãy dùng Cut và Paste để chuyển dòng Lock the door xuống cuối danh sách."), jobsStart, jobsOrder.join("\n"), jobsSteps, (doc, ctx) => used(ctx, "home.clipboard.cut") && used(ctx, "home.clipboard.paste") && jobsInOrder(doc)),
 ];

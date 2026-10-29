@@ -696,6 +696,105 @@ const zoomSteps = [
   },
 ];
 
+/* ---------- fridge note: two sentences on two lines ---------- */
+
+const fridgeLines = ["I am at the shops.", "I will be home at 5 pm."];
+/** Non-empty lines, so a stray extra Enter never blocks the learner. */
+const typedLines = (doc) => doc.p.map(textOf).map((s) => s.trim()).filter(Boolean);
+/** Strict on the capital letter and the full stop, lenient on the case of the other words and on spaces. */
+const fridgeLine = (doc, i) => {
+  const line = typedLines(doc)[i];
+  return line !== undefined && sentenceFix(fridgeLines[i])(line);
+};
+
+const fridgeSteps = [
+  {
+    text: T(
+      "Type sentence 1: “I am at the shops.” Start with a capital letter and end with a full stop.",
+      "Gõ câu 1: “I am at the shops.” Bắt đầu bằng chữ hoa và kết thúc bằng dấu chấm.",
+    ),
+    hint: T(
+      "Hold Shift for the capital I. Press the Space bar between words. End with a full stop (.).",
+      "Giữ Shift để gõ chữ I hoa. Nhấn phím cách giữa các chữ. Kết thúc bằng dấu chấm (.).",
+    ),
+    done: (doc) => fridgeLine(doc, 0),
+    demo: [go("doc:0,0"), say("Capital I at the start. Full stop at the end.", "Chữ I hoa ở đầu câu. Dấu chấm ở cuối câu."), typ(fridgeLines[0])],
+  },
+  {
+    text: T("Press Enter to start a new line.", "Nhấn Enter để xuống dòng mới."),
+    hint: T(
+      "Enter is on the right side of the keyboard. The cursor moves to the next line.",
+      "Phím Enter nằm ở bên phải bàn phím. Con trỏ sẽ xuống dòng tiếp theo.",
+    ),
+    done: (doc) => fridgeLine(doc, 0) && doc.p.length >= 2,
+    demo: [go(`doc:0,${fridgeLines[0].length}`), key("Enter"), say("A new line for sentence 2.", "Xuống dòng để viết câu 2.")],
+  },
+  {
+    text: T(
+      "Type sentence 2: “I will be home at 5 pm.” Start with a capital letter and end with a full stop.",
+      "Gõ câu 2: “I will be home at 5 pm.” Bắt đầu bằng chữ hoa và kết thúc bằng dấu chấm.",
+    ),
+    hint: T(
+      "Type the number 5, press the Space bar, then type pm. End with a full stop (.).",
+      "Gõ số 5, nhấn phím cách, rồi gõ pm. Kết thúc bằng dấu chấm (.).",
+    ),
+    done: (doc) => fridgeLine(doc, 1),
+    demo: [go("doc:1,0"), say("Capital I at the start. Full stop at the end.", "Chữ I hoa ở đầu câu. Dấu chấm ở cuối câu."), typ(fridgeLines[1])],
+  },
+];
+
+/* ---------- shopping list: type one sentence, then save it ---------- */
+
+const shoppingSentence = "I need rice and eggs.";
+const shoppingTyped = (doc) => sentenceFix(shoppingSentence)(textOf(doc));
+/** Shopping List with any spaces, _ or capitals; a typed .docx never matters. */
+const isShoppingName = (name) => {
+  const n = plain(String(name ?? "").replace(/\.docx$/i, ""));
+  return n.includes("shopping") && n.includes("list");
+};
+const savedShopping = (ctx) => savedInDocuments(ctx) && isShoppingName(ctx.saved.name);
+
+const shoppingSteps = [
+  {
+    // The typing counts for the sentence skill; the saving counts for the save skill.
+    skill: "t1-sentence",
+    text: T(
+      "Type the sentence: “I need rice and eggs.” Start with a capital letter and end with a full stop.",
+      "Gõ câu: “I need rice and eggs.” Bắt đầu bằng chữ hoa và kết thúc bằng dấu chấm.",
+    ),
+    hint: T(
+      "Hold Shift for the capital I. Press the Space bar between words. End with a full stop (.).",
+      "Giữ Shift để gõ chữ I hoa. Nhấn phím cách giữa các chữ. Kết thúc bằng dấu chấm (.).",
+    ),
+    done: (doc) => shoppingTyped(doc),
+    demo: [go("doc:0,0"), say("Capital I at the start. Full stop at the end.", "Chữ I hoa ở đầu câu. Dấu chấm ở cuối câu."), typ(shoppingSentence)],
+  },
+  // File, Save As, Browse and Documents are the same clicks as the About me save.
+  ...saveSteps.slice(0, 3),
+  {
+    text: T(
+      "File name: type Shopping List. For example: Shopping_List or Shopping List.",
+      "Tên file: gõ Shopping List. Ví dụ: Shopping_List hoặc Shopping List.",
+    ),
+    hint: T(
+      "Click in the File name box. Type Shopping List. Spaces or _ are both fine.",
+      "Bấm vào ô File name. Gõ Shopping List. Dùng dấu cách hay dấu gạch dưới (_) đều được.",
+    ),
+    done: (doc, ctx) => (saveStage() === "dialog-documents" && isShoppingName(typedFileName())) || savedShopping(ctx),
+    demo: [
+      go("sa.name"),
+      say("Type Shopping List. A space or _ between words is fine.", "Gõ Shopping List. Giữa các chữ dùng dấu cách hay dấu gạch dưới (_) đều được."),
+      typ("Shopping_List", "sa.name"),
+    ],
+  },
+  {
+    text: T("Click Save.", "Bấm Save."),
+    hint: T("The Save button is at the bottom right of the window.", "Nút Save nằm ở góc dưới bên phải của cửa sổ."),
+    done: (doc, ctx) => savedShopping(ctx),
+    demo: [say("Click Save.", "Bấm Save."), go("sa.save")],
+  },
+];
+
 export const missions = [
   {
     id: "t1-m-type-name",
@@ -771,5 +870,33 @@ export const missions = [
     tabs: ["home"],
     steps: zoomSteps,
     goal: { check: () => zoomNow() >= 150, progress: () => Math.max(0, Math.min(1, (zoomNow() - 100) / 50)) },
+  },
+  {
+    id: "t1-m-fridge-note",
+    skill: "t1-sentence",
+    title: T("A note on the fridge", "Mẩu giấy nhắn trên tủ lạnh"),
+    scenario: T(
+      "You are going out and you want your family to know. Write a note for the fridge: two sentences, one on each line.",
+      "Bạn ra ngoài và muốn người nhà biết. Hãy viết mẩu giấy nhắn dán lên tủ lạnh: hai câu, mỗi câu một dòng.",
+    ),
+    startDoc: "",
+    targetDoc: fridgeLines.join("\n"),
+    tabs: ["home"],
+    steps: fridgeSteps,
+    goal: { check: (doc) => typedLines(doc).length === 2 && fridgeLine(doc, 0) && fridgeLine(doc, 1), progress: progressOf(fridgeSteps) },
+  },
+  {
+    id: "t1-m-save-shopping",
+    skill: "t1-save",
+    title: T("Save your shopping list", "Lưu danh sách đi chợ"),
+    scenario: T(
+      "You want to keep your shopping list for next week. Type one sentence, then save it in the Documents folder. Name the file Shopping List.",
+      "Bạn muốn giữ lại danh sách đi chợ cho tuần sau. Hãy gõ một câu, rồi lưu vào thư mục Documents. Đặt tên file là Shopping List.",
+    ),
+    startDoc: "",
+    targetDoc: shoppingSentence,
+    tabs: ["home"],
+    steps: shoppingSteps,
+    goal: { check: (doc, ctx) => shoppingTyped(doc) && savedShopping(ctx), progress: progressOf(shoppingSteps) },
   },
 ];
