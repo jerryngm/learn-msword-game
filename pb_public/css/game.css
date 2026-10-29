@@ -913,6 +913,7 @@ html:not(.hide-vi) .wg-q-context figcaption .vi { display: inline; margin-left: 
 .wg-picker-list { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 6px; }
 .wg-m-story summary { cursor: pointer; font-size: 16px; font-weight: 800; color: var(--teal-d); line-height: 1.25; padding: 4px 0; }
 .wg-m-story summary .vi { display: inline; margin-left: 6px; font-size: 14px; color: var(--ink-2); }
+html.hide-vi .wg-m-story summary .vi { display: none; }
 .wg-m-story .wg-m-scn { margin-top: 4px; }
 .wg-m-navbtn { font-size: 14px; padding: 2px 4px; white-space: nowrap; }
 .wg-mtop { padding-right: 340px; }
