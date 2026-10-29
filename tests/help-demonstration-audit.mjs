@@ -124,7 +124,7 @@ export async function runHelpAudit(page) {
           const sameEffect = (a, b) => clean(a.page) === clean(b.page) && a.pageStyle === b.pageStyle && a.zoom === b.zoom;
           result.requiresDocumentEffect = !sameEffect(result.initial, result.expected);
           result.observedExpectedEffect = result.states.some(s => sameEffect(s, result.expected));
-          const sameUI = (a, b) => sameEffect(a, b) && a.title === b.title && a.tab === b.tab && JSON.stringify(a.inputs) === JSON.stringify(b.inputs) && JSON.stringify(a.menus) === JSON.stringify(b.menus);
+          const sameUI = (a, b) => sameEffect(a, b) && a.title?.replace(/\s+/g, ' ') === b.title?.replace(/\s+/g, ' ') && a.tab === b.tab && JSON.stringify(a.inputs) === JSON.stringify(b.inputs) && JSON.stringify(a.menus) === JSON.stringify(b.menus);
           result.requiresVisibleEffect = !sameUI(result.initial, result.expected);
           result.observedVisibleEffect = result.states.some(s => sameUI(s, result.expected));
           ctx.selection = word.selection;

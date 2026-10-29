@@ -276,10 +276,11 @@ export function mountWord(el, opts = {}) {
     const s = computeState();
     const tableTab = root.querySelector('[data-tab="table"].wt-tab');
     const pictureTab = root.querySelector('[data-tab="picture"].wt-tab');
-    pictureTab.hidden = !doc.p[selectedPicture]?.picture && demoPicture<0;
-    page.querySelectorAll(".wd-picture").forEach(el=>el.classList.toggle("is-selected",Number(el.closest(".wd-p").dataset.p)===(demoPicture>=0?demoPicture:selectedPicture)));
+    const activePicture = demoSelection ? demoPicture : selectedPicture;
+    pictureTab.hidden = !(demoDoc ?? doc).p[activePicture]?.picture;
+    page.querySelectorAll(".wd-picture").forEach(el=>el.classList.toggle("is-selected",Number(el.closest(".wd-p").dataset.p)===activePicture));
     // Picture Format › Size shows the selected picture's size in cm (the page is 96 px per inch).
-    const shownPicture = demoPicture>=0 ? (demoDoc??doc).p[demoPicture]?.picture : doc.p[selectedPicture]?.picture;
+    const shownPicture = (demoDoc ?? doc).p[activePicture]?.picture;
     if (shownPicture) {
       const cm = (px) => `${(px*2.54/96).toFixed(2)} cm`;
       root.querySelectorAll('[data-measure="picture.height"]').forEach((i) => (i.value = cm(shownPicture.height)));
@@ -289,7 +290,7 @@ export function mountWord(el, opts = {}) {
     root.querySelector('[data-tab="tabledesign"].wt-tab').hidden = tableTab.hidden;
     // A contextual tab that disappears while it is active hands the ribbon back to the tab used
     // before it (Home if that one is gone too). A demo's own tab changes are put back when it ends.
-    if (!locked && CONTEXT_TABS.has(tab) && root.querySelector(`.wt-tab[data-tab="${tab}"]`)?.hidden) {
+    if ((!locked || demoSelection) && CONTEXT_TABS.has(tab) && root.querySelector(`.wt-tab[data-tab="${tab}"]`)?.hidden) {
       const back = RIBBON_TABS.has(prevTab) && !CONTEXT_TABS.has(prevTab) ? prevTab : "home";
       setTab(back);
       return; // setTab re-renders the ribbon and runs updateUI again
@@ -1729,6 +1730,8 @@ export function mountWord(el, opts = {}) {
     const r = orderRange(clampPos(demoDoc??doc, range.from), clampPos(demoDoc??doc, range.to));
     demoAt = r.from;
     demoSelection = { anchor: r.from, focus: r.to };
+    demoPicture = -1;
+    updateUI();
     const first = rangeRects(r)[0];
     if (first) ensureVisible(first);
     return rangeRects(r);
@@ -1764,6 +1767,8 @@ export function mountWord(el, opts = {}) {
         demoPlaceholder={from:{p,offset:0},to:{p,offset:para.length}};
         demoSelection={anchor:demoPlaceholder.from,focus:demoPlaceholder.to};
         demoAt=demoPlaceholder.from;
+        demoPicture=-1;
+        updateUI();
         commandEl(target)?.classList.add("is-demo-placeholder");
       }
       return;
@@ -1774,6 +1779,7 @@ export function mountWord(el, opts = {}) {
       return;
     }
     if (target === "print.submit") {
+      backstage?.close();
       popups.toast({en:"Practice print complete. No paper is printed.",vi:"Đã thực hành in. Không in ra giấy."});
       return;
     }
@@ -1805,7 +1811,7 @@ export function mountWord(el, opts = {}) {
       demoCommit(result.doc??result,result.sel);popups.closeAll();popups.closeDialog();return;
     }
     const pos = parseDocTarget(target);
-    if (pos) { demoAt=pos; demoSelection=collapsedSel(pos); }
+    if (pos) { demoAt=pos; demoSelection=collapsedSel(pos); demoPicture=-1; updateUI(); }
     if (pos && kind === "right") {
       const rect = demoCaretRect(pos, 0);
       openContextMenu(rect.left, rect.bottom, pos);
@@ -1866,6 +1872,7 @@ export function mountWord(el, opts = {}) {
     const view = { zoom, tab, prevTab, top: canvas.scrollTop, left: canvas.scrollLeft, title: root.querySelector(".wd-name").innerHTML, pictureDialog: pictureDialogs.snapshot() };
     demoState = { ctrl, was: wasBackstage, view, colours: { ...lastColours }, lists: { ...lastLists }, border: lastBorderSide, marks, painter };
     demoSelection = clampSel(doc, sel);
+    demoPicture = selectedPicture;
     demoHistory = history.fork();
     demoClipboard = clip;
     const before = JSON.stringify(doc);
