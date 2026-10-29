@@ -112,7 +112,8 @@ export const SKILLS = [
   // Topic 8
   { id: "t8-plan-doc", topic: 8, mission: false, ican: { en: "plan a document: what it is, who it's for, and its heading", vi: "lên ý cho văn bản: loại gì, viết cho ai, tiêu đề là gì" } },
   { id: "t8-capstone", topic: 8, ican: { en: "make a real-life document from start to finish", vi: "tự làm một văn bản dùng trong đời sống từ đầu đến cuối" } },
-  // Topic 9 has no new skills. It's the "Revise everything" preset.
+  // Topic 9
+  { id: "t9-mixed-review", topic: 9, ican: { en: "use skills from different topics together in one job", vi: "dùng nhiều kỹ năng đã học cùng lúc để làm xong một việc" } },
 ];
 
 const BY_ID = new Map(SKILLS.map((s) => [s.id, s]));
