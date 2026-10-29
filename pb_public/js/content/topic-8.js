@@ -262,16 +262,16 @@ const catSteps = [
   boldStep(catTitle), sizeStep(catTitle), centerStep(catTitle), catPicStep(), catHighlightStep(), saveStep('Lost_Cat'), printStep(),
 ];
 
-// Class timetable page: heading, 2-column table and a landscape page.
+// Class timetable page: bold, size 20 and centred heading, then a 2-column table.
 const timeTitle = 'Class timetable';
 const timeRows = [['Day', 'Time'], ['Tuesday', '10 am'], ['Thursday', '10 am']];
-const timeTarget = createDoc({ p: [{ align: 'center', runs: [{ text: timeTitle, b: true }] }], tables: [{ rows: timeRows.map(row => row.map(text => ({ p: [text] }))) }], page: { orientation: 'landscape' } });
+const timeTarget = createDoc({ p: [{ align: 'center', runs: [{ text: timeTitle, b: true, size: 20 }] }], tables: [{ rows: timeRows.map(row => row.map(text => ({ p: [text] }))) }] });
 const timeValue = s => words(s);
 const timeRowCheck = (doc, r) => timeRows[r].every((text, c) => timeValue(cell(doc, r, c)) === timeValue(text));
-const isLandscape = doc => doc.page?.orientation === 'landscape';
-const timeCheck = (doc, ctx) => formatted(doc, timeTitle, { b: true }) && centered(doc, timeTitle) && tableShape(doc) && timeRows.every((_, r) => timeRowCheck(doc, r)) && isLandscape(doc) && saved(ctx, 'Class_Timetable');
+const timeCheck = (doc, ctx) => formatted(doc, timeTitle, { b: true, size: 20 }) && centered(doc, timeTitle) && tableShape(doc) && timeRows.every((_, r) => timeRowCheck(doc, r)) && saved(ctx, 'Class_Timetable');
 const timeSteps = [
   step('t3-bold-italic-underline', T(`Select "${timeTitle}" and click Bold (B).`, `Bôi đen dòng “${timeTitle}” rồi bấm nút Bold (chữ B đậm).`), T('Select the heading. On the Home tab, click Bold (B).', 'Bôi đen tiêu đề. Trên thẻ Home, bấm nút Bold (chữ B đậm).'), doc => formatted(doc, timeTitle, { b: true }), bold(timeTitle), 'home.font'),
+  sizeStep(timeTitle),
   centerStep(timeTitle),
   {
     skill: 't5-insert-table',
@@ -288,7 +288,6 @@ const timeSteps = [
     doc => timeRowCheck(doc, r),
     [go(`cell:0,${r},0,0`), type(left, `cell:0,${r},0,0`), key('Tab'), type(right, `cell:0,${r},1,0`)],
   )),
-  step('t5-orientation', T('Turn the page to Landscape.', 'Xoay trang sang Landscape (trang ngang).'), T('Click the Layout tab (between Design and References). In the Page Setup group, click Orientation, then Landscape.', 'Bấm thẻ Layout (nằm giữa Design và References). Trong nhóm Page Setup, bấm Orientation, rồi bấm Landscape.'), isLandscape, [go('tab.layout'), go('menu:layout.orientation'), go('choice:layout.orientation.set:landscape')], 'layout.pageSetup'),
   saveStep('Class_Timetable'),
 ];
 
@@ -296,6 +295,6 @@ export const missions = [
   mission('t8-m-festival-flyer', T('Make a festival flyer', 'Làm tờ rơi lễ hội'), T('Tell your neighbours about the Spring festival. The words are ready. Make the heading big, bold and centred. Add a flower photo under the heading, then make Music and Food into bullets. Save your flyer and practise printing one copy.', 'Làm tờ rơi báo tin lễ hội mùa xuân (“Spring festival”) cho hàng xóm. Phần chữ đã có sẵn. Hãy làm tiêu đề to, in đậm và canh giữa. Chèn hình flower.png dưới tiêu đề, rồi tạo dấu chấm đầu dòng cho Music và Food. Lưu tờ rơi và thực hành in một bản.'), festivalStart, festivalTarget, festivalSteps, festivalCheck),
   mission('t8-m-cafe-menu', T('Make a café menu', 'Làm thực đơn quán cà phê'), T('Your café sells tea for $3 and coffee for $4. Make the heading big, bold and centred. Add a coffee picture under the heading, then add a 2x3 price table below it. Save your menu and practise printing one copy.', 'Quán cà phê bán trà giá $3 và cà phê giá $4. Hãy làm tiêu đề to, in đậm và canh giữa. Chèn hình ly cà phê dưới tiêu đề, rồi thêm bảng giá 2x3 bên dưới. Lưu thực đơn và thực hành in một bản.'), 'Cafe menu', menuTarget, menuSteps, menuCheck),
   mission('t8-m-class-invitation', T('Make a class party invitation', 'Làm thiệp mời dự tiệc của lớp'), T('The Community flyer template is open. Replace the heading with Class party, centre it, and add a balloons picture under it. Fill in Saturday 2 pm and Community hall, then save and practise printing one copy.', 'Mẫu Community flyer đang mở. Hãy thay tiêu đề thành “Class party”, canh giữa, rồi chèn hình bóng bay bên dưới. Điền tiếp Saturday 2 pm và Community hall, sau đó lưu lại và thực hành in một bản.'), invitationStart, invitationTarget, invitationSteps, invitationCheck),
-  mission('t8-m-lost-cat-poster', T('Make a lost cat poster', 'Làm tờ thông báo tìm mèo lạc'), T('Your neighbour\'s cat is lost. Make the heading big, bold and centred. Add a cat picture under the heading and highlight the phone number yellow. Save your poster and practise printing one copy.', 'Chú mèo của hàng xóm bị lạc. Hãy làm tiêu đề to, in đậm và canh giữa. Chèn hình con mèo dưới tiêu đề và tô nền vàng cho số điện thoại. Lưu tờ thông báo và thực hành in một bản.'), catStart, catTarget, catSteps, catCheck),
-  mission('t8-m-class-timetable', T('Make a class timetable page', 'Làm trang thời khoá biểu của lớp'), T('Your class meets on Tuesday and Thursday at 10 am. Make the heading bold and centred. Add a table with 2 columns and 3 rows for the days and times. Turn the page to Landscape and save it.', 'Lớp bạn học vào thứ Ba và thứ Năm lúc 10 giờ sáng. Hãy làm tiêu đề in đậm và canh giữa. Chèn bảng 2 cột 3 hàng ghi ngày và giờ học. Xoay trang sang Landscape (trang ngang) rồi lưu lại.'), timeTitle, timeTarget, timeSteps, timeCheck, ['home', 'insert', 'layout']),
+  mission('t8-m-lost-cat-poster', T('Make a lost cat poster', 'Làm tờ thông báo tìm mèo lạc'), T('Your neighbour\'s cat is lost. Make a poster people can read from far away. Make the heading size 20, bold and centred. Add a cat picture under the heading. Highlight the phone number yellow, so people can find it fast. Then save the poster and practise printing one copy.', 'Chú mèo của hàng xóm bị lạc. Hãy làm tờ thông báo để người ta đọc được từ xa. Làm tiêu đề cỡ 20, in đậm và canh giữa. Chèn hình con mèo dưới tiêu đề. Tô nền vàng cho số điện thoại để mọi người dễ thấy. Rồi lưu tờ thông báo và thực hành in một bản.'), catStart, catTarget, catSteps, catCheck),
+  mission('t8-m-class-timetable', T('Make a class timetable page', 'Làm trang thời khoá biểu của lớp'), T('Your class meets on Tuesday and Thursday at 10 am. You will put this page on the classroom wall. Make the heading size 20, bold and centred, so it is easy to see. Add a table with 2 columns and 3 rows for the days and times. Then save it.', 'Lớp bạn học vào thứ Ba và thứ Năm lúc 10 giờ sáng. Bạn sẽ dán trang này lên tường lớp học. Hãy làm tiêu đề cỡ 20, in đậm và canh giữa cho dễ nhìn. Chèn bảng 2 cột 3 hàng ghi ngày và giờ học. Rồi lưu lại.'), timeTitle, timeTarget, timeSteps, timeCheck),
 ];

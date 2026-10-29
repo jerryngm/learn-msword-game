@@ -148,7 +148,7 @@ const cardCentred = (d) => sameText(d, cardText) && d.p[0].align === 'center' &&
 const cardCheck = (d) => cardBold(d) && cardRed(d) && cardCentred(d);
 const cardDoc = createDoc({ p: [new Para({ align: 'center' }, [makeRun(cardTitle, { b: true, colour: '#FF0000' })]), new Para({}, [makeRun('Dear Mai, have a lovely day.')]), new Para({}, [makeRun('From Lan')])] });
 const skilled = (skill, s) => ({ ...s, skill });
-const onlyHeading = (en, vi) => ({ en: `${en} Only the heading changes. If other lines changed too, click Undo.`, vi: `${vi} Chỉ tiêu đề thay đổi. Nếu các dòng khác cũng đổi, hãy bấm Undo.` });
+const onlyHeading = (en, vi) => ({ en: `${en} Only the heading changes. If other lines changed too, click Undo (the curved arrow at the top left).`, vi: `${vi} Chỉ tiêu đề thay đổi. Nếu các dòng khác cũng đổi, hãy bấm Undo (mũi tên cong ở góc trên bên trái).` });
 
 export const missions = [
   mission('shop-sign', 'bold-italic-underline', T('A shop sign', 'Bảng hiệu cửa hàng'), T('Help customers see that your shop is open. Make OPEN bold.', 'Giúp khách nhìn rõ cửa hàng đang mở cửa. Hãy làm chữ OPEN in đậm.'), 'OPEN\nFresh bread every day.', createDoc({ p: [new Para({}, [makeRun('OPEN', { b: true })]), new Para({}, [makeRun('Fresh bread every day.')])] }), [selectStep(0, 'OPEN'), actionStep(T('Click Bold (B).', 'Bấm Bold (B).'), T('B is in the Font group on Home.', 'Nút B nằm trong nhóm Font trên Home.'), boldCheck, [go('home.font.bold')])], boldCheck),

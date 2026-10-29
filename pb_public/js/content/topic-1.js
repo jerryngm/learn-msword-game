@@ -876,8 +876,8 @@ export const missions = [
     skill: "t1-sentence",
     title: T("A note on the fridge", "Mẩu giấy nhắn trên tủ lạnh"),
     scenario: T(
-      "You are going out and you want your family to know. Write a note for the fridge: two sentences, one on each line.",
-      "Bạn ra ngoài và muốn người nhà biết. Hãy viết mẩu giấy nhắn dán lên tủ lạnh: hai câu, mỗi câu một dòng.",
+      "You are at the shops. You want your family to know where you are and when you will be home. Write a note for the fridge: two sentences, one on each line.",
+      "Bạn đang đi chợ và muốn người nhà biết bạn ở đâu, mấy giờ về. Hãy viết mẩu giấy nhắn dán lên tủ lạnh: hai câu, mỗi câu một dòng.",
     ),
     startDoc: "",
     targetDoc: fridgeLines.join("\n"),
@@ -890,8 +890,8 @@ export const missions = [
     skill: "t1-save",
     title: T("Save your shopping list", "Lưu danh sách đi chợ"),
     scenario: T(
-      "You want to keep your shopping list for next week. Type one sentence, then save it in the Documents folder. Name the file Shopping List.",
-      "Bạn muốn giữ lại danh sách đi chợ cho tuần sau. Hãy gõ một câu, rồi lưu vào thư mục Documents. Đặt tên file là Shopping List.",
+      "You want to keep a short shopping note for next week. Type one sentence about what to buy, then save it in the Documents folder. Name the file Shopping List.",
+      "Bạn muốn giữ lại một ghi chú đi chợ ngắn cho tuần sau. Hãy gõ một câu ghi món cần mua, rồi lưu vào thư mục Documents. Đặt tên file là Shopping List.",
     ),
     startDoc: "",
     targetDoc: shoppingSentence,

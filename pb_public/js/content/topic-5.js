@@ -251,7 +251,7 @@ const phoneSteps = [
 const rosterRows = [['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], ['Lan', 'Mai', 'Nam', 'Hoa', 'Binh', 'Tam', 'An']];
 const rosterCheck = (doc) => landscape(doc) && narrow(doc);
 const rosterSteps = [
-  step(T('Click the Layout tab. Click Orientation, then Landscape.', 'Bấm thẻ Layout. Bấm Orientation, rồi bấm Landscape.'),
+  step(T('Click the Layout tab between Design and References. Click Orientation, then Landscape.', 'Bấm thẻ Layout nằm giữa Design và References. Bấm Orientation, rồi bấm Landscape.'),
     T('Orientation is in the Page Setup group. Landscape is the wide page.', 'Orientation nằm trong nhóm Page Setup. Landscape là trang nằm ngang.'),
     landscape, orientationScript('landscape'), 'layout.pageSetup'),
   { ...step(T('Click Margins, then Narrow.', 'Bấm Margins, rồi bấm Narrow.'),
@@ -276,9 +276,9 @@ export const missions = [
     T('Make your garden club flyer spread wider on the page. Make the empty edges smaller: change Margins to Narrow (1.27 cm).', 'Làm cho tờ rơi câu lạc bộ làm vườn trải rộng trên trang hơn. Hãy thu nhỏ phần mép trống: đổi Margins thành Narrow (1.27 cm).'),
     flyerText, createDoc({ p: flyerText.split('\n'), page: { margins: 'narrow' } }), LAYOUT_TABS, flyerSteps, narrow),
   mission('t5-m-phone-list', 't5-insert-table', T('Family phone list', 'Danh sách số điện thoại gia đình'),
-    T('Keep your family numbers in one place. Insert a table with 2 columns and 3 rows under the heading. Type Name and Phone in the first row, then Mum and her number in the second row.', 'Ghi số điện thoại của gia đình vào một chỗ. Chèn một bảng có 2 cột và 3 hàng dưới tiêu đề. Gõ Name và Phone vào hàng đầu, rồi gõ Mum và số của mẹ vào hàng thứ hai.'),
+    T('Keep your family numbers in one place. Insert a table with 2 columns and 3 rows under the heading. In the first row, type Name and Phone. In the second row, type Mum and 0400 111 222. The third row stays empty, for the next person.', 'Ghi các số điện thoại của gia đình vào cùng một chỗ. Chèn một bảng có 2 cột và 3 hàng dưới tiêu đề. Ở hàng đầu, gõ Name và Phone. Ở hàng thứ hai, gõ Mum và 0400 111 222. Hàng thứ ba để trống, dành cho người tiếp theo.'),
     'Family phone numbers', tableDoc(phoneRows, 'Family phone numbers'), TABLE_TABS, phoneSteps, phoneCheck),
   mission('t5-m-cleaning-roster', 't5-orientation', T('A wide cleaning roster', 'Bảng lịch dọn dẹp quá rộng'),
-    T('Your cleaning roster has 7 day columns, so it is too wide for the page. Turn the page to Landscape, then make the edges smaller with Narrow margins.', 'Bảng lịch dọn dẹp có 7 cột ngày nên quá rộng, không vừa trang. Hãy xoay trang sang Landscape (trang ngang), rồi thu nhỏ phần mép trống bằng lề hẹp Narrow.'),
+    T('Your cleaning roster has 7 day columns, so it is too wide for the page. Turn the page to Landscape, then make the edges smaller with Narrow margins.', 'Bảng lịch dọn dẹp có 7 cột ngày nên quá rộng, không vừa trang. Hãy xoay trang sang Landscape (trang ngang), rồi chọn lề Narrow để phần trống hai bên trang nhỏ lại.'),
     tableDoc(rosterRows, 'Cleaning roster'), tableDoc(rosterRows, 'Cleaning roster', { orientation: 'landscape', margins: 'narrow' }), LAYOUT_TABS, rosterSteps, rosterCheck),
 ];

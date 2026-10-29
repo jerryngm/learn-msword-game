@@ -81,7 +81,7 @@ const flyerTabText = 'Garden club';
 export const items = [
   {
     id: 't9-thank-you-order', skill: 't9-mixed-review', type: 'order',
-    prompt: T('You typed a thank-you note and want the heading to stand out. Put the steps in order to make it bold and keep the note.', 'Bạn đã gõ xong lời cảm ơn và muốn tiêu đề nổi bật. Hãy xếp các bước theo thứ tự để làm tiêu đề in đậm rồi lưu lời nhắn lại.'),
+    prompt: T('You typed a thank-you note. Now you want the heading bold, and you want to keep the note in Documents as Thank_You. Put the steps in order.', 'Bạn đã gõ xong lời cảm ơn. Bây giờ bạn muốn tiêu đề in đậm và lưu lại trong Documents với tên Thank_You. Hãy xếp các bước theo thứ tự.'),
     hint: T('Select the heading first, then click Bold. Save last, so the saved file keeps the bold heading.', 'Bôi đen tiêu đề trước, rồi bấm Bold. Lưu sau cùng để file đã lưu có tiêu đề in đậm.'),
     steps: [
       option('select', 'Select the heading "Thank you"', 'Bôi đen tiêu đề “Thank you”'),
@@ -180,7 +180,7 @@ const marketSteps = [
 
 const clubStart = createDoc('Club timetable');
 const clubRows = [['Day', 'Time'], ['Tuesday', '10 am'], ['Friday', '9 am']];
-const clubTarget = createDoc({ p: ['Club timetable'], tables: [{ rows: clubRows.map(row => row.map(text => ({ p: [text] }))) }], page: { orientation: 'landscape' } });
+const clubTarget = createDoc({ p: [{ runs: [{ text: 'Club timetable', b: true }] }], tables: [{ rows: clubRows.map(row => row.map(text => ({ p: [text] }))) }] });
 const value = s => loose(s).replace(/\s/g, '');
 const cellId = (r, c, off = 0) => `cell:0,${r},${c},${off}`;
 const gridOf = doc => (doc.tables?.[0]?.rows ?? []).map(row => row.map(cell => cell.p.map(textOf).join(' ')));
@@ -197,13 +197,18 @@ const rowInserted = doc => {
   const rows = gridOf(doc);
   return tableSize(doc) && rows.length >= 3 && value(rows[1][0]) !== 'friday';
 };
-const landscape = doc => doc.page?.orientation === 'landscape';
+const clubBold = doc => formatted(doc, 'Club timetable', { b: true });
 const clubCheck = doc => {
   const rows = gridRows(doc);
   return hasText(doc, 'Club timetable') && tableSize(doc) && headerDone(doc) && rows.length === 3 &&
-    rowIndex(doc, 'Tuesday', '10 am') === 1 && rowIndex(doc, 'Friday', '9 am') === 2 && landscape(doc);
+    rowIndex(doc, 'Tuesday', '10 am') === 1 && rowIndex(doc, 'Friday', '9 am') === 2 && clubBold(doc);
 };
 const clubSteps = [
+  step('t3-select', T('Select the heading: Club timetable', 'Bôi đen tiêu đề: Club timetable'), selectHint,
+    (doc, ctx) => selectedText(ctx, 0, 0, 14) || clubBold(doc), [go('doc:0,0'), select(0, 0, 14)]),
+  step('t3-bold-italic-underline', T('Click Bold (B).', 'Bấm Bold (chữ B đậm).'),
+    T('B is in the Font group on the Home tab.', 'Nút B nằm trong nhóm Font trên thẻ Home.'),
+    clubBold, [go('tab.home'), select(0, 0, 14), go('home.font.bold')], 'home.font'),
   step('t5-insert-table',
     T('Click after "Club timetable". On the Insert tab, click Table. Choose 2x2 Table.', 'Bấm ngay sau chữ “Club timetable”. Trên thẻ Insert, bấm Table. Chọn 2x2 Table.'),
     T('First click at the end of Club timetable. Then click Insert, then Table. 2x2 means 2 columns and 2 rows: move the mouse over the squares until the top says 2x2 Table, then click.', 'Trước tiên bấm vào cuối dòng Club timetable. Sau đó bấm Insert, rồi bấm Table. 2x2 nghĩa là 2 cột và 2 hàng: đưa chuột qua các ô vuông đến khi phía trên hiện chữ 2x2 Table, rồi bấm.'),
@@ -224,10 +229,6 @@ const clubSteps = [
     T('New row: click the left cell, type Tuesday, press Tab, then type 10 am.', 'Hàng mới: bấm vào ô bên trái, gõ Tuesday, nhấn Tab, rồi gõ 10 am.'),
     T('The new row is under Day and Time. Click its left cell and type Tuesday. Press Tab, then type 10 am.', 'Hàng mới nằm dưới Day và Time. Bấm vào ô bên trái của hàng đó và gõ Tuesday. Nhấn Tab, rồi gõ 10 am.'),
     doc => rowIndex(doc, 'Tuesday', '10 am') >= 1, [go(cellId(1, 0)), type('Tuesday', cellId(1, 0)), key('Tab'), type('10 am', cellId(1, 1))]),
-  step('t5-orientation',
-    T('Members will pin the timetable on a notice board. Click the Layout tab. Click Orientation, then Landscape.', 'Mọi người sẽ ghim thời khoá biểu lên bảng tin. Bấm thẻ Layout. Bấm Orientation, rồi bấm Landscape.'),
-    T('The Layout tab is next to Design. Orientation is in the Page Setup group. Landscape is the wide page.', 'Thẻ Layout nằm cạnh thẻ Design. Orientation nằm trong nhóm Page Setup. Landscape là trang nằm ngang.'),
-    landscape, [go('tab.layout'), go('menu:layout.orientation'), go('choice:layout.orientation.set:landscape')], 'layout.pageSetup'),
 ];
 
 /* ---------- mission 4: festival flyer update ---------- */
@@ -273,7 +274,7 @@ const festivalSteps = [
   step('t6-insert-picture', T('Add the flower.png picture from Downloads.', 'Chèn hình flower.png từ thư mục Downloads.'),
     T('Click the Insert tab, then Pictures, then This Device. Click Downloads on the left. Click flower.png, then the Insert button.', 'Bấm thẻ Insert, rồi Pictures, rồi This Device. Bấm Downloads ở bên trái. Bấm hình flower.png, rồi bấm nút Insert.'),
     flowerUnderHeading, [go('tab.insert'), go('menu:insert.pictures'), go('insert.pictures.device'), go('insert.pictures.nav:downloads'), go('choice:insert.pictures.choose:flower'), go('insert.pictures.insert')], 'insert.pictures.insert'),
-  step('t6-resize', T('The picture is too big. Drag the little round dot on the bottom-right corner towards the middle, to make it smaller.', 'Hình hơi to. Kéo chấm tròn nhỏ ở góc dưới bên phải vào phía giữa hình để làm hình nhỏ lại.'),
+  step('t6-resize', T('The picture is too big. Drag the little round dot on the bottom-right corner towards the middle, to make it smaller.', 'Hình quá to. Kéo chấm tròn nhỏ ở góc dưới bên phải vào phía giữa hình để làm hình nhỏ lại.'),
     T('Click the picture once, so the little round dots show. Drag a corner dot, not a side dot, so the flower keeps its shape. If it looks stretched, press Ctrl+Z and try again.', 'Bấm vào hình một lần để các chấm tròn nhỏ hiện ra. Kéo chấm tròn ở góc, đừng kéo chấm tròn ở cạnh, để hình hoa giữ nguyên hình dạng. Nếu hình bị méo, nhấn Ctrl+Z rồi làm lại.'),
     smallerFlower, [go('picture:0'), drag('picture:0:se', -100, -70)]),
   step('t7-save-version',
@@ -290,9 +291,9 @@ export const missions = [
     T('You are going to the market. Make the heading bold, move Rice to the end because that stall comes last, make the three items a bullet list, then practise printing one copy.', 'Bạn sắp đi chợ. Hãy làm tiêu đề in đậm, chuyển Rice xuống cuối vì quầy gạo ghé sau cùng, tạo dấu chấm đầu dòng cho ba món, rồi thực hành in một bản.'),
     marketStart, marketTarget, ['home'], marketSteps, marketCheck),
   mission('t9-m-club-timetable', T('Club timetable', 'Thời khoá biểu câu lạc bộ'),
-    T('Your garden club meets on Tuesday and Friday. Insert a table under the heading, fill in the days and times, then turn the page to Landscape for the notice board.', 'Câu lạc bộ làm vườn họp vào thứ Ba và thứ Sáu. Hãy chèn bảng dưới tiêu đề, điền ngày và giờ, rồi xoay trang sang Landscape để dán lên bảng tin.'),
-    clubStart, clubTarget, ['home', 'insert', 'layout'], clubSteps, clubCheck),
+    T('Your garden club meets on Friday at 9 am. A new Tuesday meeting at 10 am comes first in the week. Make a timetable for the noticeboard: make the heading bold, insert a table under the heading, type the Friday row, then add a row above it for Tuesday.', 'Câu lạc bộ làm vườn họp vào thứ Sáu lúc 9 giờ. Buổi họp mới vào thứ Ba lúc 10 giờ đứng trước trong tuần. Hãy làm thời khoá biểu để dán lên bảng tin: làm tiêu đề in đậm, chèn bảng dưới tiêu đề, gõ hàng thứ Sáu, rồi thêm một hàng phía trên cho thứ Ba.'),
+    clubStart, clubTarget, ['home', 'insert'], clubSteps, clubCheck),
   mission('t9-m-festival-update', T('Festival flyer update', 'Cập nhật tờ rơi lễ hội'),
-    T('The festival date has changed. Highlight the new date, add a flower picture under the heading and make it smaller, then save the new flyer as Festival_V2 and keep the old one.', 'Ngày lễ hội đã đổi. Hãy tô nền ngày mới, chèn hình hoa dưới tiêu đề và làm hình nhỏ lại, rồi lưu tờ rơi mới thành Festival_V2 và giữ lại tờ rơi cũ.'),
+    T('The festival date has changed, and the new date is already typed. Highlight it so people see it. Add a flower picture under the heading Spring festival and make it smaller. Then save this flyer as Festival_V2 and keep the old one.', 'Ngày lễ hội đã đổi và ngày mới đã được gõ sẵn. Hãy tô nền ngày mới để mọi người dễ thấy. Chèn hình hoa dưới tiêu đề Spring festival và làm hình nhỏ lại. Rồi lưu tờ rơi này thành Festival_V2 và giữ lại tờ rơi cũ.'),
     festivalStart, festivalTarget, ['home', 'insert'], festivalSteps, festivalCheck, { title_bar: 'Festival_V1' }),
 ];
