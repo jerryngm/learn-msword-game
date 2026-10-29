@@ -1092,3 +1092,123 @@ html:not(.hide-vi) .wg-q-context figcaption .vi { display: inline; margin-left: 
   background: #fff;
   box-shadow: 0 4px 12px rgba(0,0,0,.15);
 }
+
+/* ---------- Teacher Encouragements & Badge Recognitions ---------- */
+.wg-teacher-hero {
+  background: linear-gradient(145deg, #FFFDF6, #FFF6E5);
+  border: 3px solid #E5A93C;
+  border-radius: var(--r-lg);
+  padding: 18px 22px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 30px rgba(229, 169, 60, .18);
+  animation: fadeIn .3s var(--ease) both;
+}
+.wg-teacher-h {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 21px;
+  color: #8C5800;
+  margin-bottom: 12px;
+  line-height: 1.25;
+}
+.wg-teacher-h .vi { font-size: 14.5px; color: #A66A02; }
+.wg-teacher-badge-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #FFF0CE;
+  border: 2px solid #E5A93C;
+  font-size: 24px;
+  flex: none;
+  box-shadow: 0 2px 8px rgba(229, 169, 60, .25);
+}
+.wg-teacher-body {
+  background: #fff;
+  border: 2px solid #F2DFB3;
+  border-radius: var(--r-md);
+  padding: 14px 18px;
+  margin-bottom: 14px;
+}
+.wg-teacher-msg {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.35;
+  margin: 0;
+}
+.wg-teacher-msg .vi { font-size: 15px; color: var(--ink-2); margin-top: 3px; }
+.wg-teacher-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #E8F5E9;
+  border: 1.5px solid #81C784;
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1B5E20;
+  margin-top: 10px;
+}
+.wg-teacher-badge-pill .vi { font-size: 12.5px; color: #2E7D32; }
+.wg-teacher-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.wg-teacher-ack {
+  min-height: 48px;
+  font-size: 18px;
+  padding: 4px 24px;
+  background: #E5A93C;
+  color: #fff;
+  border: 2px solid #C6881B;
+  border-radius: 999px;
+  box-shadow: 0 4px 0 #A87110;
+  cursor: pointer;
+}
+.wg-teacher-ack:hover {
+  background: #D99B2D;
+}
+.wg-teacher-ack .vi { font-size: 13.5px; color: rgba(255, 255, 255, .95); }
+
+/* Banner variant for Teacher Recognition */
+.wg-teacher-banner {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px 6px 10px;
+  background: #FFFDF6;
+  border: 2px solid #E5A93C;
+  border-radius: 999px;
+  box-shadow: 0 10px 32px rgba(229, 169, 60, .25);
+  animation: slideUp .3s var(--ease) both;
+  max-width: calc(100vw - 32px);
+}
+.wg-teacher-banner-msg { font-size: 15px; color: var(--ink); line-height: 1.2; }
+.wg-teacher-banner-msg .vi { font-size: 12px; }
+.wg-teacher-banner .wg-teacher-view {
+  min-height: 42px;
+  padding: 4px 18px;
+  font-size: 16px;
+  background: #E5A93C;
+  color: #fff;
+  border: 2px solid #C6881B;
+  border-radius: 999px;
+  box-shadow: 0 4px 0 #A87110;
+  flex: none;
+  white-space: nowrap;
+}
+.wg-teacher-banner .wg-teacher-view:hover { background: #D99B2D; }
+.wg-teacher-banner .wg-teacher-view .vi { color: rgba(255, 255, 255, .9); font-size: 12px; }
+

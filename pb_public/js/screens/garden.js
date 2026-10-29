@@ -249,18 +249,32 @@ export async function render(root, { learner }) {
   let shownIds = null;
   const stopEnc = learnerEncouragements(learner.id, (list, err) => {
     if (err) console.error("teacher messages could not be loaded", err);
-    const msgs = list.filter((e) => e.message && e.message.trim()).slice(0, 2);
+    const msgs = list.filter((e) => (e.message && e.message.trim()) || e.kind === "helper").slice(0, 3);
     tmsg.hidden = msgs.length === 0;
     const known = shownIds;
     shownIds = new Set(msgs.map((m) => m.id));
     tmsg.innerHTML = `<div class="wg-from">${gbi("fromTeacher")}</div>${msgs
       .map((m) => {
-        const text = m.message.trim();
-        const p = STAR_PRESETS[text];
-        const body = p ? biPair(p) : esc(text);
-        return `<p class="${known && !known.has(m.id) ? "is-new" : ""}">${m.kind === "helper" ? "🤝 " : ""}${body}</p>`;
+        const text = m.message?.trim() || "";
+        const body = text
+          ? (STAR_PRESETS[text] ? biPair(STAR_PRESETS[text]) : esc(text))
+          : biPair(gt("teacherBadgeTitle"));
+        return `<p class="${known && !known.has(m.id) ? "is-new" : ""}">${m.kind === "helper" ? "🤝 " : "⭐ "}${body}</p>`;
       })
       .join("")}`;
+
+    if (list.some((e) => e.kind === "helper")) {
+      pb.collection("learners")
+        .getOne(learner.id, { requestKey: null })
+        .then((fresh) => {
+          if (fresh?.helper_badges != null && root.isConnected) {
+            learner.helper_badges = fresh.helper_badges;
+            const row = root.querySelector(".wg-helper-row b");
+            if (row) row.textContent = String(fresh.helper_badges);
+          }
+        })
+        .catch(() => {});
+    }
   });
 
   return () => {

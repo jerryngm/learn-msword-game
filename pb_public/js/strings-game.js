@@ -219,6 +219,16 @@ export const GAME_STRINGS = {
   helperTopicTask: { en: "Topic {topic} · {type}: {title}", vi: "Chủ đề {topic} · {type}: {title}" },
   taskMission: { en: "Mission", vi: "Nhiệm vụ" },
   taskRevision: { en: "Revision", vi: "Ôn tập" },
+
+  // Teacher Recognitions & Badges
+  teacherPraiseTitle: { en: "⭐ A star from your teacher!", vi: "⭐ Ngôi sao khen ngợi từ giáo viên!" },
+  teacherBadgeTitle: { en: "🤝 You received a Helper Badge!", vi: "🤝 Bạn nhận được Huy hiệu giúp đỡ!" },
+  teacherCombinedTitle: { en: "⭐ Teacher recognition & 🤝 Helper Badge!", vi: "⭐ Lời khen từ giáo viên & 🤝 Huy hiệu giúp đỡ!" },
+  teacherBadgeAwarded: { en: "🤝 +1 Helper Badge awarded!", vi: "🤝 Được tặng +1 Huy hiệu giúp đỡ!" },
+  teacherBadgeSub: { en: "Your teacher awarded you a Helper Badge for helping a classmate.", vi: "Giáo viên tặng bạn một Huy hiệu giúp đỡ vì đã hỗ trợ bạn cùng lớp." },
+  teacherAck: { en: "💖 Thank you!", vi: "💖 Cảm ơn cô/thầy!" },
+  teacherAckCelebration: { en: "Keep up the wonderful work! 🌱", vi: "Hãy tiếp tục phát huy nhé! 🌱" },
+  teacherDismiss: { en: "Close", vi: "Đóng" },
 };
 
 /**

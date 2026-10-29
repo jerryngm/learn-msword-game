@@ -1,13 +1,21 @@
-// Real-time peer helper alerts: notifies qualified classmates when a peer asks for help.
-// Appears on Home, Garden, Success (as a prominent hero card), and Mission/Revision (as a top slide-down banner).
+// Real-time alerts: notifies learners of peer helper asks and teacher recognitions / badges.
+// Appears on Home, Garden, Success (as a prominent hero card), and Mission/Revision (as a bottom banner).
 
 import { avatarEmoji, biPair, esc } from "./i18n.js";
-import { acceptAsk, learnerAttempts, learnersByIds, loadAllContent, watchOpenClassmateAsks } from "./game-data.js";
+import {
+  acceptAsk,
+  learnerAttempts,
+  learnerEncouragements,
+  learnersByIds,
+  loadAllContent,
+  watchOpenClassmateAsks,
+} from "./game-data.js";
 import { skillById } from "./content/skills.js";
 import { skillState } from "./rules.js";
-import { gbi, glabel, gt } from "./strings-game.js";
+import { gbi, glabel, gt, STAR_PRESETS } from "./strings-game.js";
 
 const DECLINE_PREFIX = "declined_ask_";
+const ACK_ENC_PREFIX = "wg_ack_enc_";
 
 /** Resolves human-friendly task details (topic, type, title, goal) for an ask. */
 export async function resolveTaskOverview(ask) {
@@ -48,8 +56,72 @@ export async function canLearnerHelp(learnerId, ask) {
   }
 }
 
+/** Checks if a teacher encouragement has already been acknowledged on this device. */
+export function isEncouragementAcknowledged(id) {
+  try {
+    if (typeof localStorage !== "undefined") {
+      return localStorage.getItem(ACK_ENC_PREFIX + id) === "1";
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/** Marks encouragement IDs as acknowledged so they aren't repeatedly shown. */
+export function acknowledgeEncouragements(ids) {
+  try {
+    if (typeof localStorage !== "undefined") {
+      for (const id of ids) {
+        localStorage.setItem(ACK_ENC_PREFIX + id, "1");
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
- * Mounts real-time helper alerts in the given container or slot.
+ * Groups recent unacknowledged teacher recognitions (stars, helper badges, praise messages).
+ * Returns null if there are no new recognitions to show.
+ */
+export function groupTeacherRecognitions(list) {
+  const unack = (list || []).filter((item) => {
+    if (!item || !item.id) return false;
+    if (isEncouragementAcknowledged(item.id)) return false;
+    const created = new Date(item.created).getTime();
+    // Only surface recognitions from the last 24 hours
+    return Number.isFinite(created) ? Date.now() - created < 24 * 60 * 60 * 1000 : true;
+  });
+  if (!unack.length) return null;
+
+  const first = unack[0];
+  const firstTime = new Date(first.created).getTime();
+  // Group recognitions created within 10 seconds of each other (e.g. Star + Helper Badge sent together)
+  const group = unack.filter((item) => Math.abs(new Date(item.created).getTime() - firstTime) <= 10000);
+
+  const hasStar = group.some((g) => g.kind === "star");
+  const hasHelper = group.some((g) => g.kind === "helper");
+  const starItem = group.find((g) => g.kind === "star");
+  const message = starItem?.message?.trim() || group.find((g) => g.message?.trim())?.message?.trim() || "";
+
+  const ids = group.map((g) => g.id);
+
+  let titleKey = "teacherPraiseTitle";
+  if (hasStar && hasHelper) titleKey = "teacherCombinedTitle";
+  else if (hasHelper) titleKey = "teacherBadgeTitle";
+
+  return {
+    ids,
+    hasStar,
+    hasHelper,
+    message,
+    titleKey,
+  };
+}
+
+/**
+ * Mounts real-time alerts (peer classmate asks and teacher recognitions/badges).
  * @param {Object} options
  * @param {HTMLElement} options.slot Container element to render into
  * @param {Object} options.learner Active learner object
@@ -62,6 +134,10 @@ export function mountHelperAlert({ slot, learner, session, variant = "hero" } = 
 
   const sessionId = typeof session === "object" ? session?.id : session;
   let activeAsk = null;
+  let activeRecognition = null;
+  let lastAsks = [];
+  let lastEncouragements = [];
+  let acknowledging = false;
   let closed = false;
   let popModal = null;
 
@@ -74,6 +150,7 @@ export function mountHelperAlert({ slot, learner, session, variant = "hero" } = 
 
   const clearAlert = () => {
     activeAsk = null;
+    activeRecognition = null;
     clearModal();
     if (slot) slot.innerHTML = "";
   };
@@ -84,7 +161,8 @@ export function mountHelperAlert({ slot, learner, session, variant = "hero" } = 
     } catch {
       /* ignore */
     }
-    clearAlert();
+    activeAsk = null;
+    update();
   };
 
   const onAccept = async (ask) => {
@@ -111,12 +189,94 @@ export function mountHelperAlert({ slot, learner, session, variant = "hero" } = 
       }
 
       setTimeout(() => {
-        if (!closed) clearAlert();
+        if (!closed) {
+          activeAsk = null;
+          update();
+        }
       }, 4000);
     } catch (err) {
       console.error("could not accept ask", err);
       clearAlert();
     }
+  };
+
+  const onAckTeacher = (rec) => {
+    acknowledgeEncouragements(rec.ids);
+    acknowledging = true;
+
+    if (variant === "banner") {
+      slot.innerHTML = `
+        <aside class="wg-teacher-banner" role="status">
+          <span class="wg-teacher-badge-ico" aria-hidden="true">🌟</span>
+          <div class="wg-teacher-banner-msg">
+            <b>${gbi("teacherAckCelebration")}</b>
+          </div>
+        </aside>`;
+    } else {
+      slot.innerHTML = `
+        <div class="wg-teacher-hero wg-helper-confirmed" role="status">
+          <span class="e" aria-hidden="true">🌟</span>
+          <p class="wg-helper-confirmed-msg">${gbi("teacherAckCelebration")}</p>
+        </div>`;
+    }
+
+    setTimeout(() => {
+      acknowledging = false;
+      if (!closed) {
+        activeRecognition = null;
+        update();
+      }
+    }, 2500);
+  };
+
+  const renderTeacherHero = (rec) => {
+    const { titleKey, message, hasHelper } = rec;
+    const bodyHtml = message
+      ? (STAR_PRESETS[message] ? biPair(STAR_PRESETS[message]) : esc(message))
+      : (hasHelper ? biPair(gt("teacherBadgeSub")) : "");
+
+    const badgePillHtml = hasHelper
+      ? `<div class="wg-teacher-badge-pill">
+           <span>${gbi("teacherBadgeAwarded")}</span>
+         </div>`
+      : "";
+
+    slot.innerHTML = `
+      <section class="wg-teacher-hero card" role="alert">
+        <h2 class="wg-teacher-h">
+          <span class="wg-teacher-badge-ico" aria-hidden="true">${hasHelper ? "🤝" : "⭐"}</span>
+          <span>${gbi(titleKey)}</span>
+        </h2>
+        <div class="wg-teacher-body">
+          <p class="wg-teacher-msg">${bodyHtml}</p>
+          ${badgePillHtml}
+        </div>
+        <div class="wg-teacher-actions">
+          <button type="button" class="btn btn-primary wg-teacher-ack">${gbi("teacherAck")}</button>
+        </div>
+      </section>`;
+
+    slot.querySelector(".wg-teacher-ack")?.addEventListener("click", () => onAckTeacher(rec));
+  };
+
+  const renderTeacherBanner = (rec) => {
+    const { titleKey, message, hasHelper } = rec;
+    const briefText = message
+      ? (STAR_PRESETS[message] ? biPair(STAR_PRESETS[message]) : esc(message))
+      : gbi(titleKey);
+
+    slot.innerHTML = `
+      <aside class="wg-teacher-banner" role="alert">
+        <span class="wg-teacher-badge-ico" aria-hidden="true">${hasHelper ? "🤝" : "⭐"}</span>
+        <div class="wg-teacher-banner-msg">
+          <b>${briefText}</b>
+        </div>
+        <button type="button" class="btn-sm wg-teacher-ack wg-teacher-view">${gbi("teacherAck")}</button>
+        <button type="button" class="wg-helper-banner-close" aria-label="${esc(glabel("close"))}">✕</button>
+      </aside>`;
+
+    slot.querySelector(".wg-teacher-ack")?.addEventListener("click", () => onAckTeacher(rec));
+    slot.querySelector(".wg-helper-banner-close")?.addEventListener("click", () => onAckTeacher(rec));
   };
 
   const renderHero = (ask, asker, overview) => {
@@ -205,52 +365,81 @@ export function mountHelperAlert({ slot, learner, session, variant = "hero" } = 
     container.querySelector(".wg-helper-decline")?.addEventListener("click", () => onDecline(ask.id));
   };
 
-  const handleOpenAsks = async (asks) => {
-    if (closed) return;
+  const update = async () => {
+    if (closed || acknowledging) return;
 
-    // Find the first open ask where this learner is qualified to assist
-    let target = null;
-    for (const a of asks) {
+    // Priority 1: Unacknowledged teacher recognition (star, helper badge, praise)
+    const rec = groupTeacherRecognitions(lastEncouragements);
+    if (rec) {
+      const recKey = rec.ids.join(",");
+      if (activeRecognition?.ids?.join(",") !== recKey) {
+        activeRecognition = rec;
+        activeAsk = null;
+        if (variant === "banner") {
+          renderTeacherBanner(rec);
+        } else {
+          renderTeacherHero(rec);
+        }
+      }
+      return;
+    } else if (activeRecognition) {
+      activeRecognition = null;
+    }
+
+    // Priority 2: Open peer classmate asks where this learner qualifies to help
+    let targetAsk = null;
+    for (const a of lastAsks) {
       if (await canLearnerHelp(learner.id, a)) {
-        target = a;
+        targetAsk = a;
         break;
       }
     }
 
-    if (!target) {
+    if (!targetAsk) {
       clearAlert();
       return;
     }
 
-    if (activeAsk?.id === target.id) return; // already showing this ask
-    activeAsk = target;
+    if (activeAsk?.id === targetAsk.id) return; // already showing this ask
+    activeAsk = targetAsk;
 
     try {
-      const [asker] = await learnersByIds([target.learner]);
-      const overview = await resolveTaskOverview(target);
+      const [asker] = await learnersByIds([targetAsk.learner]);
+      const overview = await resolveTaskOverview(targetAsk);
       if (closed || !activeAsk) return;
 
       if (variant === "banner") {
-        renderBanner(target, asker, overview);
+        renderBanner(targetAsk, asker, overview);
       } else {
-        renderHero(target, asker, overview);
+        renderHero(targetAsk, asker, overview);
       }
     } catch (err) {
       console.error("could not render helper alert", err);
     }
   };
 
-  const stopWatch = watchOpenClassmateAsks(sessionId ?? null, (asks, err) => {
+  const stopWatchAsks = watchOpenClassmateAsks(sessionId ?? null, (asks, err) => {
     if (err) {
       console.error("could not watch open asks for helpers", err);
       return;
     }
-    handleOpenAsks(asks);
+    lastAsks = asks || [];
+    update();
+  });
+
+  const stopWatchEnc = learnerEncouragements(learner.id, (list, err) => {
+    if (err) {
+      console.error("could not watch learner encouragements", err);
+      return;
+    }
+    lastEncouragements = list || [];
+    update();
   });
 
   return () => {
     closed = true;
-    stopWatch();
+    stopWatchAsks();
+    stopWatchEnc();
     clearAlert();
   };
 }
