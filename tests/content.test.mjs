@@ -17,7 +17,7 @@ const UNFINISHED = /\bdraft\b|nháp/i;
 const MAX_DEMO_MS = 15000; // the guide's ~10 s target, plus slack for the estimate
 
 const topics = [];
-for (let n = 1; n <= 9; n++) {
+for (let n = 1; n <= 10; n++) {
   if (existsSync(new URL(`topic-${n}.js`, CONTENT))) topics.push({ n, mod: await import(new URL(`topic-${n}.js`, CONTENT)) });
 }
 

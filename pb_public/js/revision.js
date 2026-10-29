@@ -1,7 +1,7 @@
 // Revision round selection and mission picking. Pure: `today` and `rng` are passed in.
 // Spec: plans/20261025-1345-word-garden-game/game-rules.md "Revision round selection"
 
-import { skillById } from "./content/skills.js";
+import { lastWeekTopic, reviseEverythingTopics, skillById } from "./content/skills.js";
 import { CONFIG, attemptTime, dayKey, gardenState } from "./rules.js";
 
 const STAGE_RANK = { seed: 0, sprout: 1, leafy: 2, bud: 3, flowering: 4 };
@@ -24,9 +24,9 @@ export function skillWeight(state, { taught = true } = {}) {
 
 function topicsForPreset(preset, topics, taught) {
   let chosen = topics;
-  if (preset === "revise_everything") return taught.filter((n) => n >= 1 && n <= 8);
+  if (preset === "revise_everything") return reviseEverythingTopics(taught);
   if (preset === "all_covered" || preset === "most_faded") chosen = taught;
-  else if (preset === "last_week") chosen = taught.length ? [Math.max(...taught)] : [];
+  else if (preset === "last_week") chosen = taught.length ? [lastWeekTopic(taught)] : [];
   return chosen.length ? chosen : topics;
 }
 

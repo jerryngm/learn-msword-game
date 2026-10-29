@@ -5,7 +5,7 @@
 
 import { liveSession, watchAllAttempts, watchClassSettings, watchLearners, watchSessionAttempts } from "../live.js";
 import { avatarEmoji, esc } from "../i18n.js";
-import { TOPICS, loadTopic, skillById } from "../content/skills.js";
+import { BONUS_TOPIC, TOPICS, loadTopic, skillById, topicLabel, topicName } from "../content/skills.js";
 import { GARDEN_SPOTS, classStats, gardenKind, gardenProgress, masteredFlowers, totalStars } from "./class-stats.js";
 import { goalStripHtml, sidebarHtml } from "./projector-components.js";
 import { gardenSvg } from "./garden-scene.js";
@@ -79,8 +79,11 @@ let drawToken = 0;
 function topicsText(session) {
   const list = Array.isArray(session?.topics) ? session.topics.map(Number).filter((n) => TOPICS.some((t) => t.n === n)) : [];
   if (!list.length) return "";
-  if (list.length === 1) return `Topic ${list[0]} · ${TOPICS.find((t) => t.n === list[0]).title.en}`;
-  return `Topics ${list.join(", ")}`;
+  if (list.length === 1) {
+    const [n] = list;
+    return n === BONUS_TOPIC ? topicLabel(n).en : `${topicLabel(n).en} · ${TOPICS.find((t) => t.n === n).title.en}`;
+  }
+  return `Topics ${list.map(topicName).join(", ")}`;
 }
 
 /* ---------- drawing ---------- */

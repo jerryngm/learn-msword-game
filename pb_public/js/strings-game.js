@@ -3,6 +3,7 @@
 // gt(key, vars) -> {en, vi}; gbi(key, vars) -> HTML with the .vi line; glabel(key, vars) -> aria/title text.
 
 import { biPair, labelPair } from "./i18n.js";
+import { BONUS_TOPIC, topicLabel } from "./content/skills.js";
 
 export const GAME_STRINGS = {
   icanChecklist: { en: "I can…", vi: "Tôi biết…" },
@@ -24,7 +25,7 @@ export const GAME_STRINGS = {
     en: "This one could not be saved, but you still finished it. Keep going.",
     vi: "Câu này chưa lưu được, nhưng bạn đã làm xong rồi. Cứ tiếp tục nhé.",
   },
-  topicChip: { en: "🌿 Topic {n}", vi: "Chủ đề {n}" },
+  topicChip: { en: "{leaf}{label}", vi: "{label}" }, // {label}: see TOPIC_VAR
 
   // Empty states
   emptyRevisionTitle: { en: "Your questions are on their way", vi: "Câu hỏi của bạn sắp có rồi" },
@@ -154,8 +155,8 @@ export const GAME_STRINGS = {
   close: { en: "Close", vi: "Đóng" },
   kitchen: { en: "🍳 Kitchen", vi: "Nhà bếp" },
   badges: { en: "🏅 Badges", vi: "Huy hiệu" },
-  dishTopic: { en: "Topic {n}", vi: "Chủ đề {n}" },
-  dishCooked: { en: "Topic {n} ✓", vi: "Chủ đề {n} ✓" },
+  dishTopic: { en: "{label}", vi: "{label}" },
+  dishCooked: { en: "{label} ✓", vi: "{label} ✓" },
   kitchenNote: { en: "Finish a topic to cook its dish. For the feast, answer every question in a full Revise everything round.", vi: "Học xong mỗi chủ đề, bạn sẽ nấu được một món. Để có nồi lẩu, hãy trả lời hết các câu trong một lượt Ôn lại tất cả (Revise everything)." },
   noBadges: {
     en: "A plant that flowers gives you an “I can…” badge.",
@@ -216,7 +217,7 @@ export const GAME_STRINGS = {
   helperAlertDecline: { en: "Can't right now", vi: "Bận rồi" },
   helperAlertAccepted: { en: "Thank you! Please walk over to {name}'s laptop. 🌱", vi: "Cảm ơn bạn! Hãy qua máy của {name} nhé. 🌱" },
   helperComing: { en: "🤝 {name} is coming to help you!", vi: "🤝 {name} đang đến giúp bạn!" },
-  helperTopicTask: { en: "Topic {topic} · {type}: {title}", vi: "Chủ đề {topic} · {type}: {title}" },
+  helperTopicTask: { en: "{label} · {type}: {title}", vi: "{label} · {type}: {title}" },
   taskMission: { en: "Mission", vi: "Nhiệm vụ" },
   taskRevision: { en: "Revision", vi: "Ôn tập" },
 
@@ -231,6 +232,10 @@ export const GAME_STRINGS = {
   teacherDismiss: { en: "Close", vi: "Đóng" },
 };
 
+// Strings that name a topic take the topic number in this var and get {label} ("Topic 3", "🌟 Bonus") filled in
+// from topicLabel, so Bonus reads right everywhere without each screen special-casing topic 10.
+const TOPIC_VAR = { topicChip: "n", dishTopic: "n", dishCooked: "n", helperTopicTask: "topic" };
+
 /**
  * {en, vi} for a key. A var may itself be an {en, vi} pair (e.g. a skill's "I can" text);
  * each language line then takes its own half.
@@ -238,6 +243,11 @@ export const GAME_STRINGS = {
 export function gt(key, vars = {}) {
   const entry = GAME_STRINGS[key];
   if (!entry) throw new Error(`Missing game string: ${key}`);
+  const topicVar = TOPIC_VAR[key];
+  if (topicVar) {
+    const n = Number(vars[topicVar]);
+    vars = { ...vars, label: topicLabel(n), leaf: n === BONUS_TOPIC ? "" : "🌿 " };
+  }
   const pick = (lang) => (s) =>
     s.replace(/\{(\w+)\}/g, (_, k) => {
       if (!(k in vars)) return `{${k}}`;

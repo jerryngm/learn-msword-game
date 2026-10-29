@@ -1,6 +1,6 @@
 // Small helpers shared by the trainer views.
 import { avatarEmoji, esc } from "../i18n.js";
-import { TOPICS } from "../content/skills.js";
+import { TOPICS, topicLabel, topicName } from "../content/skills.js";
 
 export { esc, avatarEmoji };
 
@@ -24,7 +24,7 @@ export function topicList(value) {
 }
 
 export function topicTitle(n) {
-  return TOPICS.find((t) => t.n === n)?.title.en ?? `Topic ${n}`;
+  return TOPICS.find((t) => t.n === n)?.title.en ?? topicLabel(n).en;
 }
 
 /** "Topics 1, 3 · Both · 10 items" for a session record. */
@@ -33,7 +33,7 @@ export function sessionLine(session) {
   const topics = topicList(session.topics);
   const preset = PRESETS.find((p) => p.key === session.preset)?.label;
   const mode = MODES.find((m) => m.key === session.mode)?.label ?? session.mode;
-  return [preset, topics.length ? `Topics ${topics.join(", ")}` : null, mode, `${session.length} items`].filter(Boolean).join(" · ");
+  return [preset, topics.length ? `Topics ${topics.map(topicName).join(", ")}` : null, mode, `${session.length} items`].filter(Boolean).join(" · ");
 }
 
 export function face(learner, size = "") {

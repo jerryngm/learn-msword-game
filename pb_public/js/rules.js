@@ -3,7 +3,7 @@
 // Calendar days are Australia/Melbourne days; PocketBase `created` strings are UTC.
 // Spec: plans/20261025-1345-word-garden-game/game-rules.md
 
-import { skillsOfTopic } from "./content/skills.js";
+import { BONUS_TOPIC, skillsOfTopic } from "./content/skills.js";
 
 export const CONFIG = Object.freeze({
   clockSkewMs: 5 * 60 * 1000, // how far ahead of the server a laptop clock may be
@@ -146,9 +146,10 @@ export function supportLevel(cleanDays) {
 
 /**
  * A topic's dish is cooked when enough of its skills are at sprout or higher and at least
- * one of its missions has been done (any star count).
+ * one of its missions has been done (any star count). Bonus has no dish.
  */
 export function dishCooked(topicN, gardenMap, attempts) {
+  if (topicN === BONUS_TOPIC) return false;
   if (topicN === 9) return (attempts ?? []).some((a) => a.kind === "revision" && a.review_complete === true);
   const skills = skillsOfTopic(topicN);
   if (skills.length === 0) return false;

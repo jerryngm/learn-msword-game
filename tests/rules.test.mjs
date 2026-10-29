@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 
 import { CONFIG, reviewComplete, attemptTime, dayKey, dishCooked, gardenState, skillState, starsFor, supportLevel, weeklyStreak } from "../pb_public/js/rules.js";
 import { buildRound, pickNextMission, skillWeight } from "../pb_public/js/revision.js";
+import { BONUS_TOPIC, DISH_TOPICS, lastWeekTopic, reviseEverythingTopics, topicLabel, topicMark, topicName } from "../pb_public/js/content/skills.js";
+import { gt } from "../pb_public/js/strings-game.js";
 
 // PocketBase-style attempt: `day` is a UTC date, created at 02:00 UTC (midday in Melbourne, so the same calendar day).
 const attempt = (skill, stars, day, extra = {}) => ({
@@ -268,6 +270,41 @@ test("Revise everything selects taught skill-bearing topics and keeps the select
   assert.equal(round.length, 3);
   assert.deepEqual(new Set(round.map((i) => i.skill)), new Set(["t1-keys", "t7-template", "t8-plan-doc"]));
   assert.deepEqual(buildRound({ items, topics: [3], taughtTopics: [], preset: "revise_everything", length: 3 }), []);
+});
+
+test("Bonus (topic 10) is outside Revise everything, Only last week and the Kitchen", () => {
+  assert.deepEqual(reviseEverythingTopics([1, 8, 9, 10]), [1, 8], "Revise everything keeps topics 1-8 only");
+  assert.deepEqual(reviseEverythingTopics([10]), []);
+  assert.equal(lastWeekTopic([1, 3, 10]), 3, "Only last week ignores Bonus");
+  assert.equal(lastWeekTopic([10]), 10, "Bonus alone is still what the class is on");
+  assert.equal(lastWeekTopic([]), null);
+
+  const items = [item("t1-keys"), item("t2-spelling")];
+  const last = buildRound({ items, attempts: [], topics: [], length: 10, preset: "last_week", taughtTopics: [1, 2, 10], today: "2026-10-06" });
+  assert.deepEqual(last.map((i) => i.skill), ["t2-spelling"]);
+  const everything = buildRound({ items, topics: [], taughtTopics: [10], preset: "revise_everything", length: 3, today: "2026-10-26" });
+  assert.deepEqual(everything, [], "nothing to revise when only Bonus is taught");
+
+  assert.deepEqual(DISH_TOPICS.map((t) => t.n), [1, 2, 3, 4, 5, 6, 7, 8, 9], "the Kitchen has nine dishes");
+  const done = [attempt("t1-keys", 3, "2026-10-26", { kind: "mission", review_complete: true })];
+  assert.equal(dishCooked(BONUS_TOPIC, new Map(), done), false, "Bonus never cooks a dish");
+});
+
+test("topic labels: numbered topics read Topic N, Bonus reads 🌟 Bonus", () => {
+  assert.deepEqual(topicLabel(3), { en: "Topic 3", vi: "Chủ đề 3" });
+  assert.deepEqual(topicLabel(10), { en: "🌟 Bonus", vi: "🌟 Kỹ năng thêm" });
+  assert.equal(topicName(4), "4");
+  assert.equal(topicName(10), "Bonus");
+  assert.equal(topicMark(10), "🌟");
+  assert.equal(topicMark(2), "2");
+  // The game strings that name a topic use the same labels, so mission.js's picker header gets "🌟 Bonus" too.
+  assert.deepEqual(gt("dishTopic", { n: 10 }), { en: "🌟 Bonus", vi: "🌟 Kỹ năng thêm" });
+  assert.deepEqual(gt("dishTopic", { n: 5 }), { en: "Topic 5", vi: "Chủ đề 5" });
+  assert.deepEqual(gt("dishCooked", { n: 5 }), { en: "Topic 5 ✓", vi: "Chủ đề 5 ✓" });
+  assert.deepEqual(gt("topicChip", { n: 5 }), { en: "🌿 Topic 5", vi: "Chủ đề 5" });
+  assert.deepEqual(gt("topicChip", { n: 10 }), { en: "🌟 Bonus", vi: "🌟 Kỹ năng thêm" });
+  assert.equal(gt("helperTopicTask", { topic: 10, type: "Mission", title: "Find" }).en, "🌟 Bonus · Mission: Find");
+  assert.equal(gt("helperTopicTask", { topic: 2, type: "Nhiệm vụ", title: "Gõ" }).vi, "Chủ đề 2 · Nhiệm vụ: Gõ");
 });
 
 test("review feast needs every answer in a full real review round", () => {

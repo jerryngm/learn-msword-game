@@ -1,7 +1,7 @@
 // Content contract: every topic, skill id and item/mission shape the game uses.
 // Skill ids are stable. `attempts.skill` and `attempts.item` store them, so never rename one.
 //
-// Each topic file `js/content/topic-N.js` exports `items` (revision) and `missions`.
+// Each topic file `js/content/topic-N.js` (topics 1–9, plus 10 = the Bonus garden) exports `items` (revision) and `missions`.
 //
 // ── Revision item ─────────────────────────────────────────────────────────────
 // { id: 't1-keys-pick-1', skill: 't1-keys', type, prompt: {en, vi}, hint: {en, vi}, ...payload }
@@ -51,7 +51,52 @@ export const TOPICS = [
   { n: 7, title: { en: "Templates and saving safely", vi: "Mẫu có sẵn và lưu file an toàn" } },
   { n: 8, title: { en: "A real-life document", vi: "Làm một văn bản dùng trong đời sống" } },
   { n: 9, title: { en: "Review", vi: "Ôn tập" } },
+  { n: 10, title: { en: "Bonus", vi: "Kỹ năng thêm" } },
 ];
+
+// Topic 10 is the Bonus garden: the trainer opens it by ticking it as taught. It has no Kitchen dish and is
+// not part of "Revise everything" (topics 1–8) or "Only last week" (the newest numbered topic).
+export const BONUS_TOPIC = 10;
+const LAST_NUMBERED_TOPIC = 9;
+/** Topics whose revision joins a "Revise everything" round (the module spine, not Review or Bonus). */
+const REVISE_EVERYTHING_MAX = 8;
+/** Topics that have a Kitchen dish. */
+export const DISH_TOPICS = TOPICS.filter((t) => t.n <= LAST_NUMBERED_TOPIC);
+
+/** Full {en, vi} name of a topic for chips and headers: "Topic 3" / "Chủ đề 3", or "🌟 Bonus" / "🌟 Kỹ năng thêm". */
+export function topicLabel(n) {
+  if (n === BONUS_TOPIC) {
+    const { title } = TOPICS.find((t) => t.n === BONUS_TOPIC);
+    return { en: `🌟 ${title.en}`, vi: `🌟 ${title.vi}` };
+  }
+  return { en: `Topic ${n}`, vi: `Chủ đề ${n}` };
+}
+
+/** A topic number in running text ("Topics 1, 3, Bonus"): "3", or "Bonus" for topic 10. */
+export function topicName(n) {
+  return n === BONUS_TOPIC ? TOPICS.find((t) => t.n === BONUS_TOPIC).title.en : String(n);
+}
+
+/** Short plain mark for a topic where space is tight (a bed number, a table column): "3", or "🌟" for Bonus. */
+export function topicMark(n) {
+  return n === BONUS_TOPIC ? "🌟" : String(n);
+}
+
+/** Topics in a "Revise everything" round: the taught topics 1–8. */
+export function reviseEverythingTopics(taught) {
+  return (taught ?? []).filter((n) => n >= 1 && n <= REVISE_EVERYTHING_MAX);
+}
+
+/**
+ * The topic "Only last week" practises: the newest taught numbered topic. Bonus is ignored, unless it is the
+ * only topic taught, in which case that is what the class is working on.
+ */
+export function lastWeekTopic(taught) {
+  const list = taught ?? [];
+  const numbered = list.filter((n) => n !== BONUS_TOPIC);
+  const pool = numbered.length ? numbered : list;
+  return pool.length ? Math.max(...pool) : null;
+}
 
 // `extra: true` marks skills beyond the module spine. `mission: false` means the skill has revision items only.
 // `optional: true` lets a learner skip its items in a round without an attempt (not every learner needs it).

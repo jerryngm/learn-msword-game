@@ -1,7 +1,7 @@
 // My Garden (#s7): a plant per skill in the learner's own plant kind (labels on hover only), the plant card with
 // "💧 Water it / Practise again", the Kitchen shelf, the "I can…" badge wall and teacher ⭐ messages (live).
 
-import { TOPICS, SKILLS, skillsOfTopic } from "../content/skills.js";
+import { DISH_TOPICS, TOPICS, SKILLS, skillsOfTopic, topicMark } from "../content/skills.js";
 import { biPair, esc, labelPair } from "../i18n.js";
 import { dayKey, dishCooked, gardenState } from "../rules.js";
 import { pickNextMission } from "../revision.js";
@@ -61,12 +61,12 @@ export async function render(root, { learner }) {
     const dish = play.dishNames[n] ?? play.dishNames[String(n)];
     const plants = skillsOfTopic(n).map((s, i) => plantButton(s, garden.get(s.id), i, kind)).join("");
     return `<section class="wg-bed">
-        <h2 class="wg-bed-h"><span class="wg-bed-n" aria-hidden="true">${n}</span><span>${biPair(tp.title)}</span>${dish ? `<span class="wg-bed-dish">${esc(dish)}</span>` : ""}</h2>
+        <h2 class="wg-bed-h"><span class="wg-bed-n" aria-hidden="true">${topicMark(n)}</span><span>${biPair(tp.title)}</span>${dish ? `<span class="wg-bed-dish">${esc(dish)}</span>` : ""}</h2>
         <div class="wg-soil">${plants}</div>
       </section>`;
   };
 
-  const dishesHtml = TOPICS.map((tp) => {
+  const dishesHtml = DISH_TOPICS.map((tp) => {
     const name = play.dishNames[tp.n] ?? play.dishNames[String(tp.n)] ?? "";
     const cooked = dishCooked(tp.n, garden, attempts);
     return `<div class="wg-dish${cooked ? " is-cooked" : ""}">${cooked ? DISH_SVG.cooked : DISH_SVG.locked}

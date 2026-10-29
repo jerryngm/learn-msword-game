@@ -1,7 +1,7 @@
 // Trainer dashboard (#s10): ask queue, learners × skills heatmap, struggle flags, who can help,
 // the class garden (pick the next flower), send ⭐ / 🤝, and learner admin. Everything redraws from the shared live store.
 import { pb } from "../live.js";
-import { skillsOfTopic, skillById } from "../content/skills.js";
+import { BONUS_TOPIC, skillsOfTopic, skillById } from "../content/skills.js";
 import { gardenState } from "../rules.js";
 import { PLANT_KINDS } from "../plants.js";
 import { GARDEN_AREAS, gardenKind, gardenProgress, totalStars } from "../projector/class-stats.js";
@@ -166,7 +166,7 @@ export function render(root, { store, logout }) {
       : !skills.length
         ? `<p class="t-empty">No topics taught yet. Tick one in Start session.</p>`
         : `<table class="t-hm">
-            <thead><tr><th></th>${skills.map((s) => `<th title="${esc(s.ican.en)}"><span>${esc(shortSkill(s.id))}</span><small>T${s.topic}</small></th>`).join("")}</tr></thead>
+            <thead><tr><th></th>${skills.map((s) => `<th title="${esc(s.ican.en)}"><span>${esc(shortSkill(s.id))}</span><small>${s.topic === BONUS_TOPIC ? "🌟" : `T${s.topic}`}</small></th>`).join("")}</tr></thead>
             <tbody>${active
               .map((l) => {
                 const g = gardens.get(l.id);

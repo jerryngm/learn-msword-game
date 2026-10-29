@@ -1,6 +1,6 @@
 // Start a session: topics (tick "taught" to unlock), preset, mode, length, a live summary, then Start.
 import { pb } from "../live.js";
-import { TOPICS } from "../content/skills.js";
+import { TOPICS, lastWeekTopic, reviseEverythingTopics, topicLabel, topicMark, topicName } from "../content/skills.js";
 import { missionsPerRun } from "../game-data.js";
 import { LENGTHS, MODES, PRESETS, errText, esc, flash, sessionLine, topicList } from "./util.js";
 
@@ -17,8 +17,8 @@ export async function endSessions() {
 }
 
 function topicsForPreset(preset, taught) {
-  if (preset === "revise_everything") return taught.filter((n) => n >= 1 && n <= 8);
-  if (preset === "last_week") return taught.length ? [Math.max(...taught)] : [];
+  if (preset === "revise_everything") return reviseEverythingTopics(taught);
+  if (preset === "last_week") return taught.length ? [lastWeekTopic(taught)] : [];
   return [...taught];
 }
 
@@ -86,7 +86,7 @@ export function render(root, { store, logout }) {
       const isTaught = taught.includes(t.n);
       return `<div class="t-topic ${isTaught ? "" : "is-locked"} ${on.has(t.n) ? "is-on" : ""}">
           <button type="button" class="t-topic-pick" data-topic="${t.n}" ${isTaught ? "" : "disabled"} aria-pressed="${on.has(t.n)}">
-            <b>${t.n}</b><span>${esc(t.title.en)}<small>${isTaught ? (on.has(t.n) ? "In this session" : "Not in this session") : "Not taught yet"}</small></span>
+            <b>${topicMark(t.n)}</b><span>${esc(t.title.en)}<small>${isTaught ? (on.has(t.n) ? "In this session" : "Not in this session") : "Not taught yet"}</small></span>
           </button>
           <label class="t-taught"><input type="checkbox" data-taught="${t.n}" ${isTaught ? "checked" : ""}> Taught</label>
         </div>`;
@@ -94,7 +94,7 @@ export function render(root, { store, logout }) {
 
     $("#presets").innerHTML = PRESETS.map((p) => {
       const sel = pick.topics === null && pick.preset === p.key;
-      const extra = p.key === "last_week" && taught.length ? ` (${Math.max(...taught)})` : p.key === "all_covered" && taught.length ? ` (${taught.join(", ")})` : "";
+      const extra = p.key === "last_week" && taught.length ? ` (${topicName(lastWeekTopic(taught))})` : p.key === "all_covered" && taught.length ? ` (${taught.map(topicName).join(", ")})` : "";
       return `<button type="button" class="t-chip ${sel ? "is-on" : ""}" data-preset="${p.key}" aria-pressed="${sel}">${esc(p.label + extra)}</button>`;
     }).join("");
 
@@ -108,7 +108,7 @@ export function render(root, { store, logout }) {
     if (pick.mode !== "missions") lines.push(`<b>${pick.length}</b> revision items, ${pick.preset === "most_faded" && pick.topics === null ? "most faded skills first" : "faded skills first"}, topics mixed`);
     if (pick.mode !== "revision") lines.push(`<b>${missions}</b> Word missions in a Missions run`);
     if (pick.mode === "both") lines.push("Learners choose Revision or Missions on their home screen");
-    lines.push(`<span class="t-muted">${esc(presetLabel)} · Topics: ${topics.length ? topics.join(", ") : "none"} · help fades by each learner's plant stage</span>`);
+    lines.push(`<span class="t-muted">${esc(presetLabel)} · Topics: ${topics.length ? topics.map(topicName).join(", ") : "none"} · help fades by each learner's plant stage</span>`);
     $("#preview").innerHTML = lines.join("<br>");
     $("#start").disabled = busy || topics.length === 0;
     $("#names").checked = pick.showNames;
@@ -147,7 +147,7 @@ export function render(root, { store, logout }) {
     e.target.disabled = true;
     try {
       await pb.collection("class_settings").update(settings.id, { taught_topics: [...set].sort((a, b) => a - b) }, { requestKey: null });
-      flash(msg, e.target.checked ? `Topic ${n} is now taught.` : `Topic ${n} is no longer taught.`);
+      flash(msg, e.target.checked ? `${topicLabel(n).en} is now taught.` : `${topicLabel(n).en} is no longer taught.`);
     } catch (err) {
       e.target.checked = !e.target.checked;
       e.target.disabled = false;
