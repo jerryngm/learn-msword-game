@@ -49,9 +49,9 @@ export function matchPictures(term,pool=PICTURES) {
   if (!words.length) return [];
   return pool.filter(p=>words.every(w=>p.tags.some(t=>t===w||t.startsWith(w))||norm(p.name).split(" ").some(n=>stem(n)===w)));
 }
-/** Online Pictures results: the matches, or a small default set when nothing matches. */
+/** Online Pictures results: the matches, or a small default set when nothing matches. Never the learner's own photos. */
 export function onlineResults(term) {
-  const hits=matchPictures(term);
+  const hits=matchPictures(term,LIBRARY_PICTURES);
   return hits.length ? hits : DEFAULT_RESULTS.map(id=>PICTURES.find(p=>p.id===id));
 }
 
