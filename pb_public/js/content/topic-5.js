@@ -225,6 +225,40 @@ const flyerSteps = [
     narrow, marginScript, 'layout.pageSetup'),
 ];
 
+const phoneRows = [['Name', 'Phone'], ['Mum', '0400 111 222'], ['', '']];
+const phoneCheck = (doc) => heading(doc, 'Family phone numbers') && size(doc, 2, 3) &&
+  sameGrid(doc, [['Name', 'Phone'], ['Mum', '0400 111 222']]);
+const phoneSteps = [
+  step(T('Click after "Family phone numbers". On the Insert tab, click Table. Choose 2x3 Table.', 'Bấm ngay sau chữ “Family phone numbers”. Trên thẻ Insert, bấm Table. Chọn 2x3 Table.'),
+    T('First click at the end of Family phone numbers. Then click Insert, then Table. 2x3 means 2 columns and 3 rows: move the mouse over the squares until the top says 2x3 Table, then click.', 'Trước tiên bấm vào cuối dòng Family phone numbers. Sau đó bấm Insert, rồi bấm Table. 2x3 nghĩa là 2 cột và 3 hàng: đưa chuột qua các ô vuông đến khi phía trên hiện chữ 2x3 Table, rồi bấm.'),
+    (doc) => size(doc, 2, 3), insertScript(0, 20, '2x3'), 'insert.tables'),
+  ...[
+    step(T('Click the top-left cell. Type: Name', 'Bấm vào ô trên cùng bên trái. Gõ: Name'),
+      T('The top-left cell is the first box of the new table. Use Shift for the capital N.', 'Ô trên cùng bên trái là ô đầu tiên của bảng mới. Giữ Shift để gõ chữ N viết hoa.'),
+      (doc) => loose(cellText(doc, 0, 0, 0)) === 'name', [go(cellAt(0, 0)), type('Name', cellAt(0, 0))]),
+    step(T('Press Tab. Type: Phone', 'Nhấn Tab. Gõ: Phone'),
+      T('Tab moves you to the next cell on the right. Then type Phone.', 'Phím Tab đưa bạn sang ô kế bên phải. Sau đó gõ Phone.'),
+      (doc) => loose(cellText(doc, 0, 0, 1)) === 'phone', [key('Tab'), type('Phone', cellAt(0, 1))]),
+    step(T('Press Tab. Type: Mum', 'Nhấn Tab. Gõ: Mum'),
+      T('Tab at the end of a row goes to the first cell of the next row.', 'Ở ô cuối của một hàng, nhấn Tab sẽ sang ô đầu tiên của hàng bên dưới.'),
+      (doc) => loose(cellText(doc, 0, 1, 0)) === 'mum', [key('Tab'), type('Mum', cellAt(1, 0))]),
+    step(T('Press Tab. Type: 0400 111 222', 'Nhấn Tab. Gõ: 0400 111 222'),
+      T('Tab moves to the Phone cell. Leave the last row empty.', 'Phím Tab đưa con trỏ sang ô Phone. Để trống hàng cuối.'),
+      phoneCheck, [key('Tab'), type('0400 111 222', cellAt(1, 1))]),
+  ].map((st) => ({ ...st, skill: 't5-table-type' })),
+];
+
+const rosterRows = [['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], ['Lan', 'Mai', 'Nam', 'Hoa', 'Binh', 'Tam', 'An']];
+const rosterCheck = (doc) => landscape(doc) && narrow(doc);
+const rosterSteps = [
+  step(T('Click the Layout tab. Click Orientation, then Landscape.', 'Bấm thẻ Layout. Bấm Orientation, rồi bấm Landscape.'),
+    T('Orientation is in the Page Setup group. Landscape is the wide page.', 'Orientation nằm trong nhóm Page Setup. Landscape là trang nằm ngang.'),
+    landscape, orientationScript('landscape'), 'layout.pageSetup'),
+  { ...step(T('Click Margins, then Narrow.', 'Bấm Margins, rồi bấm Narrow.'),
+    T('Margins is in the Page Setup group. Narrow is 1.27 cm, so the table has more room.', 'Margins nằm trong nhóm Page Setup. Narrow là 1,27 cm, nên bảng có thêm chỗ.'),
+    (doc) => landscape(doc) && narrow(doc), [go('tab.layout'), ...layoutMenu('layout.margins', 'narrow')], 'layout.pageSetup'), skill: 't5-margins' },
+];
+
 export const missions = [
   mission('t5-m-timetable', 't5-insert-table', T('Weekly class timetable', 'Thời khoá biểu hằng tuần'),
     T('Set up a timetable for your class. Insert a table with 2 columns and 3 rows under the heading. In the first row, type the column headings Day and Class.', 'Hãy tạo khung thời khoá biểu cho lớp học. Chèn một bảng có 2 cột và 3 hàng dưới tiêu đề. Gõ hai tiêu đề cột Day và Class vào hàng trên cùng.'),
@@ -241,4 +275,10 @@ export const missions = [
   mission('t5-m-flyer-margins', 't5-margins', T('Narrow margins for a flyer', 'Lề hẹp cho tờ rơi'),
     T('Make your garden club flyer spread wider on the page. Make the empty edges smaller: change Margins to Narrow (1.27 cm).', 'Làm cho tờ rơi câu lạc bộ làm vườn trải rộng trên trang hơn. Hãy thu nhỏ phần mép trống: đổi Margins thành Narrow (1.27 cm).'),
     flyerText, createDoc({ p: flyerText.split('\n'), page: { margins: 'narrow' } }), LAYOUT_TABS, flyerSteps, narrow),
+  mission('t5-m-phone-list', 't5-insert-table', T('Family phone list', 'Danh sách số điện thoại gia đình'),
+    T('Keep your family numbers in one place. Insert a table with 2 columns and 3 rows under the heading. Type Name and Phone in the first row, then Mum and her number in the second row.', 'Ghi số điện thoại của gia đình vào một chỗ. Chèn một bảng có 2 cột và 3 hàng dưới tiêu đề. Gõ Name và Phone vào hàng đầu, rồi gõ Mum và số của mẹ vào hàng thứ hai.'),
+    'Family phone numbers', tableDoc(phoneRows, 'Family phone numbers'), TABLE_TABS, phoneSteps, phoneCheck),
+  mission('t5-m-cleaning-roster', 't5-orientation', T('A wide cleaning roster', 'Bảng lịch dọn dẹp quá rộng'),
+    T('Your cleaning roster has 7 day columns, so it is too wide for the page. Turn the page to Landscape, then make the edges smaller with Narrow margins.', 'Bảng lịch dọn dẹp có 7 cột ngày nên quá rộng, không vừa trang. Hãy xoay trang sang Landscape (trang ngang), rồi thu nhỏ phần mép trống bằng lề hẹp Narrow.'),
+    tableDoc(rosterRows, 'Cleaning roster'), tableDoc(rosterRows, 'Cleaning roster', { orientation: 'landscape', margins: 'narrow' }), LAYOUT_TABS, rosterSteps, rosterCheck),
 ];

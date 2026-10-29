@@ -39,9 +39,9 @@ const endDoc = listDoc(['Bread', 'Milk'], 0, 1, 'bullet');
 const endScript = [go('doc:1,4'), key('Enter'), key('Enter'), type('Bring a bag.')];
 const endCheck = (doc) => sameLines(doc, ['Bread', 'Milk', 'Bring a bag.']) && listed(doc, 0, 1, 'bullet') && plainLine(doc, 2, 'Bring a bag.');
 const headingText = ['Lost cat', 'Black cat with a white tail.', 'Please call Lan.'];
-function headingFormat(doc, props) {
+function headingFormat(doc, props, text = 'lost cat') {
   const runs = doc.p[0]?.runs.filter((r) => r.text.trim()) ?? [];
-  return clean(line(doc, 0)) === 'lost cat' && runs.length > 0 && runs.every((r) => Object.entries(props).every(([key, value]) => r[key] === value));
+  return clean(line(doc, 0)) === text && runs.length > 0 && runs.every((r) => Object.entries(props).every(([key, value]) => r[key] === value));
 }
 const headingCheck = (doc) => sameLines(doc, headingText) && headingFormat(doc, { size: 20, b: true }) && doc.p[0].align === 'center';
 const headingScript = [select(0, 0, 8), ...menu('home.font.size', 20), go('home.font.bold'), go('home.paragraph.alignCenter')];
@@ -199,6 +199,42 @@ const noticeSteps = [
     (doc) => doc.p[0].align === 'center', [go('doc:0,2'), go('home.paragraph.alignCenter')]),
 ];
 
+const withSkill = (skill, ...list) => list.map((s) => ({ ...s, skill }));
+const phinLines = ['Phin coffee', 'Put coffee in the phin.', 'Pour hot water.', 'Wait five minutes.', 'Enjoy your coffee.'];
+const phinNumbered = (doc) => listed(doc, 1, 3, 'number') && !doc.p[0].list;
+const phinCheck = (doc) => sameLines(doc, phinLines) && phinNumbered(doc) && plainLine(doc, 4, 'Enjoy your coffee.');
+const phinSteps = [
+  step(T('Select the three steps. Click Numbering.', 'Bôi đen ba bước. Bấm Numbering.'),
+    T('Select from Put coffee in the phin. to Wait five minutes. Leave the title plain.', 'Bôi đen từ dòng Put coffee in the phin. đến hết Wait five minutes. Giữ tiêu đề không có số.'),
+    phinNumbered, [select(1, 3, 18), go('home.paragraph.numbering')]),
+  ...withSkill('t4-end-list',
+    step(T('Click after Wait five minutes. Press Enter twice to end the list.', 'Bấm sau Wait five minutes. Nhấn Enter hai lần để kết thúc danh sách.'),
+      T('Enter once adds an empty number. Enter again removes that number.', 'Enter lần đầu thêm một số trống. Enter lần nữa bỏ số đó.'),
+      (doc) => phinNumbered(doc) && doc.p.length >= 5 && !doc.p[4].list, [go('doc:3,18'), key('Enter'), key('Enter')]),
+    step(T('On the new line, type: Enjoy your coffee.', 'Ở dòng mới, gõ: Enjoy your coffee.'),
+      T('The new line has no number. Type Enjoy your coffee. there.', 'Dòng mới không có số. Gõ Enjoy your coffee. ở đó.'),
+      phinCheck, [go('doc:4,0'), type('Enjoy your coffee.')])),
+];
+const saleLines = ['Garage sale', 'Chairs', 'Books', 'Plates', 'Saturday 9 am'];
+const saleHeading = (doc, props) => headingFormat(doc, props, 'garage sale');
+const saleItems = (doc) => listed(doc, 1, 3, 'bullet') && !doc.p[0].list && !doc.p[4]?.list;
+const saleCheck = (doc) => sameLines(doc, saleLines) && saleHeading(doc, { size: 20, b: true }) && doc.p[0].align === 'center' && saleItems(doc);
+const saleSteps = [
+  step(T('Select Garage sale. Change Font Size to 20.', 'Bôi đen Garage sale. Đổi Font Size thành 20.'),
+    T('Select only the first line. Open Font Size and click 20.', 'Chỉ bôi đen dòng đầu. Mở Font Size rồi bấm 20.'),
+    (doc) => saleHeading(doc, { size: 20 }), [select(0, 0, 11), ...menu('home.font.size', 20)], 'home.font'),
+  step(T('Select Garage sale. Click Bold.', 'Bôi đen Garage sale. Bấm Bold.'),
+    T('Select the heading again if it is no longer blue. Click B.', 'Nếu tiêu đề không còn được bôi đen, hãy bôi đen lại. Bấm B.'),
+    (doc) => saleHeading(doc, { b: true }), [select(0, 0, 11), go('home.font.bold')], 'home.font'),
+  step(T('Click in Garage sale. Click Center.', 'Bấm vào Garage sale. Bấm Center.'),
+    T('Center is in the Paragraph group. It puts the heading in the middle.', 'Center nằm trong nhóm Paragraph, đưa tiêu đề vào giữa.'),
+    (doc) => doc.p[0].align === 'center', [go('doc:0,5'), go('home.paragraph.alignCenter')]),
+  ...withSkill('t4-bullets',
+    step(T('Select the three items. Click Bullets.', 'Bôi đen ba món đồ. Bấm Bullets.'),
+      T('Select Chairs, Books and Plates. Leave Saturday 9 am out of the selection.', 'Bôi đen Chairs, Books và Plates. Không bôi đen dòng Saturday 9 am.'),
+      saleItems, [select(1, 3, 6), go('home.paragraph.bullets')])),
+];
+
 export const missions = [
   mission('t4-m-pho-list', 't4-bullets', T('Shopping for pho', 'Danh sách mua đồ nấu phở'),
     T('Your family member is going to the market for you. Give each pho ingredient a bullet, then write Thank you. on a plain line below.', 'Người nhà sẽ đi chợ giúp bạn. Hãy thêm dấu chấm đầu dòng cho từng nguyên liệu nấu phở, rồi gõ Thank you. ở dòng bình thường bên dưới.'),
@@ -215,4 +251,13 @@ export const missions = [
   mission('t4-m-lost-cat-notice', 't4-heading-sign', T('A lost cat notice', 'Thông báo tìm mèo lạc'),
     T('Help your neighbours notice your missing cat. Make Lost cat size 20, bold and centred. Keep the message below it.', 'Giúp hàng xóm chú ý đến thông báo tìm mèo. Làm Lost cat cỡ 20, in đậm và canh giữa. Giữ lời nhắn ở bên dưới.'),
     headingText.join('\n'), createDoc({ p: headingText.map((text, p) => new Para(p === 0 ? { align: 'center' } : {}, [makeRun(text, p === 0 ? { size: 20, b: true } : {})])) }), noticeSteps, headingCheck),
+  mission('t4-m-phin-coffee', 't4-numbering', T('Steps to make phin coffee', 'Các bước pha cà phê phin'),
+    T('Show a friend how to make phin coffee. Number the three steps and keep the title without a number. Then end the list and type Enjoy your coffee. on a plain line.', 'Chỉ cho bạn bè cách pha cà phê phin. Đánh số ba bước, không đánh số tiêu đề. Rồi kết thúc danh sách và gõ Enjoy your coffee. ở dòng bình thường.'),
+    phinLines.slice(0, 4).join('\n'), listDoc(phinLines, 1, 3, 'number'), phinSteps, phinCheck),
+  mission('t4-m-garage-sale', 't4-heading-sign', T('A garage sale sign', 'Bảng hiệu bán đồ cũ'),
+    T('You are selling things from your house on Saturday. Make Garage sale size 20, bold and centred, then give each item a bullet. Keep Saturday 9 am plain.', 'Thứ Bảy bạn bán đồ cũ trước nhà. Làm Garage sale cỡ 20, in đậm và canh giữa, rồi thêm dấu chấm đầu dòng cho từng món đồ. Giữ dòng Saturday 9 am như cũ.'),
+    saleLines.join('\n'), createDoc({ p: saleLines.map((text, p) => new Para({
+      ...(p === 0 ? { align: 'center' } : {}),
+      ...(p >= 1 && p <= 3 ? { list: { type: 'bullet', format: '•' } } : {}),
+    }, [makeRun(text, p === 0 ? { size: 20, b: true } : {})])) }), saleSteps, saleCheck),
 ];

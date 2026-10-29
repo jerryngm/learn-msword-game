@@ -44,7 +44,7 @@ const ratioOf = (id) => {
 // A corner drag keeps the shape exactly (up to rounding); a side drag changes it.
 const keepsShape = (p) => Math.abs(p.width / p.height / ratioOf(p.id) - 1) < 0.03;
 // The trainer teaches "make it smaller": any real change down from the 480 px start counts, with no size target.
-const smaller = (p) => p.width < 470;
+const smaller = (p, from = 480) => p.width < from - 10;
 /** Exactly one picture, the right one, and it sits right after the paragraph `before` (the heading or the line above). */
 const onePictureAfter = (doc, id, before) => {
   const all = pictures(doc);
@@ -291,6 +291,54 @@ const moveSteps = [
     moveMissionCheck, dragPicture),
 ];
 
+const clubLines = ['We meet every Friday at 2 pm.', 'Everyone is welcome.'];
+const clubText = ['Computer club', ...clubLines];
+const clubInserted = (doc) => onePictureAfter(doc, 'keyboard', 'Computer club') && sameLines(doc, clubText);
+// A picture inserted from the picker starts at 240 px wide; any real, shape-keeping change down from there counts.
+const clubSmaller = (doc) => {
+  const all = pictures(doc);
+  return clubInserted(doc) && smaller(all[0], 240) && keepsShape(all[0]);
+};
+const clubSteps = [
+  ...[
+  step(T('Click at the end of "Computer club".', 'Bấm vào cuối dòng “Computer club”.'),
+    T('Click just after the last letter of Computer club.', 'Bấm ngay sau chữ cái cuối cùng của Computer club.'),
+    (doc, ctx) => caretAtEnd(doc, ctx, 'Computer club') || newLineUnder(doc, 'Computer club') || clubInserted(doc), [go('doc:0,13')]),
+  step(T('Press Enter.', 'Nhấn Enter.'),
+    T('Enter makes a new empty line under Computer club. The picture will go on this new line.', 'Phím Enter tạo một dòng trống mới dưới Computer club. Hình sẽ nằm ở dòng mới này.'),
+    (doc) => newLineUnder(doc, 'Computer club') || clubInserted(doc), [key('Enter')]),
+  step(T('On the Insert tab, click Pictures, then This Device.', 'Trên thẻ Insert, bấm Pictures, rồi bấm This Device.'),
+    T('First click the Insert tab. Then click Pictures, then This Device to open the picture window.', 'Trước tiên bấm thẻ Insert. Rồi bấm Pictures, rồi chọn This Device để mở cửa sổ chọn hình.'),
+    (doc) => isDeviceDialogOpen() || clubInserted(doc), openPicker, 'insert.pictures.device'),
+  step(T('In Downloads, click "keyboard.png", then click Insert.', 'Trong thư mục Downloads, bấm vào hình “keyboard.png”, rồi bấm nút Insert.'),
+    T('Click Downloads on the left. Click keyboard.png, then click the Insert button.', 'Bấm Downloads ở bên trái. Bấm hình keyboard.png, rồi bấm nút Insert.'),
+    clubInserted, choosePicture('keyboard'), 'insert.pictures.insert'),
+  ].map((st) => ({ ...st, skill: 't6-insert-picture' })),
+  { ...step(T('Drag the little round dot on the bottom-right corner towards the middle, to make the picture smaller.', 'Kéo chấm tròn nhỏ ở góc dưới bên phải vào phía giữa hình để làm hình nhỏ lại.'),
+    T('Click the picture once if you cannot see the dots. Use a corner dot, not a side dot, so the keyboard keeps its shape. If it looks stretched, press Ctrl+Z and try again.', 'Nếu chưa thấy các chấm tròn, hãy bấm vào hình một lần. Kéo chấm tròn ở góc, đừng kéo chấm tròn ở cạnh, để hình bàn phím giữ nguyên hình dạng. Nếu hình bị méo, nhấn Ctrl+Z rồi làm lại.'),
+    clubSmaller, [go('picture:0'), drag('picture:0:se', -80, -42)]), skill: 't6-resize' },
+];
+
+const onePageLines = ['Free seeds for everyone.', 'Come on Sunday at 10 am.', 'Bring a friend.'];
+const onePageText = ['Garden open day', ...onePageLines];
+const onePageStart = flyer('Garden open day', pic('flower', 480), onePageLines);
+const onePageWrapped = (doc) => {
+  const all = pictures(doc);
+  return all.length === 1 && all[0].id === 'flower' && all[0].wrap === 'square' && sameLines(doc, onePageText);
+};
+const onePageCheck = (doc) => onePageWrapped(doc) && smaller(pictures(doc)[0]) && keepsShape(pictures(doc)[0]);
+const onePageSteps = [
+  step(T('Click the flower picture once.', 'Bấm vào hình hoa một lần.'),
+    T('Click anywhere on the picture. A new tab, Picture Format, shows at the top.', 'Bấm vào chỗ nào trên hình cũng được. Ở phía trên sẽ hiện thêm thẻ mới tên Picture Format.'),
+    (doc, ctx) => pictureSelected(doc, ctx) || onePageWrapped(doc), [go('picture:0')]),
+  step(T('Click the Picture Format tab. Click Wrap Text, then Square.', 'Bấm thẻ Picture Format. Bấm Wrap Text, rồi bấm Square.'),
+    T('First click the Picture Format tab at the top. If you cannot see that tab, click the picture first. Then click Wrap Text, then Square. Square puts the text next to the picture.', 'Trước tiên bấm thẻ Picture Format ở phía trên. Nếu không thấy thẻ đó, hãy bấm vào hình trước. Rồi bấm Wrap Text, rồi bấm Square. Square đưa chữ lên nằm cạnh hình.'),
+    onePageWrapped, wrapTo('square'), 'picture.arrange'),
+  { ...step(T('Drag the little round dot on the bottom-right corner towards the middle, to make the picture smaller.', 'Kéo chấm tròn nhỏ ở góc dưới bên phải vào phía giữa hình để làm hình nhỏ lại.'),
+    T('Use a corner dot, not a side dot, so the flower keeps its shape. Hold the mouse button down while you drag. If it looks stretched, press Ctrl+Z and try again.', 'Kéo chấm tròn ở góc, đừng kéo chấm tròn ở cạnh, để hình hoa giữ nguyên hình dạng. Giữ nút chuột trong lúc kéo. Nếu hình bị méo, nhấn Ctrl+Z rồi làm lại.'),
+    onePageCheck, [go('picture:0'), drag('picture:0:se', -240, -168)]), skill: 't6-resize' },
+];
+
 export const missions = [
   mission('t6-m-flower-flyer', 't6-insert-picture', T('Add a flower photo to the flyer', 'Thêm hình hoa vào tờ rơi'),
     T('Your garden club flyer has text but no picture. Add the flower.png picture on a new line under the heading Garden club.', 'Tờ rơi của câu lạc bộ làm vườn mới có chữ mà chưa có hình. Hãy chèn hình flower.png vào một dòng mới dưới tiêu đề Garden club.'),
@@ -304,4 +352,10 @@ export const missions = [
   mission('t6-m-move-picture', 't6-move-wrap', T('Move the picture', 'Di chuyển hình'),
     T('Your notice for a free computer class has a laptop photo under the heading. You want the photo at the top right, next to the heading. Set Wrap Text to In Front of Text, then drag the picture there.', 'Tờ thông báo lớp máy tính miễn phí của bạn có một tấm hình laptop nằm dưới tiêu đề. Bạn muốn đưa hình lên góc trên bên phải, cạnh dòng tiêu đề. Hãy đặt Wrap Text thành In Front of Text, rồi kéo hình tới đó.'),
     moveMissionStart, flyer('Free computer class', pic('laptop', 160, 'front', undefined, MOVE_TARGET), moveMissionLines), moveSteps, moveMissionCheck),
+  mission('t6-m-computer-club', 't6-resize', T('Computer club notice', 'Thông báo câu lạc bộ máy tính'),
+    T('Your computer club notice needs a picture. Add the keyboard.png picture on a new line under the heading Computer club. Then make it smaller with a corner dot, so the keyboard does not get squashed.', 'Thông báo câu lạc bộ máy tính cần một tấm hình. Hãy chèn hình keyboard.png vào một dòng mới dưới tiêu đề Computer club. Sau đó làm hình nhỏ lại bằng chấm tròn ở góc để hình bàn phím không bị bẹp.'),
+    clubText.join('\n'), flyer('Computer club', pic('keyboard', 160), clubLines), clubSteps, clubSmaller),
+  mission('t6-m-garden-one-page', 't6-move-wrap', T('Fit the garden flyer on one page', 'Cho tờ rơi vườn vừa một trang'),
+    T('The big flower picture pushes the text of your garden flyer onto a second page. Put the text next to the picture, so the flyer fits on one page: set Wrap Text to Square. Then make the picture smaller.', 'Hình hoa to đẩy chữ của tờ rơi làm vườn sang trang thứ hai. Hãy đưa chữ lên cạnh hình cho tờ rơi vừa một trang: đặt Wrap Text thành Square. Sau đó làm hình nhỏ lại.'),
+    onePageStart, flyer('Garden open day', pic('flower', 240, 'square'), onePageLines), onePageSteps, onePageCheck),
 ];
