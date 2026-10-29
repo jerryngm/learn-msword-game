@@ -278,6 +278,13 @@ export function mountWord(el, opts = {}) {
     const pictureTab = root.querySelector('[data-tab="picture"].wt-tab');
     pictureTab.hidden = !doc.p[selectedPicture]?.picture && demoPicture<0;
     page.querySelectorAll(".wd-picture").forEach(el=>el.classList.toggle("is-selected",Number(el.closest(".wd-p").dataset.p)===(demoPicture>=0?demoPicture:selectedPicture)));
+    // Picture Format › Size shows the selected picture's size in cm (the page is 96 px per inch).
+    const shownPicture = demoPicture>=0 ? (demoDoc??doc).p[demoPicture]?.picture : doc.p[selectedPicture]?.picture;
+    if (shownPicture) {
+      const cm = (px) => `${(px*2.54/96).toFixed(2)} cm`;
+      root.querySelectorAll('[data-measure="picture.height"]').forEach((i) => (i.value = cm(shownPicture.height)));
+      root.querySelectorAll('[data-measure="picture.width"]').forEach((i) => (i.value = cm(shownPicture.width)));
+    }
     tableTab.hidden = !doc.p[sel.focus.p]?.cell && !demoDoc?.tables?.length;
     root.querySelector('[data-tab="tabledesign"].wt-tab').hidden = tableTab.hidden;
     // A contextual tab that disappears while it is active hands the ribbon back to the tab used

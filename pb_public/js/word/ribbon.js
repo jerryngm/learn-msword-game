@@ -218,8 +218,33 @@ const TABLE_LAYOUT = [
   group("table.data", "Data", [big("table.sort", "tbl_sort", "Sort"), big("table.repeatHeader", "tbl_repeat", "Repeat Header Rows"), big("table.convert", "tbl_convert", "Convert to Text"), big("table.formula", "tbl_formula", "Formula")]),
 ];
 
+// Picture Format as in Windows Word 365. Only Wrap Text works; the rest are visible but inert.
+const PICTURE_FORMAT = [
+  group("picture.adjust", "Adjust", [
+    big("picture.removeBackground", "pf_removebg", "Remove Background"),
+    big("picture.corrections", "pf_corrections", "Corrections", { menuOnly: true }), big("picture.color", "pf_color", "Color", { menuOnly: true }),
+    big("picture.artistic", "pf_artistic", "Artistic Effects", { menuOnly: true }), big("picture.transparency", "pf_transparency", "Transparency", { menuOnly: true }),
+    stack(smt("picture.compress", "pf_compress", "Compress Pictures"), smt("picture.change", "pic_change", "Change Picture", { menuOnly: true }), smt("picture.reset", "pf_reset", "Reset Picture", { split: true })),
+  ]),
+  group("picture.styles", "Picture Styles", [
+    { t: "picstyles", cmd: "picture.style" },
+    stack(smt("picture.border", "pf_border", "Picture Border", { menuOnly: true }), smt("picture.effects", "pf_effects", "Picture Effects", { menuOnly: true }), smt("picture.layout", "pf_layout", "Picture Layout", { menuOnly: true })),
+  ], { launcher: "picture.styles.dialog" }),
+  group("picture.accessibility", "Accessibility", [big("picture.altText", "pf_alttext", "Alt Text")]),
+  group("picture.arrange", "Arrange", [
+    big("picture.position", "text_position_square_24", "Position", { menuOnly: true }), big("picture.wrap", "text_wrap_24", "Wrap Text", { menuOnly: true }),
+    big("picture.forward", "position_forward_24", "Bring Forward", { split: true, wrap: true }), big("picture.backward", "position_backward_24", "Send Backward", { split: true, wrap: true }),
+    big("picture.selectionPane", "layer_24", "Selection Pane", { cls: "wi-orange" }),
+    stack(smt("picture.align", "align_left_20", "Align", { menuOnly: true }), smt("picture.group", "square_multiple_16", "Group", { menuOnly: true, disabled: true }), smt("picture.rotate", "pf_rotate", "Rotate", { menuOnly: true })),
+  ]),
+  group("picture.size", "Size", [
+    big("picture.crop", "pf_crop", "Crop", { split: true }),
+    { t: "rows", rows: [[{ t: "measure", cmd: "picture.height", icon: "tbl_height", label: "Height", value: "" }], [{ t: "measure", cmd: "picture.width", icon: "tbl_width", label: "Width", value: "" }]] },
+  ], { launcher: "picture.size.dialog" }),
+];
+
 const TAB_GROUPS = new Map([
-  ["picture", [group("picture.arrange", "Arrange", [big("picture.wrap", "text_wrap_24", "Wrap Text", {menuOnly:true}),big("picture.delete", "delete", "Delete Picture")])]],
+  ["picture", PICTURE_FORMAT],
   ["tabledesign", TABLE_DESIGN],
   ["table", TABLE_LAYOUT],
   ["home", HOME], ["insert", INSERT], ["design", DESIGN], ["layout", LAYOUT], ["references", REFERENCES],
@@ -287,7 +312,7 @@ function bigHtml(item) {
   const icon = `<span class="wr-bic">${glyph ?? ico(item.icon, `wi-big ${item.cls ?? ""}`)}</span>`;
   const cls = `wr-btn wr-big${disabled(item)}${item.on ? " is-on" : ""}`;
   if (item.split) {
-    return `<span class="wr-bigsplit${disabled(item)}"><button type="button" class="${cls} wr-big-top" data-cmd="${item.cmd}" ${attrs(item)}>${icon}</button><button type="button" class="wr-btn wr-big-bottom${disabled(item)}" data-menu="${item.cmd}" title="${esc(item.label)}"><span class="wr-blbl">${esc(item.label)}</span>${chev}</button></span>`;
+    return `<span class="wr-bigsplit${disabled(item)}"><button type="button" class="${cls} wr-big-top" data-cmd="${item.cmd}" ${attrs(item)}>${icon}</button><button type="button" class="wr-btn wr-big-bottom${disabled(item)}" data-menu="${item.cmd}" title="${esc(item.label)}">${item.wrap ? bigLabel(item.label, true) : `<span class="wr-blbl">${esc(item.label)}</span>${chev}`}</button></span>`;
   }
   const attr = item.menuOnly ? `data-menu="${item.cmd}"` : `data-cmd="${item.cmd}"`;
   return `<button type="button" class="${cls}" ${attr} ${attrs(item)}>${icon}${bigLabel(item.label, item.menuOnly)}</button>`;
@@ -315,6 +340,16 @@ function stylesHtml() {
 
 /** Table Styles gallery: small grid tiles in Word's built-in colours (first tile is Table Grid). */
 const TABLE_STYLE_TILES = ["#000", "#7F7F7F", "#A5A5A5", "#595959", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#404040", "#5B9BD5", "#70AD47", "#4472C4", "#C55A9E", "#A9D18E", "#F4B183"];
+/** Picture Styles gallery: the same small landscape in each of Word's first frames. */
+const PICTURE_STYLE_TILES = ["Simple Frame, White", "Beveled Matte, White", "Metal Frame", "Drop Shadow Rectangle", "Reflected Rounded Rectangle", "Soft Edge Rectangle", "Double Frame, Black"];
+function pictureStylesHtml(item) {
+  ensureCommand(item.cmd, "Picture Style");
+  const tiles = PICTURE_STYLE_TILES.map((name, i) => `<button type="button" class="wr-pstyle" data-cmd="${item.cmd}" data-arg="${i}" data-v="${i}" title="${esc(name)}" aria-label="${esc(name)}"><i></i></button>`).join("");
+  // On a narrow window Word swaps the gallery for one Quick Styles button.
+  return `<div class="wr-gallery wr-pstyles wide-only"><div class="wr-gallery-tiles">${tiles}</div>
+    <button type="button" class="wr-btn wr-gallery-more" data-cmd="${item.cmd}" aria-label="More picture styles">${ico("more")}</button></div>
+    <div class="narrow-only">${bigHtml({ cmd: item.cmd, icon: "pf_effects", label: "Quick Styles", menuOnly: true })}</div>`;
+}
 function tableStylesHtml(item) {
   ensureCommand(item.cmd, "Table Style");
   const tiles = TABLE_STYLE_TILES.map((c, i) => `<button type="button" class="wr-tstyle${i === 0 ? " is-grid" : ""}" data-cmd="${item.cmd}" data-arg="${i}" title="Table style" style="--c:${c}"><i></i></button>`).join("");
@@ -351,10 +386,11 @@ function itemHtml(item) {
       ensureCommand(item.cmd, item.label);
       return `<button type="button" class="wr-btn wr-check${item.on ? " is-checked" : ""}" data-cmd="${item.cmd}" title="${esc(item.label)}"><span class="wr-box"></span>${esc(item.label)}</button>`;
     case "tablestyles": return tableStylesHtml(item);
+    case "picstyles": return pictureStylesHtml(item);
     case "measure":
       ensureCommand(item.cmd, item.label);
       return `<label class="wr-spinrow wr-measure" title="${esc(item.label)}"><span class="wr-spinlbl">${ico(item.icon)}${esc(item.label)}:</span>
-        <span class="wr-spin" data-cmd="${item.cmd}"><input type="text" readonly value="${esc(item.value)}" tabindex="-1"><span class="wr-spinbtns"><span>${ico("chevron_up_12")}</span><span>${ico("chevron_down_12")}</span></span></span></label>`;
+        <span class="wr-spin" data-cmd="${item.cmd}"><input type="text" readonly value="${esc(item.value)}" data-measure="${item.cmd}" tabindex="-1"><span class="wr-spinbtns"><span>${ico("chevron_up_12")}</span><span>${ico("chevron_down_12")}</span></span></span></label>`;
     case "cellalign": {
       ensureCommand(item.cmd, "Align");
       const names = ["Top Left", "Top Center", "Top Right", "Center Left", "Center", "Center Right", "Bottom Left", "Bottom Center", "Bottom Right"];
