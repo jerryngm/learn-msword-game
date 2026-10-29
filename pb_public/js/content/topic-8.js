@@ -20,7 +20,7 @@ const formatted = (doc, text, props) => {
 const centered = (doc, text) => matching(doc, text)?.align === 'center';
 const picture = (doc, id) => {
   const all = doc.p.map((p, i) => ({ p, i })).filter(({ p }) => p.picture);
-  if (all.length !== 1 || all[0].p.picture.id !== id) return false;
+  if (all.length !== 1 || ![].concat(id).includes(all[0].p.picture.id)) return false;
   // The photo belongs directly under the first text heading; spare empty lines are harmless.
   const before = doc.p.slice(0, all[0].i).filter(p => !p.cell && textOf(p).trim());
   return before.length === 1 && before[0] === doc.p.find(p => !p.cell && textOf(p).trim());
@@ -53,8 +53,8 @@ const onlinePicStep = (heading, id, labelEn, labelVi) => step(
 );
 const saveStep = name => step('t1-save', T(`Save in Documents as ${name}. A space is fine too.`, `Lưu vào Documents với tên ${name}. Dùng dấu cách cũng được.`), T(`Click File, Save As, Browse, then Documents. Click File name and type ${name}. Click Save.`, `Bấm File, Save As, Browse, rồi Documents. Bấm ô File name và gõ ${name}. Bấm Save.`), (doc, ctx) => saved(ctx, name), saveScript(name));
 const printStep = () => step('t7-print', T('Practise printing one copy.', 'Thực hành in một bản.'), T('Click File, then Print. Leave Copies at 1. Click the large Print button. The game does not print paper.', 'Bấm File, rồi Print. Giữ số 1 trong ô Copies. Bấm nút Print lớn. Trò chơi không in ra giấy.'), (doc, ctx) => printed(ctx), printScript);
-const mission = (id, title, scenario, startDoc, targetDoc, steps, check) => ({
-  id, skill: 't8-capstone', title, scenario, startDoc, targetDoc, tabs: ['home', 'insert'], steps,
+const mission = (id, title, scenario, startDoc, targetDoc, steps, check, tabs = ['home', 'insert']) => ({
+  id, skill: 't8-capstone', title, scenario, startDoc, targetDoc, tabs, steps,
   goal: { check, progress: (doc, ctx) => check(doc, ctx) ? 1 : steps.filter(s => s.done(doc, ctx)).length / steps.length },
 });
 
@@ -226,8 +226,76 @@ const invitationSteps = [
   saveStep('Class_Invitation'), printStep(),
 ];
 
+// Lost cat poster: Online Pictures "Cats" shows cat, kitten and cat-black; any of them is a cat.
+const catTitle = 'Lost cat';
+const catLines = [catTitle, 'Black cat with a white tail.', 'Please call Lan: 0400 123 456'];
+const catPhone = catLines[2];
+const catIds = ['cat', 'kitten', 'cat-black'];
+const catStart = catLines.join('\n');
+const catTarget = createDoc({ p: [{ align: 'center', runs: [{ text: catTitle, b: true, size: 20 }] }, '', pic('cat'), '', catLines[1], { runs: [{ text: catPhone, highlight: '#FFFF00' }] }] });
+const catCheck = (doc, ctx) => formatted(doc, catTitle, { b: true, size: 20 }) && centered(doc, catTitle) && picture(doc, catIds) && hasText(doc, catLines[1]) &&
+  formatted(doc, catPhone, { highlight: '#FFFF00' }) && saved(ctx, 'Lost_Cat') && printed(ctx);
+const catPicStep = () => step(
+  't6-insert-picture',
+  T('Add the cat picture on a new line under Lost cat.', 'Chèn hình con mèo vào dòng mới dưới Lost cat.'),
+  T('Click at the end of Lost cat and press Enter. Click Insert, Pictures, then Online Pictures. Click Cats, choose a cat picture, then click Insert.', 'Bấm vào cuối dòng Lost cat rồi nhấn Enter. Bấm Insert, Pictures, rồi Online Pictures. Bấm ô Cats, chọn một hình con mèo, rồi bấm Insert.'),
+  doc => picture(doc, catIds),
+  [go(`doc:0,${catTitle.length}`), key('Enter'), go('tab.insert'), go('menu:insert.pictures'), go('insert.pictures.online'), go('insert.pictures.online.category:cats'), go('choice:insert.pictures.choose:cat'), go('insert.pictures.insert')],
+  'insert.pictures.insert',
+);
+const catHighlightStep = () => ({
+  skill: 't3-highlight',
+  text: T('Select the phone number line and highlight it yellow.', 'Bôi đen dòng số điện thoại rồi tô nền vàng.'),
+  hint: T('Select the line that starts with Please call. On the Home tab, open Text Highlight Color (the pen with a yellow bar) and click Yellow.', 'Bôi đen dòng bắt đầu bằng Please call. Trên thẻ Home, mở Text Highlight Color (hình bút có vạch vàng) rồi bấm Yellow.'),
+  done: doc => formatted(doc, catPhone, { highlight: '#FFFF00' }),
+  get demo() {
+    let p = 5;
+    if (typeof document !== 'undefined' && document.querySelector('.wd-page .wd-picture')) {
+      const el = [...document.querySelectorAll('.wd-page .wd-p')].find(e => words(e.textContent) === words(catPhone));
+      if (el) p = Number(el.dataset.p);
+    }
+    return [go('tab.home'), { select: { from: { p, offset: 0 }, to: { p, offset: catPhone.length } } }, go('menu:home.font.highlight'), go('choice:home.font.highlight:#FFFF00')];
+  },
+  spotlight: 'home.font',
+});
+const catSteps = [
+  boldStep(catTitle), sizeStep(catTitle), centerStep(catTitle), catPicStep(), catHighlightStep(), saveStep('Lost_Cat'), printStep(),
+];
+
+// Class timetable page: heading, 2-column table and a landscape page.
+const timeTitle = 'Class timetable';
+const timeRows = [['Day', 'Time'], ['Tuesday', '10 am'], ['Thursday', '10 am']];
+const timeTarget = createDoc({ p: [{ align: 'center', runs: [{ text: timeTitle, b: true }] }], tables: [{ rows: timeRows.map(row => row.map(text => ({ p: [text] }))) }], page: { orientation: 'landscape' } });
+const timeValue = s => words(s);
+const timeRowCheck = (doc, r) => timeRows[r].every((text, c) => timeValue(cell(doc, r, c)) === timeValue(text));
+const isLandscape = doc => doc.page?.orientation === 'landscape';
+const timeCheck = (doc, ctx) => formatted(doc, timeTitle, { b: true }) && centered(doc, timeTitle) && tableShape(doc) && timeRows.every((_, r) => timeRowCheck(doc, r)) && isLandscape(doc) && saved(ctx, 'Class_Timetable');
+const timeSteps = [
+  step('t3-bold-italic-underline', T(`Select "${timeTitle}" and click Bold (B).`, `Bôi đen dòng “${timeTitle}” rồi bấm nút Bold (chữ B đậm).`), T('Select the heading. On the Home tab, click Bold (B).', 'Bôi đen tiêu đề. Trên thẻ Home, bấm nút Bold (chữ B đậm).'), doc => formatted(doc, timeTitle, { b: true }), bold(timeTitle), 'home.font'),
+  centerStep(timeTitle),
+  {
+    skill: 't5-insert-table',
+    text: T('Click at the end of the heading. Insert a table with 2 columns and 3 rows.', 'Bấm vào cuối tiêu đề. Chèn bảng có 2 cột và 3 hàng.'),
+    hint: T('Click after Class timetable. Click Insert, then Table, and choose 2x3 Table on the grid.', 'Bấm vào sau chữ Class timetable. Bấm Insert, rồi Table, và chọn 2x3 Table trên lưới ô.'),
+    done: tableShape,
+    demo: [go(`doc:0,${timeTitle.length}`), go('tab.insert'), go('menu:insert.table'), go('choice:insert.table.create:2x3')],
+    spotlight: 'insert.tables',
+  },
+  ...timeRows.map(([left, right], r) => step(
+    't5-table-type',
+    T(`Row ${r + 1}: click the left cell, type ${left}, press Tab, then type ${right}.`, `Hàng ${r + 1}: bấm vào ô bên trái, gõ ${left}, nhấn Tab, rồi gõ ${right}.`),
+    T(`Click the left cell of row ${r + 1} and type ${left}. Press Tab to move right, then type ${right}.`, `Bấm vào ô bên trái của hàng ${r + 1} và gõ ${left}. Nhấn Tab để sang ô bên phải, rồi gõ ${right}.`),
+    doc => timeRowCheck(doc, r),
+    [go(`cell:0,${r},0,0`), type(left, `cell:0,${r},0,0`), key('Tab'), type(right, `cell:0,${r},1,0`)],
+  )),
+  step('t5-orientation', T('Turn the page to Landscape.', 'Xoay trang sang Landscape (trang ngang).'), T('Click the Layout tab (between Design and References). In the Page Setup group, click Orientation, then Landscape.', 'Bấm thẻ Layout (nằm giữa Design và References). Trong nhóm Page Setup, bấm Orientation, rồi bấm Landscape.'), isLandscape, [go('tab.layout'), go('menu:layout.orientation'), go('choice:layout.orientation.set:landscape')], 'layout.pageSetup'),
+  saveStep('Class_Timetable'),
+];
+
 export const missions = [
   mission('t8-m-festival-flyer', T('Make a festival flyer', 'Làm tờ rơi lễ hội'), T('Tell your neighbours about the Spring festival. The words are ready. Make the heading big, bold and centred. Add a flower photo under the heading, then make Music and Food into bullets. Save your flyer and practise printing one copy.', 'Làm tờ rơi báo tin lễ hội mùa xuân (“Spring festival”) cho hàng xóm. Phần chữ đã có sẵn. Hãy làm tiêu đề to, in đậm và canh giữa. Chèn hình flower.png dưới tiêu đề, rồi tạo dấu chấm đầu dòng cho Music và Food. Lưu tờ rơi và thực hành in một bản.'), festivalStart, festivalTarget, festivalSteps, festivalCheck),
   mission('t8-m-cafe-menu', T('Make a café menu', 'Làm thực đơn quán cà phê'), T('Your café sells tea for $3 and coffee for $4. Make the heading big, bold and centred. Add a coffee picture under the heading, then add a 2x3 price table below it. Save your menu and practise printing one copy.', 'Quán cà phê bán trà giá $3 và cà phê giá $4. Hãy làm tiêu đề to, in đậm và canh giữa. Chèn hình ly cà phê dưới tiêu đề, rồi thêm bảng giá 2x3 bên dưới. Lưu thực đơn và thực hành in một bản.'), 'Cafe menu', menuTarget, menuSteps, menuCheck),
   mission('t8-m-class-invitation', T('Make a class party invitation', 'Làm thiệp mời dự tiệc của lớp'), T('The Community flyer template is open. Replace the heading with Class party, centre it, and add a balloons picture under it. Fill in Saturday 2 pm and Community hall, then save and practise printing one copy.', 'Mẫu Community flyer đang mở. Hãy thay tiêu đề thành “Class party”, canh giữa, rồi chèn hình bóng bay bên dưới. Điền tiếp Saturday 2 pm và Community hall, sau đó lưu lại và thực hành in một bản.'), invitationStart, invitationTarget, invitationSteps, invitationCheck),
+  mission('t8-m-lost-cat-poster', T('Make a lost cat poster', 'Làm tờ thông báo tìm mèo lạc'), T('Your neighbour\'s cat is lost. Make the heading big, bold and centred. Add a cat picture under the heading and highlight the phone number yellow. Save your poster and practise printing one copy.', 'Chú mèo của hàng xóm bị lạc. Hãy làm tiêu đề to, in đậm và canh giữa. Chèn hình con mèo dưới tiêu đề và tô nền vàng cho số điện thoại. Lưu tờ thông báo và thực hành in một bản.'), catStart, catTarget, catSteps, catCheck),
+  mission('t8-m-class-timetable', T('Make a class timetable page', 'Làm trang thời khoá biểu của lớp'), T('Your class meets on Tuesday and Thursday at 10 am. Make the heading bold and centred. Add a table with 2 columns and 3 rows for the days and times. Turn the page to Landscape and save it.', 'Lớp bạn học vào thứ Ba và thứ Năm lúc 10 giờ sáng. Hãy làm tiêu đề in đậm và canh giữa. Chèn bảng 2 cột 3 hàng ghi ngày và giờ học. Xoay trang sang Landscape (trang ngang) rồi lưu lại.'), timeTitle, timeTarget, timeSteps, timeCheck, ['home', 'insert', 'layout']),
 ];

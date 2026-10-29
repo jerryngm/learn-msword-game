@@ -130,9 +130,57 @@ const printSteps = [
   step(T('Set Copies to 2.', 'Đổi số trong ô Copies thành 2.'),T('Copies starts at 1. Click its up arrow once, or click the box and type 2.', 'Ô Copies đang là 1. Bấm mũi tên lên một lần, hoặc bấm vào ô và gõ 2.'),(doc,ctx)=>(inPage('print')&&Number(field('[data-print="copies"]'))===2)||printedTwo(doc,ctx),[go('print.copies'),key('ArrowUp')]),
   step(T('Click the large Print button.', 'Bấm nút Print lớn.'),T('The game confirms your two copies. No paper is printed.', 'Trò chơi xác nhận bạn đã thực hành in hai bản. Không in ra giấy.'),printedTwo,[go('print.submit')]),
 ];
+const skilled = (skill, ...args) => ({ skill, ...step(...args) });
+const loweredText = p => practiceText(textOf(p)).toLowerCase();
+const hasLine = (doc, text) => doc.p.some(p => loweredText(p) === text.toLowerCase());
+const placeholderP = (placeholder, fallback) => typeof document === 'undefined' ? fallback : Number(document.querySelector(`[data-placeholder="${placeholder}"]`)?.dataset.p ?? fallback);
+
+// Mission: a shopping list from the List template.
+const listWords = ['Shopping list', 'Rice', 'Eggs'];
+const listFilled = createDoc({ p: [{ runs: [{ text: 'Shopping list', b: true, size: 20 }] }, 'Rice', 'Eggs'] });
+const openedList = (doc, ctx) => Boolean(ctx?.commands?.includes('file.new.template.list'));
+const listPreview = () => typeof document !== 'undefined' && Boolean(document.querySelector('.bn-preview [data-new="create"][data-id="list"]'));
+const searchedList = () => inPage('new') && /list/i.test(field('[data-new="search"]').trim());
+const listCheck = (doc, ctx) => openedList(doc, ctx) && JSON.stringify(doc.p.map(loweredText).filter(Boolean)) === JSON.stringify(listWords.map(s => s.toLowerCase()));
+const listPlaceholderStep = (placeholder, value, fallbackP) => ({
+  skill: 't7-placeholder',
+  text: T(`Click ${placeholder} once and type ${value}.`, `Bấm một lần vào ${placeholder} và gõ ${value}.`),
+  hint: T(`Click the grey ${placeholder} text once. The whole block is selected. Type ${value} to replace it.`, `Bấm một lần vào phần chữ màu xám ${placeholder}. Cả phần chữ sẽ được bôi đen. Gõ ${value} để thay thế.`),
+  done: doc => hasLine(doc, value),
+  get demo() { const p = placeholderP(placeholder, fallbackP); return [go(`placeholder:${p}`), type(value, `doc:${p},0`)]; },
+});
+const listSteps = [
+  skilled('t7-template', T('Click File, then New.', 'Bấm File, rồi New.'), T('File is at the top left. New is on the left of the File screen.', 'File nằm ở góc trên bên trái. New nằm bên trái màn hình File.'), (doc, ctx) => inPage('new') || openedList(doc, ctx), [go('file'), go('bs.new')]),
+  skilled('t7-template', T('Click the "Search for online templates" box and type "list".', 'Bấm vào ô “Search for online templates” và gõ “list”.'), T('Click the Search for online templates box. Type "list". The Shopping list picture appears below.', 'Bấm ô tìm mẫu Search for online templates. Gõ “list”. Hình Shopping list hiện ra bên dưới.'), (doc, ctx) => searchedList() || listPreview() || openedList(doc, ctx), [go('new.search'), type('list', 'new.search')]),
+  skilled('t7-template', T('Click Shopping list.', 'Bấm Shopping list.'), T('Click the Shopping list picture to see a larger preview.', 'Bấm vào hình Shopping list để xem mẫu lớn hơn.'), (doc, ctx) => listPreview() || openedList(doc, ctx), [go('new.template:list')]),
+  skilled('t7-template', T('Click Create.', 'Bấm Create.'), T('Create opens a new document using this template.', 'Create mở một văn bản mới theo mẫu này.'), openedList, [go('new.create')]),
+  listPlaceholderStep('[Item 1]', 'Rice', 1),
+  listPlaceholderStep('[Item 2]', 'Eggs', 2),
+];
+
+// Mission: keep the old flyer and save a new version, then print one copy.
+const flyerLines = ['Computer class', 'Tuesday 11 am', 'Community centre'];
+const flyerStart = createDoc({ p: [{ runs: [{ text: 'Computer class', b: true, size: 20 }] }, 'Tuesday 11 am', 'Community centre'] });
+const flyerVersionName = name => String(name ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\.docx$/i, '').toLowerCase().replace(/[^a-z0-9]/g, '') === 'flyerv2';
+const flyerUnchanged = doc => same(doc, flyerLines);
+const savedFlyer = (doc, ctx) => flyerUnchanged(doc) && ctx?.saved?.folder?.length === 1 && ctx.saved.folder[0] === 'Documents' && flyerVersionName(ctx.saved.name);
+const printedOne = ctx => Boolean(ctx?.commands?.includes('file.print.copies.1'));
+const flyerDone = (doc, ctx) => savedFlyer(doc, ctx) && printedOne(ctx);
+const flyerSaveHint = T('Use File, Save As, Browse, then Documents. Click File name and type Flyer_V2. Click Save. A space instead of the underscore is fine.', 'Bấm File, Save As, Browse, rồi Documents. Bấm ô File name và gõ Flyer_V2. Bấm Save. Bạn có thể dùng dấu cách thay cho dấu gạch dưới (_).');
+const flyerSteps = [
+  skilled('t7-save-version', T('Click File, then Save As.', 'Bấm File, rồi Save As.'), T('Save As makes a new version with a different name. The old Flyer_V1 stays as it is.', 'Save As lưu thêm một bản với tên khác. Bản Flyer_V1 cũ vẫn còn nguyên.'), (doc, ctx) => /^(saveas|dialog)/.test(stage()) || savedFlyer(doc, ctx) || printedOne(ctx), [go('file'), go('bs.saveas')]),
+  skilled('t7-save-version', T('Click Browse, then Documents.', 'Bấm Browse, rồi Documents.'), T('Browse opens the Save As window. Click Documents on its left.', 'Browse mở cửa sổ Save As. Bấm Documents ở bên trái cửa sổ.'), (doc, ctx) => stage() === 'dialog-documents' || savedFlyer(doc, ctx) || printedOne(ctx), [go('sa.browse'), go('sa.documents')]),
+  skilled('t7-save-version', T('Type Flyer_V2 in File name. A space is fine too.', 'Gõ Flyer_V2 vào ô File name. Dùng dấu cách cũng được.'), flyerSaveHint, (doc, ctx) => (stage() === 'dialog-documents' && flyerVersionName(field('.sa-name'))) || savedFlyer(doc, ctx) || printedOne(ctx), [go('sa.name'), type('Flyer_V2', 'sa.name')]),
+  skilled('t7-save-version', T('Click Save.', 'Bấm Save.'), T('Save keeps this version under the new name in Documents.', 'Save lưu bản này vào Documents với tên mới.'), (doc, ctx) => savedFlyer(doc, ctx) || printedOne(ctx), [go('sa.save')]),
+  skilled('t7-print', T('Click File, then Print.', 'Bấm File, rồi Print.'), T('Print on the left opens the print preview.', 'Mục Print bên trái mở phần xem trước khi in.'), (doc, ctx) => inPage('print') || printedOne(ctx), [go('file'), go('bs.print')]),
+  skilled('t7-print', T('Click the large Print button. Leave Copies at 1.', 'Bấm nút Print lớn. Giữ số 1 trong ô Copies.'), T('Copies already shows 1, which is what you need. The game confirms your copy. No paper is printed.', 'Ô Copies đã là 1, đúng như bạn cần. Trò chơi xác nhận bạn đã in một bản. Không in ra giấy.'), (doc, ctx) => printedOne(ctx), [go('print.submit')]),
+];
+
 export const missions = [
   mission('t7-m-open-template','t7-template',T('Open a resume template','Mở mẫu resume'),T('You want to apply for a job. Open the Simple resume template so the layout is ready for you.', 'Bạn muốn xin việc. Hãy mở mẫu Simple resume để có sẵn bố cục.'),'',resume,templateSteps,openedResume),
   mission('t7-m-fill-resume','t7-placeholder',T('Fill in a simple resume','Điền thông tin vào resume'),T('Fill in this resume with your own name (or Lan Nguyen) and your skills, then remove the optional interests line. Use Cooking and cleaning for the skills.', 'Điền tên của bạn (hoặc Lan Nguyen) và kỹ năng vào resume này, rồi xoá dòng sở thích không bắt buộc. Ghi Cooking and cleaning ở phần kỹ năng.'),resume,filled,fillSteps,filledCheck),
   mission('t7-m-save-version','t7-save-version',T('Save a new resume version','Lưu thêm bản resume mới'),T('You updated Resume_V1. Keep the first version and save this one in Documents as Resume_V2. A space instead of the underscore is fine.', 'Bạn vừa sửa Resume_V1. Hãy giữ bản đầu và lưu bản này vào Documents với tên Resume_V2. Bạn có thể dùng dấu cách thay cho dấu gạch dưới (_).'),filled,undefined,saveSteps,savedVersion,{title_bar:'Resume_V1'}),
   mission('t7-m-print-two','t7-print',T('Print two resume copies','In hai bản resume'),T('You need two copies of your resume for an interview. Practise printing 2 copies. The game shows a confirmation and does not print paper.', 'Bạn cần hai bản resume để đi phỏng vấn. Hãy thực hành in 2 bản. Trò chơi hiện thông báo xác nhận và không in ra giấy.'),filled,undefined,printSteps,printedTwo),
+  mission('t7-m-shopping-template','t7-template',T('A shopping list from a template','Danh sách đi chợ từ mẫu có sẵn'),T('You are going to the market. Open the Shopping list template, then replace its two example items with Rice and Eggs.', 'Bạn sắp đi chợ. Hãy mở mẫu Shopping list, rồi thay hai món mẫu bằng Rice và Eggs.'),'',listFilled,listSteps,listCheck),
+  mission('t7-m-class-time-v2','t7-save-version',T('The class time changed','Giờ học đã đổi'),T('Your computer class now starts at 11 am, and the flyer already says so. Keep the old flyer and save this one in Documents as Flyer_V2. Then practise printing 1 copy for the noticeboard. A space instead of the underscore is fine.', 'Lớp máy tính giờ bắt đầu lúc 11 giờ và tờ rơi đã sửa xong. Hãy giữ tờ rơi cũ và lưu bản này vào Documents với tên Flyer_V2. Sau đó thực hành in 1 bản để dán lên bảng tin. Bạn có thể dùng dấu cách thay cho dấu gạch dưới (_).'),flyerStart,undefined,flyerSteps,flyerDone,{title_bar:'Flyer_V1'}),
 ];
