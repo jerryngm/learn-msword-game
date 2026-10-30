@@ -176,7 +176,7 @@ export async function render(root, { id, learner }) {
     const before = skillState(attempts, mission.skill, now);
     const support = supportLevel(before.cleanDays);
     const usesWord = (mission.mock ?? "word") === "word";
-    const ctx = { saved: null, opened: null, commands: [], learner: { name: learner.name }, selection: null };
+    const ctx = { saved: null, exported: null, opened: null, commands: [], learner: { name: learner.name }, selection: null };
     const n = run ? run.done.length + 1 : 0;
 
     root.innerHTML = `
@@ -549,6 +549,11 @@ export async function render(root, { id, learner }) {
         evaluate();
       };
       offs.push(word.on("saved", onSaved));
+      // File › Export › Create PDF/XPS › Publish: {folder: [...], name, type: 'pdf'} of the last PDF the learner published.
+      offs.push(word.on("exported", (p) => {
+        ctx.exported = p && typeof p === "object" ? { folder: Array.isArray(p.folder) ? p.folder.map(String) : [], name: String(p.name ?? ""), type: String(p.type ?? "") } : null;
+        evaluate();
+      }));
       const onSavedDom = (e) => onSaved(e.detail);
       host.addEventListener("wg-saved", onSavedDom);
       offs.push(() => host.removeEventListener("wg-saved", onSavedDom));

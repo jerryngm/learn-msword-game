@@ -17,6 +17,7 @@
 import { playDemo } from "../demo/player.js";
 import { ico } from "../word/icons.js";
 import { biPair, esc, labelPair } from "../i18n.js";
+import { GLYPH } from "../word/picture-dialogs.js";
 
 function useStyles(root) {
   let link = document.head.querySelector("link[data-wg-mocks]");
@@ -56,6 +57,7 @@ const PIN = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 1.8 14.2 
 const FOLDER_SVG = `<svg class="mke-fold" viewBox="0 0 20 16" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h4.2l1.6 1.8h9.2A1.5 1.5 0 0 1 19 4.3V13.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 1 13.5z" fill="#F8D775"/><path d="M1 5.2h18v8.3a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 1 13.5z" fill="#FDE9A0"/></svg>`;
 
 function folderIcon(f) {
+  if (GLYPH[f.id]) return GLYPH[f.id];
   if (f.icon === "DL") return `<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10M5.5 9 10 13.5 14.5 9M4 16.5h12" fill="none" stroke="#2E9E6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   if (f.icon === "MU") return `<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7" cy="15" r="3" fill="#D13438"/><path d="M10 15V4l7-1.5V12" fill="none" stroke="#D13438" stroke-width="2"/><circle cx="14" cy="12" r="3" fill="#D13438"/></svg>`;
   return `<span style="color:${f.color}">${ico(f.icon)}</span>`;
@@ -96,9 +98,9 @@ function taskbar() {
 
 function html({ view, mine, interactive, withTaskbar }) {
   const nav = FOLDERS.map(
-    (f) => `<div class="mk-r mke-n${view === f.id ? " is-on" : ""}" data-region="nav-${f.id}" data-folder="${f.id}" role="button" tabindex="0"><span class="mk-tag">${f.label}</span>${folderIcon(f)}<span class="mke-nl">${f.label}</span><i class="mke-pin">${PIN}</i></div>`,
+    (f) => `<div class="mk-r mke-n${view === f.id ? " is-on" : ""}" data-region="nav-${f.id}" data-folder="${f.id}" role="button" tabindex="0"><span class="mk-tag">${f.label}</span><span class="mke-ni">${folderIcon(f)}</span><span class="mke-nl">${f.label}</span><i class="mke-pin">${PIN}</i></div>`,
   ).join("");
-  const crumb = view === "home" ? "Home" : `<span>This PC</span><i>›</i><b>${LABEL[view]}</b>`;
+  const crumb = view === "home" ? `<span class="mke-crumb">${GLYPH.home}</span><i>›</i><b>Home</b>` : `<span>This PC</span><i>›</i><span class="mke-crumb">${folderIcon({ id: view })}</span><i>›</i><b>${LABEL[view]}</b>`;
   let content;
   if (view === "home") {
     content = `<div class="mke-sec">Quick access</div><div class="mke-tiles">${FOLDERS.map(
@@ -127,11 +129,11 @@ function html({ view, mine, interactive, withTaskbar }) {
       <span class="mke-sep"></span><span class="mke-cb">${ico("arrow_sort_20")}Sort <i>▾</i></span><span class="mke-cb">${ico("text_align_left_20")}View <i>▾</i></span></div>
     <div class="mke-addr">
       <span class="mke-ab">${ico("arrow_left_20")}</span><span class="mke-ab">${ico("arrow_forward_20")}</span><span class="mke-ab mke-up">${ico("arrow_forward_20")}</span>
-      <div class="mk-r mke-path" data-region="address" role="button" tabindex="0"><span class="mk-tag">Address bar<span class="vi">· Thanh địa chỉ</span></span>${ico("document_text_20")}<i>›</i>${crumb}<i>›</i></div>
+      <div class="mk-r mke-path" data-region="address" role="button" tabindex="0"><span class="mk-tag">Address bar<span class="vi">· Thanh địa chỉ</span></span>${crumb}<i>›</i></div>
       <div class="mk-r mke-search" data-region="search" role="button" tabindex="0"><span class="mk-tag">Search box<span class="vi">· Ô tìm kiếm</span></span>Search ${view === "home" ? "Home" : LABEL[view]}${ico("search_20")}</div>
     </div>
     <div class="mke-body">
-      <nav class="mke-nav" aria-label="Folders"><div class="mk-r mke-n${view === "home" ? " is-on" : ""}" data-region="nav-home" data-folder="home" role="button" tabindex="0"><span class="mk-tag">Home</span><span style="color:#0F6CBD">${ico("home_20")}</span><span class="mke-nl">Home</span></div>
+      <nav class="mke-nav" aria-label="Folders"><div class="mk-r mke-n${view === "home" ? " is-on" : ""}" data-region="nav-home" data-folder="home" role="button" tabindex="0"><span class="mk-tag">Home</span><span class="mke-ni">${GLYPH.home}</span><span class="mke-nl">Home</span></div>
         <hr>${nav}</nav>
       <div class="mk-r mke-main" data-region="content" role="group"><span class="mk-tag">Files<span class="vi">· Danh sách file</span></span>${content}</div>
     </div>

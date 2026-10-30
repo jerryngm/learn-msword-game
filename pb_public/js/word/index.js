@@ -11,10 +11,11 @@ import { getCommand, ensureCommand, SHORTCUTS, EFFECT_NAMES, WRAP_MENU } from ".
 import { openDialog } from "./dialogs.js";
 import { templateDoc } from "./templates.js";
 import { openBackstage, clearSavedDocument } from "./backstage.js";
+import { createNavPane } from "./navpane.js";
 import { ico } from "./icons.js";
 import {
-  updatePicture, editTable, FONTS, RUN_KEYS, applyFormat, clampPos, cmpPos, createDoc, deleteRange, docEnd, fragment, insertText, isCollapsed,
-  spellingRanges, orderRange, propsAt, slices, splitParagraph, applyParaFormat, wordAround, wordCount, wordSelectionAt,
+  updatePicture, editTable, FONTS, RUN_KEYS, clampPos, cmpPos, createDoc, deleteRange, docEnd, fragment, insertText, isCollapsed,
+  spellingRanges, orderRange, propsAt, slices, splitParagraph, applyParaFormat, wordAround, wordCount, wordSelectionAt, applyPainter,
 } from "./model.js";
 import { createRenderer } from "./render.js";
 import { fitRibbon, itemsHtml, ribbonHtml, tabRowHtml, TABS, ribbonParts } from "./ribbon.js";
@@ -147,7 +148,7 @@ export function mountWord(el, opts = {}) {
   let pending = null; // formatting chosen with a bare caret, used by the next typed text
   let marks = false;
   let zoom = 100;
-  let painter = null;
+  let painter = null; // Format Painter: {format, lock}; lock = double-clicked, stays on until Esc
   let clip = null;
   let clipEvent = null;
   let spellingMenu = null;
@@ -194,7 +195,7 @@ export function mountWord(el, opts = {}) {
   const root = document.createElement("div");
   root.className = "wd";
   root.innerHTML = `${titleBarHtml(title, initials)}${tabRowHtml()}<div class="wr-wrap"></div>
-    <div class="wd-canvas"><div class="wd-pagewrap"><div class="wd-page" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" aria-label="Document"></div></div></div>
+    <div class="wd-work"><div class="wd-canvas"><div class="wd-pagewrap"><div class="wd-page" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" aria-label="Document"></div></div></div></div>
     ${statusHtml()}`;
   el.appendChild(root);
   const page = root.querySelector(".wd-page");
@@ -203,6 +204,7 @@ export function mountWord(el, opts = {}) {
   const ribbonWrap = root.querySelector(".wr-wrap");
   const renderer = createRenderer(page);
   const popups = createPopups(root);
+  const navPane = createNavPane({ host: root.querySelector(".wd-work"), page, onPick: onFindPick, onClose: onFindClose, isDemo: () => locked });
   const observer = new MutationObserver(() => {
     if (!rendering && !composing) queueMicrotask(repaintFromModel);
   });
@@ -226,6 +228,7 @@ export function mountWord(el, opts = {}) {
     page.classList.toggle("is-marks", marks);
     observer.takeRecords();
     rendering = false;
+    navPane.refresh(doc);
   }
   function writeSel() {
     if (document.activeElement === page || page.contains(document.getSelection()?.anchorNode)) writeSelection(page, sel);
@@ -261,7 +264,7 @@ export function mountWord(el, opts = {}) {
       indentLeft: common(paras, (p) => p.indent.left),
       indentRight: common(paras, (p) => p.indent.right),
       marks: demoSelection ? demoState.marks : marks,
-      painter: Boolean(demoSelection ? demoState.painter : painter),
+      painter: Boolean(demoSelection ? demoState?.painter : painter),
       clip: Boolean(demoSelection ? demoClipboard : clip),
     };
   }
@@ -475,6 +478,48 @@ export function mountWord(el, opts = {}) {
       .catch((err) => console.error("picture window failed", err));
   }
 
+  /* ---------- Find: the Navigation pane (navpane.js) ---------- */
+  // The current match is the selection, so the ribbon, the status bar and ctx.selection follow it.
+  // Each search with a match reports home.editing.find.match:<term> (lower case); ↑/↓ report .next/.prev.
+  let lastFindId = "";
+  function showMatch(m) {
+    const r = caretRect(page, m.from);
+    const c = canvas.getBoundingClientRect();
+    if (r.top < c.top + 24 || r.bottom > c.bottom - 24) canvas.scrollTop += r.top - c.top - c.height / 3;
+  }
+  function onFindPick(m, how, { term }) {
+    if (locked) {
+      // Show me: only the demo view's selection moves.
+      if (m && demoState) { demoSelection = { anchor: m.from, focus: m.to }; demoAt = m.from; demoPicture = -1; showMatch(m); updateUI(); }
+      return;
+    }
+    if (!m) { lastFindId = ""; return; }
+    sel = { anchor: m.from, focus: m.to };
+    selectedPicture = -1;
+    pending = null;
+    history.seal();
+    showMatch(m);
+    updateUI();
+    const id = how === "search" ? `home.editing.find.match:${term.toLowerCase()}` : how === "pick" ? "home.editing.find.result" : `home.editing.find.${how}`;
+    if (id !== lastFindId || how !== "search") emit("command", { id, level: "a", effectName: getCommand("home.editing.find").effectName });
+    lastFindId = id;
+    document.dispatchEvent(new Event("selectionchange"));
+  }
+  function onFindClose() {
+    lastFindId = "";
+    if (!destroyed && !locked) focusPage(); // the last match stays selected in the page, as in Word
+  }
+  function findPrefill(doc0, range) {
+    if (!range || isCollapsed(range) || range.from.p !== range.to.p) return undefined;
+    const t = doc0.p[range.from.p].text.slice(range.from.offset, range.to.offset).trim();
+    return t && t.length <= 60 ? t : undefined;
+  }
+  function openFind(range, { demo = false } = {}) {
+    const source = demo ? demoDoc ?? doc : doc;
+    navPane.refresh(source);
+    navPane.open(findPrefill(source, range), { focus: !demo });
+  }
+
   /* ---------- ui surface handed to commands ---------- */
   const ui = {
     toast: (key, o) => popups.toast(ws(key), o),
@@ -499,9 +544,9 @@ export function mountWord(el, opts = {}) {
       return lastBorderSide;
     },
     painterActive: () => Boolean(painter),
-    startPainter(props) {
-      painter = props;
-      popups.note(ws("painterOn"), root.querySelector('[data-cmd="home.clipboard.painter"]'));
+    startPainter(format, lock = false) {
+      painter = { format, lock };
+      popups.note(ws(lock ? "painterLock" : "painterOn"), root.querySelector('[data-cmd="home.clipboard.painter"]'));
       updateUI();
     },
     stopPainter() {
@@ -534,6 +579,7 @@ export function mountWord(el, opts = {}) {
     backstage: (pageId) => openFile(pageId),
     newDocument: () => newDocument(null),
     openMenuFor: (id) => openMenuFor(id, root.querySelector(`[data-menu="${id}"]`)),
+    openFind: (range) => openFind(range),
   };
   const dialogEnv = {
     popups,
@@ -662,7 +708,7 @@ export function mountWord(el, opts = {}) {
       writeSel();
       updateUI();
     } else updateUI();
-    if (origin !== "key" && !popups.dialogOpen && !root.contains(document.activeElement?.closest?.(".wr-combo"))) focusPage();
+    if (origin !== "key" && !popups.dialogOpen && !root.contains(document.activeElement?.closest?.(".wr-combo,.wd-nav"))) focusPage();
   }
 
   // A menu button inside a folded group (or its flyout) has no place on screen once the menu opens: the
@@ -757,6 +803,17 @@ export function mountWord(el, opts = {}) {
         popups.toast({en:`Practice complete: ${copies} ${copies === 1 ? 'copy' : 'copies'} sent to the classroom printer. No paper is printed.`,vi:`Đã thực hành in ${copies} bản trên máy in của lớp. Không in ra giấy.`});
         emit("change", {doc, prevDoc:doc, lastCommand:"file.print.submit"});
       },
+      // Export › Create PDF/XPS › Publish. A copy as PDF: the title bar and the saved name (Ctrl+S) stay as they were.
+      exported({ folder, name, type, open }) {
+        if (locked || destroyed) return;
+        const where = folder.at(-1) ?? "Documents";
+        emit("exported", { folder: [...folder], name, type });
+        emit("command", { id: `file.export.${type}`, level: "a", effectName: { en: "save a PDF copy", vi: "lưu bản PDF" } });
+        backstage?.close();
+        const done = () => popups.toast({ en: `Your PDF is saved in ${where}: ${name}.pdf`, vi: `File PDF của bạn đã được lưu trong ${where}: ${name}.pdf` }, { ok: true });
+        if (open) openPdfViewer(name).then(done);
+        else done();
+      },
       // The Save As page reports a finished save: the title bar takes the new name, then `saved` fires.
       saved({ folder, name }) {
         title = name;
@@ -773,6 +830,21 @@ export function mountWord(el, opts = {}) {
         focusPage();
       },
     });
+  }
+
+  // "Open file after publishing": a plain PDF viewer window over Word, showing the pages as published.
+  function openPdfViewer(name) {
+    const shown = popups.dialog({
+      bare: true,
+      cls: "wd-pdfv",
+      title: `${name}.pdf`,
+      body: `<div class="pv-tb"><span class="pv-ic" aria-hidden="true">PDF</span><span class="pv-t">${esc(name)}.pdf</span>
+          <button type="button" class="pv-x" data-dlg="__close" aria-label="Close">${ico("capclose")}</button></div>
+        <div class="pv-bar"><span>1 of 1</span><span class="pv-sep"></span><span>−</span><span>+</span><span class="pv-sep"></span><span>${ico("search_20")}</span></div>
+        <div class="pv-body"><div class="pv-page"></div></div>`,
+      onMount: (el) => createRenderer(el.querySelector(".pv-page")).render(doc),
+    });
+    return shown.finally(() => { if (!destroyed && !backstage) focusPage(); });
   }
 
   /* ---------- spotlight ---------- */
@@ -994,17 +1066,20 @@ export function mountWord(el, opts = {}) {
     updateUI();
   }
 
+  // A click paints the word under the caret; a selection paints the selection. A whole-paragraph source
+  // also sets the alignment of the paragraph clicked. Single-click painters switch off after one paint.
+  function painterRange(source, r, format) {
+    if (!isCollapsed(r)) return r;
+    return wordAround(source, r.from) ?? (format.para ? r : null);
+  }
   function applyPainterNow() {
-    const r = selRange(sel);
-    let range = r;
-    if (isCollapsed(r)) {
-      range = wordAround(doc, r.from);
-      if (!range) return;
-    }
-    const props = painter;
-    painter = null;
-    const next = applyFormat(doc, range, props);
+    const { format, lock } = painter;
+    const range = painterRange(doc, selRange(sel), format);
+    if (!range) return;
+    if (!lock) painter = null;
     const cmd = getCommand("home.clipboard.painter");
+    emit("command", { id: "home.clipboard.painter.apply", level: "a", effectName: cmd.effectName });
+    const next = applyPainter(doc, range, format);
     if (next !== doc) commit(next, { id: cmd.id, label: cmd.label, cmd: { ...cmd, level: effectiveLevel(cmd) } });
     else updateUI();
   }
@@ -1426,6 +1501,7 @@ export function mountWord(el, opts = {}) {
 
   /* ---------- demo (Show me): drawn by js/demo/player.js, never touches the document ---------- */
   let demoState = null;
+  let demoFindBox = false; // the ghost's last click was in the Navigation search box (Enter steps to the next match)
 
   function demoRange() {
     return selRange(clampSel(demoDoc ?? doc, demoSelection ?? sel));
@@ -1438,6 +1514,7 @@ export function mountWord(el, opts = {}) {
     demoAt = demoSelection.focus;
     renderer.render(next);
     observer.takeRecords();
+    navPane.refresh(next);
     updateUI();
   }
   function demoType(text) {
@@ -1457,7 +1534,7 @@ export function mountWord(el, opts = {}) {
       const entry = demoHistory?.[id === "qat.undo" ? "undo" : "redo"]({ doc: source, sel: demoSelection ?? sel });
       if (entry) {
         demoDoc = entry.doc; demoSelection = entry.sel; demoAt = entry.sel.focus;
-        renderer.render(demoDoc); observer.takeRecords(); updateUI();
+        renderer.render(demoDoc); observer.takeRecords(); navPane.refresh(demoDoc); updateUI();
       }
       return;
     }
@@ -1502,8 +1579,9 @@ export function mountWord(el, opts = {}) {
         return demoState.border;
       },
       painterActive: () => Boolean(demoState.painter),
-      startPainter: (props) => { demoState.painter = props; },
+      startPainter: (format, lock = false) => { demoState.painter = { format, lock }; },
       stopPainter: () => { demoState.painter = null; },
+      openFind: (r) => openFind(r, { demo: true }),
       toggleMarks: () => { demoState.marks = !demoState.marks; page.classList.toggle("is-marks", demoState.marks); },
     };
     const target = { ...range, anchor: range.from, focus: range.to, collapsed: isCollapsed(range) };
@@ -1512,6 +1590,8 @@ export function mountWord(el, opts = {}) {
     if (next?.p) demoCommit(next, result.sel ?? demoSelection, cmd.label);
   }
   function demoKey(combo) {
+    if (combo === "Escape") { if (demoState) demoState.painter = null; popups.closeAll(); return true; }
+    if (demoFindBox && (combo === "Enter" || combo === "ArrowDown" || combo === "ArrowUp")) { navPane.step(combo === "ArrowUp" ? -1 : 1); return true; }
     const shortcut = { "ctrl+c": "home.clipboard.copy", "ctrl+x": "home.clipboard.cut", "ctrl+v": "home.clipboard.paste", ...SHORTCUTS }[combo.toLowerCase()];
     if (shortcut) { demoCommand(shortcut); return true; }
     const source = demoDoc ?? doc;
@@ -1552,6 +1632,7 @@ export function mountWord(el, opts = {}) {
 
   function restoreDemoView(view) {
     if (!view || destroyed) return;
+    navPane.restore(view.nav, doc);
     setZoom(view.zoom, false);
     root.querySelector(".wd-name").innerHTML = view.title;
     tab = view.tab; prevTab = view.prevTab;
@@ -1631,8 +1712,15 @@ export function mountWord(el, opts = {}) {
     // "file" is the File tab; "bs.<page>" is a Backstage list item (e.g. "bs.saveas"); "sa.browse|documents|name|save" are Save As controls.
     const localTarget = id.startsWith("new.template:") ? `.bs [data-template="${id.slice(13)}"]` : id.startsWith("placeholder:") ? `.wd-p[data-p="${Number(id.slice(12))}"]` : ({"new.search":'.bs [data-new="search"]',"new.search-go":'.bs [data-new="search-go"]',"new.create":'.bs [data-new="create"]',"new.cancel":'.bs [data-new="cancel"]',"print.copies":'.bs [data-print="copies"]',"print.submit":'.bs [data-print="submit"]'})[id];
     if (localTarget) return root.querySelector(localTarget);
-    const BS_TARGETS = { file: '.wt-tab[data-tab="file"]', "sa.browse": ".bs .sa-browse", "sa.documents": '.bs .sa-n[data-folder="documents"]', "sa.name": ".bs .sa-name", "sa.save": ".bs .sa-save" };
-    const bsSel = BS_TARGETS[id] ?? (id.startsWith("bs.") ? `.bs .bs-item[data-bs="${id.slice(3)}"]` : null);
+    // "find.box|next|prev|close|result:N" are the Navigation pane; a demo pointing at them opens it first.
+    if (id.startsWith("find.")) {
+      if (locked && !navPane.isOpen) openFind(demoRange(), { demo: true });
+      const FIND = { "find.box": ".wd-nav-q", "find.next": '.wd-nav [data-nav="next"]', "find.prev": '.wd-nav [data-nav="prev"]', "find.close": '.wd-nav [data-nav="close"]' };
+      return root.querySelector(FIND[id] ?? `.wd-nav-hit[data-i="${Number(id.slice(12))}"]`);
+    }
+    const BS_TARGETS = { file: '.wt-tab[data-tab="file"]', "sa.browse": ".bs .sa-browse", "sa.documents": '.bs .sa-n[data-folder="documents"]', "sa.name": ".bs .sa-name", "sa.save": ".bs .sa-save",
+      "export.pdf": '.bs [data-export="pdf"]', "export.create": '.bs [data-export="create"]', "export.name": ".bs .sa-name", "export.publish": ".bs .sa-publish", "export.cancel": '.bs .sa-scrim [data-act="cancel"]' };
+    const bsSel = BS_TARGETS[id] ?? (id.startsWith("bs.") ? `.bs .bs-item[data-bs="${id.slice(3)}"]` : id.startsWith("sa.folder:") ? `.bs .sa-n[data-folder="${id.slice(10)}"]` : null);
     const find = () => root.querySelector(bsSel ?? `.wr-card [data-cmd="${id}"],.wr-card [data-menu="${id}"],.wd-title [data-cmd="${id}"],.wd-title [data-menu="${id}"],.wd-status [data-cmd="${id}"]`);
     let b = find();
     if (!b) {
@@ -1726,11 +1814,24 @@ export function mountWord(el, opts = {}) {
       font: { family: cs.fontFamily, size: (parseFloat(cs.fontSize) || 15) * z, weight: cs.fontWeight, style: cs.fontStyle, color: cs.color },
     };
   }
+  // Ghost Format Painter: a selection (or a click on a word) while the demo painter is on paints the demo view.
+  function demoPaint() {
+    const p = demoState?.painter;
+    if (!p) return;
+    const source = demoDoc ?? doc;
+    const range = painterRange(source, demoRange(), p.format);
+    if (!range) return;
+    if (!p.lock) demoState.painter = null;
+    const next = applyPainter(source, range, p.format);
+    if (next !== source) demoCommit(next, demoSelection, "Format Painter");
+    else updateUI();
+  }
   function demoSelectRects(range) {
     const r = orderRange(clampPos(demoDoc??doc, range.from), clampPos(demoDoc??doc, range.to));
     demoAt = r.from;
     demoSelection = { anchor: r.from, focus: r.to };
     demoPicture = -1;
+    demoPaint();
     updateUI();
     const first = rangeRects(r)[0];
     if (first) ensureVisible(first);
@@ -1803,6 +1904,24 @@ export function mountWord(el, opts = {}) {
       return;
     }
     if(target==="picture.delete") {demoDeletePicture();return;}
+    // Navigation pane: the ghost searches and steps through matches in the demo view only.
+    demoFindBox = target === "find.box";
+    if (target.startsWith("find.")) {
+      if (target === "find.next") navPane.step(1);
+      else if (target === "find.prev") navPane.step(-1);
+      else if (target === "find.close") navPane.close({ silent: true });
+      else if (target.startsWith("find.result:")) navPane.pick(Number(target.slice(12)));
+      return;
+    }
+    if (target === "home.clipboard.painter" && kind === "double") { demoCommand(target, "lock"); return; }
+    // Export › Create PDF/XPS: the ghost opens the page and the Publish window; Publish only shows a note.
+    if (target === "export.publish") {
+      backstage?.close();
+      popups.toast({ en: "That is how you publish a PDF. Nothing was saved in the demo.", vi: "Đó là cách lưu file PDF. Phần chỉ cho xem không lưu gì cả." });
+      return;
+    }
+    if (target === "export.name") return;
+    if (target.startsWith("export.") || target.startsWith("sa.folder:")) { commandEl(target)?.click(); return; }
     if(target.startsWith("choice:picture.wrap.set:")) {
       const [,id,arg]=target.split(":"); const source=demoDoc??doc;
       const at=demoPicture>=0?{p:demoPicture,offset:0}:selRange(sel).from;
@@ -1811,7 +1930,7 @@ export function mountWord(el, opts = {}) {
       demoCommit(result.doc??result,result.sel);popups.closeAll();popups.closeDialog();return;
     }
     const pos = parseDocTarget(target);
-    if (pos) { demoAt=pos; demoSelection=collapsedSel(pos); demoPicture=-1; updateUI(); }
+    if (pos) { demoAt=pos; demoSelection=collapsedSel(pos); demoPicture=-1; if (kind !== "right") demoPaint(); updateUI(); }
     if (pos && kind === "right") {
       const rect = demoCaretRect(pos, 0);
       openContextMenu(rect.left, rect.bottom, pos);
@@ -1848,7 +1967,7 @@ export function mountWord(el, opts = {}) {
   }
   // What the demo opened is closed again, so the learner starts from where they were.
   function backstageSnapshot() {
-    return { inputs: [...root.querySelectorAll(".bs input")].map(el=>({selector:el.className ? `input.${el.className.split(" ")[0]}` : el.dataset.new ? `[data-new="${el.dataset.new}"]` : `[data-print="${el.dataset.print}"]`,value:el.value})), preview: root.querySelector(".bn-preview [data-new=create]")?.dataset.id, open: Boolean(backstage), page: backstage?.page ?? null, dialog: Boolean(root.querySelector(".bs .sa-scrim")), stage: root.querySelector(".bs")?.dataset.stage ?? "" };
+    return { inputs: [...root.querySelectorAll('.bs input:not([type="checkbox"]):not([type="radio"])')].map(el=>({selector:el.className ? `input.${el.className.split(" ")[0]}` : el.dataset.new ? `[data-new="${el.dataset.new}"]` : `[data-print="${el.dataset.print}"]`,value:el.value})), preview: root.querySelector(".bn-preview [data-new=create]")?.dataset.id, open: Boolean(backstage), page: backstage?.page ?? null, dialog: Boolean(root.querySelector(".bs .sa-scrim")), stage: root.querySelector(".bs")?.dataset.stage ?? "" };
   }
   function restoreBackstage(was) {
     if (!backstage && was.open) openFile(was.page);
@@ -1857,8 +1976,8 @@ export function mountWord(el, opts = {}) {
     const now = backstageSnapshot();
     if (now.dialog && (!was.dialog || now.stage !== was.stage)) root.querySelector('.bs .sa-scrim [data-act="cancel"]')?.click();
     if (now.page !== was.page || was.page === "new" || was.page === "print") backstage.show(was.page);
-    if (was.dialog && !root.querySelector(".bs .sa-scrim")) root.querySelector(".bs .sa-browse")?.click();
-    if (was.stage === "dialog-documents") root.querySelector('.bs [data-folder="documents"]')?.click();
+    if (was.dialog && !root.querySelector(".bs .sa-scrim")) root.querySelector(was.stage.startsWith("pdf-") ? '.bs [data-export="create"]' : ".bs .sa-browse")?.click();
+    if (was.stage === "dialog-documents" || was.stage === "pdf-dialog-documents") root.querySelector('.bs [data-folder="documents"]')?.click();
     for (const saved of was.inputs ?? []) { const input=root.querySelector(`.bs ${saved.selector}`); if(input) {input.value=saved.value; input.dispatchEvent(new Event("input"));} }
     if (was.preview) root.querySelector(`.bs [data-template="${was.preview}"]`)?.click();
   }
@@ -1869,8 +1988,9 @@ export function mountWord(el, opts = {}) {
     const token = ++demoToken;
     const ctrl = new AbortController();
     const wasBackstage = backstageSnapshot();
-    const view = { zoom, tab, prevTab, top: canvas.scrollTop, left: canvas.scrollLeft, title: root.querySelector(".wd-name").innerHTML, pictureDialog: pictureDialogs.snapshot() };
-    demoState = { ctrl, was: wasBackstage, view, colours: { ...lastColours }, lists: { ...lastLists }, border: lastBorderSide, marks, painter };
+    const view = { zoom, tab, prevTab, top: canvas.scrollTop, left: canvas.scrollLeft, title: root.querySelector(".wd-name").innerHTML, pictureDialog: pictureDialogs.snapshot(), nav: navPane.snapshot() };
+    demoState = { ctrl, was: wasBackstage, view, colours: { ...lastColours }, lists: { ...lastLists }, border: lastBorderSide, marks, painter: painter && { ...painter } };
+    demoFindBox = false;
     demoSelection = clampSel(doc, sel);
     demoPicture = selectedPicture;
     demoHistory = history.fork();
@@ -1901,10 +2021,11 @@ export function mountWord(el, opts = {}) {
           if (target === "new.search") {
             const input=commandEl(target); if(input) {input.value=text;input.dispatchEvent(new Event("input"));} return true;
           }
-          if (target === "sa.name") {
+          if (target === "sa.name" || target === "export.name") {
             const input = commandEl(target); if (input) input.value = text;
             return true;
           }
+          if (target === "find.box") { navPane.setTerm(text); return true; }
           if (!backstage) {
             const at = explicitTarget && parseDocTarget(target);
             if (at) demoSelection = collapsedSel(at);
@@ -1997,6 +2118,11 @@ export function mountWord(el, opts = {}) {
   page.addEventListener("drop", (e) => e.preventDefault());
   root.addEventListener("mousedown", onRootMouseDown);
   root.addEventListener("click", onRootClick);
+  // Double-clicking Format Painter keeps it on (Word): the two clicks before it switched it on and off again.
+  root.addEventListener("dblclick", (e) => {
+    if (locked || !e.target.closest?.('.wr-card [data-cmd="home.clipboard.painter"],.wm-mini [data-cmd="home.clipboard.painter"]')) return;
+    exec("home.clipboard.painter", "lock", { anchor: e.target.closest("[data-cmd]") });
+  });
   root.addEventListener("pointerover", e=>{
     const cell=e.target.closest?.(".wm-table-grid button"); if (!cell) return;
     cell.parentElement.querySelectorAll("button").forEach(b=>b.classList.toggle("is-on",+b.dataset.cols<=+cell.dataset.cols && +b.dataset.rows<=+cell.dataset.rows));

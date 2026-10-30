@@ -700,3 +700,37 @@ export function updatePicture(doc,pos,patch) {
   const para=doc.p[pos.p]; if (!para?.picture) return doc;
   return replaceParas(doc,pos.p,1,[new Para({...paraProps(para),picture:patch===null?null:{...para.picture,...patch}},para.runs)]);
 }
+
+/* ---------- Find (Navigation pane) and Format Painter: pure helpers ---------- */
+
+/** Every case-insensitive match of `term` in the document, in reading order: [{from, to}]. Matches don't cross paragraphs. */
+export function findMatches(doc, term) {
+  const q = String(term ?? "").toLowerCase();
+  if (!q) return [];
+  const out = [];
+  doc.p.forEach((para, p) => {
+    const text = para.text.toLowerCase();
+    for (let at = text.indexOf(q); at >= 0; at = text.indexOf(q, at + q.length)) out.push({ from: { p, offset: at }, to: { p, offset: at + q.length } });
+  });
+  return out;
+}
+
+/**
+ * What Format Painter picks up from a selection: the character format, plus the paragraph alignment
+ * when the selection covers whole paragraphs (Word copies paragraph formatting with the paragraph mark).
+ */
+export function painterFormat(doc, range) {
+  const { from, to } = orderRange(range.from, range.to);
+  const collapsed = isCollapsed({ from, to });
+  const run = propsAt(doc, collapsed ? from : { p: from.p, offset: Math.min(from.offset + 1, doc.p[from.p].length) });
+  const whole = !collapsed && from.offset === 0 && to.offset === doc.p[to.p].length && doc.p[from.p].length > 0;
+  return whole ? { run, para: { align: doc.p[from.p].align } } : { run, para: null };
+}
+
+/** Paint `format` (from painterFormat) onto a range: characters inside it, and the alignment of every paragraph it touches. */
+export function applyPainter(doc, range, format) {
+  const { from, to } = orderRange(range.from, range.to);
+  let next = applyFormat(doc, { from, to }, format.run);
+  if (format.para) next = applyParaFormat(next, from.p, to.p, format.para);
+  return next;
+}

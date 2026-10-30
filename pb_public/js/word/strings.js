@@ -44,6 +44,10 @@ const S = {
     en: "Now select the words that should look the same.",
     vi: "Bây giờ hãy bôi đen những chữ muốn có cùng kiểu.",
   },
+  painterLock: {
+    en: "Format Painter stays on. Select all the words that should look the same. Press Esc when you finish.",
+    vi: "Format Painter vẫn đang bật. Hãy bôi đen tất cả các chữ muốn có cùng kiểu. Xong thì nhấn Esc.",
+  },
   stylesLater: {
     en: "Styles change the look of a whole paragraph at once. You will learn them in a later lesson.",
     vi: "Styles đổi kiểu cho cả đoạn văn cùng lúc. Bạn sẽ học phần này ở bài sau.",

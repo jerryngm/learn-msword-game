@@ -81,26 +81,6 @@ const DIALOGS = {
       buttons: [{ label: "Close", value: "close", primary: true }],
     };
   },
-  find(eng) {
-    return {
-      title: "Navigation",
-      width: 320,
-      body: `<label class="wd-fld is-wide"><input type="text" class="wd-find" placeholder="Search document" spellcheck="false"></label><p class="wd-small wd-find-out" aria-live="polite"></p>`,
-      buttons: [{ label: "Close", value: "close", primary: true }],
-      onMount(el) {
-        const input = el.querySelector(".wd-find");
-        const out = el.querySelector(".wd-find-out");
-        input.addEventListener("input", () => {
-          const q = input.value.trim().toLowerCase();
-          if (!q) { out.textContent = ""; return; }
-          const n = eng.doc().p.reduce((sum, p) => sum + p.text.toLowerCase().split(q).length - 1, 0);
-          out.textContent = n === 0 ? "No results" : n === 1 ? "Result 1 of 1" : `${n} results`;
-        });
-        const first = selectedText(eng, 40);
-        if (first) { input.value = first; input.dispatchEvent(new Event("input")); }
-      },
-    };
-  },
   replace(eng) {
     return {
       title: "Find and Replace",

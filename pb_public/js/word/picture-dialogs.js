@@ -29,7 +29,7 @@ const byId = (id) => PICTURES.find((p) => p.id === id) ?? null;
 /* ---------- glyphs (Windows 11 Explorer look) ---------- */
 const svg = (body, vb = 20) => `<svg viewBox="0 0 ${vb} ${vb}" aria-hidden="true">${body}</svg>`;
 const PIC_GLYPH = svg(`<rect x="2" y="3" width="16" height="14" rx="1.5" fill="#2B88D8"/><path d="m3 16 5-6 3.5 4 2-2.2L17 16z" fill="#fff"/><circle cx="14" cy="7" r="1.6" fill="#fff"/>`);
-const GLYPH = {
+export const GLYPH = {
   home: svg(`<path d="M4.5 9.5V17h11V9.5" fill="#B9B9B9"/><path d="M2.5 10 10 3l7.5 7" fill="none" stroke="#E07A2F" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/><rect x="8.5" y="12" width="3" height="5" fill="#7A7A7A"/>`),
   gallery: PIC_GLYPH,
   onedrive: svg(`<path d="M1.5 4.5A1.5 1.5 0 0 1 3 3h4.2l1.6 1.8H17A1.5 1.5 0 0 1 18.5 6.3V15A1.5 1.5 0 0 1 17 16.5H3A1.5 1.5 0 0 1 1.5 15z" fill="#F8C94E"/><path d="M1.5 7.2h17V15a1.5 1.5 0 0 1-1.5 1.5H3A1.5 1.5 0 0 1 1.5 15z" fill="#FDDA7A"/>`),
@@ -39,12 +39,13 @@ const GLYPH = {
   pictures: PIC_GLYPH,
   music: svg(`<circle cx="10" cy="10" r="8" fill="#E9785A"/><path d="M8.5 13.2V6.5l4-1v6.2" fill="none" stroke="#fff" stroke-width="1.4"/><circle cx="7.4" cy="13.3" r="1.6" fill="#fff"/><circle cx="11.4" cy="11.8" r="1.6" fill="#fff"/>`),
   videos: svg(`<rect x="2" y="3.5" width="16" height="13" rx="1.5" fill="#8B5CD6"/><path d="M8 7v6l5-3z" fill="#fff"/>`),
+  thispc: svg(`<defs><linearGradient id="pdPC" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#54B3F0"/><stop offset="1" stop-color="#1A73C9"/></linearGradient></defs><rect x="1.5" y="3" width="17" height="11" rx="1.2" fill="url(#pdPC)"/><path d="M7 14h6M10 14v3M6 17h8" stroke="#1A73C9" stroke-width="1.5"/>`),
 };
-const PIN = svg(`<path d="M11.8 2.8 17.2 8.2l-1.6.6-3 3 .3 3-1.3 1.3-3.2-3.2-4 4-.8-.8 4-4-3.2-3.2 1.3-1.3 3 .3 3-3z" fill="#7A7A7A"/>`);
-const VIEW_GLYPH = svg(`<rect x="3" y="4" width="14" height="12" fill="none" stroke="#1A1A1A" stroke-width="1.3"/><path d="M3 13.5h14" stroke="#1A1A1A" stroke-width="1.3"/>`);
-const PANE_GLYPH = svg(`<rect x="3" y="4" width="14" height="12" fill="none" stroke="#1A1A1A" stroke-width="1.3"/><rect x="11" y="4" width="6" height="12" fill="#1F6FD1"/>`);
-const HELP_GLYPH = svg(`<circle cx="10" cy="10" r="8.5" fill="#1F6FD1"/><path d="M7.7 7.8a2.3 2.3 0 1 1 3.4 2c-.8.5-1.1.9-1.1 1.8" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="14.4" r="1" fill="#fff"/>`);
-const CARET = `<i class="pd-caret" aria-hidden="true">▾</i>`;
+export const PIN = svg(`<path d="M11.8 2.8 17.2 8.2l-1.6.6-3 3 .3 3-1.3 1.3-3.2-3.2-4 4-.8-.8 4-4-3.2-3.2 1.3-1.3 3 .3 3-3z" fill="#7A7A7A"/>`);
+export const VIEW_GLYPH = svg(`<rect x="3" y="4" width="14" height="12" fill="none" stroke="#1A1A1A" stroke-width="1.3"/><path d="M3 13.5h14" stroke="#1A1A1A" stroke-width="1.3"/>`);
+export const PANE_GLYPH = svg(`<rect x="3" y="4" width="14" height="12" fill="none" stroke="#1A1A1A" stroke-width="1.3"/><rect x="11" y="4" width="6" height="12" fill="#1F6FD1"/>`);
+export const HELP_GLYPH = svg(`<circle cx="10" cy="10" r="8.5" fill="#1F6FD1"/><path d="M7.7 7.8a2.3 2.3 0 1 1 3.4 2c-.8.5-1.1.9-1.1 1.8" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="14.4" r="1" fill="#fff"/>`);
+export const CARET = `<i class="pd-caret" aria-hidden="true">▾</i>`;
 // The classroom laptops draw some Online Pictures icons as empty boxes (a missing font); the windows copy that.
 const BOX = `<span class="pd-box" aria-hidden="true"></span>`;
 

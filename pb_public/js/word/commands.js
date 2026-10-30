@@ -9,7 +9,7 @@
 
 import {
   ALIGNS, BULLET_GLYPHS, DEFAULT_PARA, DEFAULT_RUN, FONTS, MAX_INDENT, NUMBER_FORMATS, SIZES, UNDERLINES,
-  insertPicture, updatePicture, insertTable, editTable, setPage, applyFormat, applyParaFormat, createDoc, deleteRange, fragment, insertFragment, isWordChar, paraProps, propsAt, slices, transformText,
+  insertPicture, updatePicture, insertTable, editTable, setPage, applyFormat, painterFormat, applyParaFormat, createDoc, deleteRange, fragment, insertFragment, isWordChar, paraProps, propsAt, slices, transformText,
 } from "./model.js";
 
 const registry = new Map();
@@ -271,9 +271,12 @@ registerCommand({
   scope: "sel",
   effectName: E.painter,
   pressed: (s) => s.painter,
+  // One click paints once; a double-click (arg "lock") keeps painting until Esc or another click. The paint
+  // itself happens on the next selection in the page and emits home.clipboard.painter.apply.
   run(doc, sel, ctx) {
-    if (ctx.ui.painterActive()) ctx.ui.stopPainter();
-    else ctx.ui.startPainter(propsAt(doc, sel.collapsed ? sel.from : { p: sel.from.p, offset: sel.from.offset + 1 }));
+    if (ctx.arg === "lock") ctx.ui.startPainter(painterFormat(doc, sel), true);
+    else if (ctx.ui.painterActive()) ctx.ui.stopPainter();
+    else ctx.ui.startPainter(painterFormat(doc, sel), false);
     return doc;
   },
 });
@@ -706,7 +709,8 @@ registerCommand({ id: "home.styles.pane", label: "Styles", level: "b", popup: (c
 
 /* ================= Home: Editing, Voice and the rest ================= */
 
-registerCommand({ id: "home.editing.find", label: "Find", key: "Ctrl+F", level: "b", popup: (ctx) => ctx.ui.dialog("find"), menu: () => [
+// Find opens the Navigation pane (navpane.js). Level a so it acts only when Home is a mission tab; it never changes the document.
+registerCommand({ id: "home.editing.find", label: "Find", key: "Ctrl+F", level: "a", scope: "sel", effectName: { en: "find words", vi: "tìm chữ" }, run: (doc, sel, ctx) => { ctx.ui.openFind(sel); return doc; }, menu: () => [
   { cmd: "home.editing.find", label: "Find", icon: "search_20" },
   { cmd: "home.editing.advancedFind", label: "Advanced Find..." },
   { cmd: "home.editing.goTo", label: "Go To...", icon: "arrow_forward_20" },
